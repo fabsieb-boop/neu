@@ -346,8 +346,86 @@ DEAL_MECHANISMS = [
 ]
 
 
+def build_project_start_tasks() -> list[dict[str, str]]:
+    """Create the linked checklists required to launch a new DD project."""
+    rows = [
+        # 1. Mandate and scope.
+        ("1. Mandat & Scope", "Deal Team", "Deal Thesis und konkrete Investitionsentscheidung formulieren", "Schriftlich freigegebene Deal Thesis mit Werttreibern, Kernannahmen und Entscheidungsfragen.", "Kritisch", "Ja", "Deal Sponsor", "", "00_Start", "A4", "Projektauftrag / IC-Memo"),
+        ("1. Mandat & Scope", "PMO", "Projektauftrag und Sponsor bestätigen", "Mandat, Sponsor, Entscheidungsrechte, Budgetrahmen und Eskalationsweg sind schriftlich bestätigt.", "Kritisch", "Ja", "M&A Lead", "PS-001", "00_Start", "A4", "Freigegebener Projektauftrag"),
+        ("1. Mandat & Scope", "Legal / M&A", "Zielunternehmen und Deal Perimeter abgrenzen", "Gesellschaften, Assets, Schulden, Länder und ausgenommene Positionen sind eindeutig aufgelistet.", "Kritisch", "Ja", "M&A Lead", "PS-002", "00_Start", "B5", "Perimeter-Liste / Strukturdiagramm"),
+        ("1. Mandat & Scope", "Legal / Tax", "Transaktionsstruktur vorläufig festlegen", "Share-/Asset-Deal- oder Carve-out-Hypothese samt Alternativen und offenen Strukturfragen ist dokumentiert.", "Kritisch", "Ja", "Legal Lead", "PS-003", "00_Start", "B6", "Term Sheet / Strukturmemorandum"),
+        ("1. Mandat & Scope", "PMO", "DD-Umfang, Workstreams und bewusste Ausschlüsse genehmigen", "Scope-Matrix nennt jeden Workstream, Prüfungszeitraum, Tiefgang, Deliverable und ausgeschlossene Themen.", "Kritisch", "Ja", "M&A Lead", "PS-001", "02_Checkliste", "A1", "Freigegebene Scope-Matrix"),
+        ("1. Mandat & Scope", "Deal Team", "Materialität und qualitative No-go-Kriterien beschließen", "Betragsschwelle, qualitative Eskalationen und No-go-Fälle sind durch Sponsor/IC genehmigt.", "Kritisch", "Ja", "Deal Sponsor", "PS-001", "00_Start", "B13", "Materialitäts- und No-go-Matrix"),
+        ("1. Mandat & Scope", "Legal / Compliance", "NDA, Clean-Team- und Informationsbarrieren festlegen", "Unterzeichnete NDA sowie Regeln für sensible Kunden-, Personal- und Wettbewerbsdaten liegen vor.", "Kritisch", "Ja", "Legal Lead", "PS-003", "00_Ausfüllhilfe", "A1", "NDA / Clean-Team-Protokoll"),
+        ("1. Mandat & Scope", "Compliance", "Interessenkonflikte und Unabhängigkeit prüfen", "Konfliktprüfung aller internen und externen Teammitglieder ist dokumentiert und freigegeben.", "Hoch", "Ja", "Compliance Lead", "PS-002", "02_Checkliste", "A1", "Conflict Check / Freigabe"),
+        ("1. Mandat & Scope", "PMO / Procurement", "Budget und externe Berater mandatieren", "Budget, Leistungsumfang, Tagessätze, Deliverables und Ansprechpartner sind freigegeben.", "Hoch", "Ja", "M&A Lead", "PS-005", "05_Maßnahmen", "A1", "Budget / Engagement Letters"),
+        ("1. Mandat & Scope", "Alle Workstreams", "Methoden- und Quellenrahmen festlegen", "Relevante Primärquellen, Standards, Rechtsstände und Bewertungsmethoden sind je Workstream benannt.", "Mittel", "Ja", "PMO", "PS-005", "15_Quellen", "A1", "Methoden-/Quellenliste"),
+        # 2. Governance and team.
+        ("2. Governance & Team", "PMO", "Gesamtprojektleitung namentlich festlegen", "Eine Person trägt Gesamtverantwortung und ist in der Arbeitsmappe sowie im RACI eingetragen.", "Kritisch", "Ja", "Deal Sponsor", "PS-002", "00_Start", "B9", "Benennung / RACI"),
+        ("2. Governance & Team", "PMO", "Workstream Leads und Stellvertretungen benennen", "Für jeden Scope-Bereich sind Lead, Stellvertretung und fachlicher Reviewer benannt.", "Kritisch", "Ja", "M&A Lead", "PS-005", "02_Checkliste", "A1", "Team- und Kontaktliste"),
+        ("2. Governance & Team", "PMO", "RACI für Aufgaben und Deliverables freigeben", "Responsible, Accountable, Consulted und Informed sind für alle Kernaktivitäten eindeutig.", "Hoch", "Ja", "M&A Lead", "PS-011; PS-012", "05_Maßnahmen", "A1", "Freigegebene RACI-Matrix"),
+        ("2. Governance & Team", "Deal Team", "Steering Committee und Investment Committee bestätigen", "Mitglieder, Quorum, Entscheidungsbefugnisse und Sitzungstermine sind dokumentiert.", "Kritisch", "Ja", "Deal Sponsor", "PS-011", "01_Dashboard", "A1", "Governance Charter"),
+        ("2. Governance & Team", "PMO", "Meeting- und Reporting-Cadence planen", "Kick-off, Workstream-Calls, SteerCo, Statusberichte und Entscheidungsmeetings sind terminiert.", "Hoch", "Ja", "PMO", "PS-013; PS-014", "01_Dashboard", "A1", "Projektkalender"),
+        ("2. Governance & Team", "PMO / Risk", "Eskalationsregeln und Reaktionszeiten definieren", "Trigger nach Priorität, Score, Exposure, Frist und No-go sind mit Reaktionszeit und Empfänger festgelegt.", "Kritisch", "Ja", "M&A Lead", "PS-006; PS-014", "04_Risiken", "A1", "Eskalationsmatrix"),
+        ("2. Governance & Team", "PMO", "Entscheidungs- und Annahmenlog eröffnen", "Zentrale Entscheidungen, offene Annahmen, Datum, Entscheider und Folgen werden fortlaufend protokolliert.", "Hoch", "Ja", "PMO", "PS-014", "01_Dashboard", "A1", "Decision / Assumption Log"),
+        ("2. Governance & Team", "IT / PMO", "Sicheren Projektraum und Zugriffe einrichten", "MFA, rollenbasierte Zugriffe, externe Nutzer, Logging und Offboarding sind eingerichtet und getestet.", "Kritisch", "Ja", "IT Lead", "PS-007; PS-012", "03_Dokumente", "A1", "Zugriffsmatrix / Testnachweis"),
+        ("2. Governance & Team", "PMO", "Ressourcenengpässe und Vertretungen absichern", "Urlaube, Parallelprojekte und Schlüsselabhängigkeiten sind identifiziert; Vertretungen und Puffer sind geplant.", "Mittel", "Ja", "PMO", "PS-012; PS-015", "05_Maßnahmen", "A1", "Ressourcenplan"),
+        # 3. Timeline and gates.
+        ("3. Zeitplan & Gates", "Deal Team", "IC-, Signing-, Closing- und Long-stop-Termine erfassen", "Alle verbindlichen und internen Zieltermine sind abgestimmt und in einem Baseline-Plan dokumentiert.", "Kritisch", "Ja", "M&A Lead", "PS-004", "00_Start", "B8", "Baseline-Projektplan"),
+        ("3. Zeitplan & Gates", "Legal / Regulatory", "Regulatorische Anmeldungen und kritischen Pfad planen", "Anmeldungen, Zuständigkeiten, Unterlagen, Vorlaufzeiten und Long-stop-Folgen sind erfasst.", "Kritisch", "Ja", "Legal Lead", "PS-003; PS-020", "02_Checkliste", "A1", "Regulatory Roadmap"),
+        ("3. Zeitplan & Gates", "PMO", "Meilenstein- und Abhängigkeitsplan erstellen", "Alle Deliverables besitzen Start, Fälligkeit, Vorgänger, Owner und Puffer auf dem kritischen Pfad.", "Kritisch", "Ja", "PMO", "PS-020; PS-021", "05_Maßnahmen", "A1", "Meilensteinplan"),
+        ("3. Zeitplan & Gates", "PMO / Management", "Datenlieferungen in Wellen terminieren", "Initial-, Ergänzungs- und Bring-down-Lieferungen sind je Bereich mit Owner und Deadline vereinbart.", "Hoch", "Ja", "PMO", "PS-022", "03_Dokumente", "A1", "Datenlieferplan"),
+        ("3. Zeitplan & Gates", "PMO", "Q&A-Fenster und Antwort-SLA vereinbaren", "Einreichungsrhythmus, Antwortzeit, Eskalation und Abschlusszeitpunkt sind schriftlich bestätigt.", "Hoch", "Ja", "PMO", "PS-023", "06_Q&A", "A1", "Q&A-Protokoll"),
+        ("3. Zeitplan & Gates", "Alle Workstreams", "Interim-Readout und Red-Flag-Bericht terminieren", "Format, Cut-off, Review und Adressaten des frühen Red-Flag-Berichts sind vereinbart.", "Kritisch", "Ja", "M&A Lead", "PS-015; PS-022", "01_Dashboard", "A1", "Reporting-Kalender"),
+        ("3. Zeitplan & Gates", "PMO / Reviewer", "Draft-, Review- und Final-Report-Zyklus planen", "Abgabe, Cross-Review, Faktencheck, Legal Review und finale Freigabe besitzen realistische Termine.", "Hoch", "Ja", "PMO", "PS-022; PS-026", "01_Dashboard", "A1", "Report-Produktionsplan"),
+        ("3. Zeitplan & Gates", "Alle Workstreams", "Bring-down-Prüfung vor Signing/Closing einplanen", "Zu aktualisierende Daten, Verantwortliche, Cut-off und Bring-down-Bestätigung sind definiert.", "Kritisch", "Ja", "M&A Lead", "PS-020; PS-023", "02_Checkliste", "A1", "Bring-down-Checklist"),
+        ("3. Zeitplan & Gates", "Deal Team", "Fallback- und Abbruchszenarien festlegen", "Folgen bei Datenverzug, Consent-Ausfall, Financing Gap oder No-go-Finding sind vorab entschieden.", "Kritisch", "Ja", "Deal Sponsor", "PS-006; PS-016", "04_Risiken", "A1", "Contingency-/Abbruchplan"),
+        # 4. VDR and data.
+        ("4. Datenraum & Q&A", "PMO / IT", "VDR-Owner, Administratoren und Zugriffsgruppen festlegen", "Owner, Stellvertretung, Rollen und Freigabeprozess sind dokumentiert und getestet.", "Kritisch", "Ja", "PMO", "PS-018", "03_Dokumente", "A1", "VDR-Zugriffsmatrix"),
+        ("4. Datenraum & Q&A", "Alle Workstreams", "Master Request List gegen Scope prüfen", "Jeder Scope-Punkt besitzt eine eindeutige Dokumentenanforderung ohne unnötige Dubletten.", "Kritisch", "Ja", "PMO", "PS-005; PS-030", "03_Dokumente", "A1", "Freigegebene Request List"),
+        ("4. Datenraum & Q&A", "PMO / Management", "Dokumenten-Owner je Anforderung zuordnen", "Jede Pflichtanforderung besitzt genau einen Liefer-Owner und eine realistische Fälligkeit.", "Hoch", "Ja", "PMO", "PS-031", "03_Dokumente", "A1", "Owner-Zuordnung"),
+        ("4. Datenraum & Q&A", "Alle Workstreams", "Zeitraum, Population und Datenformat je Request präzisieren", "Anforderung nennt Rechtseinheiten, Länder, Zeitraum, Granularität und maschinenlesbares Format.", "Hoch", "Ja", "Workstream Leads", "PS-031", "03_Dokumente", "A1", "Kommentierte Request List"),
+        ("4. Datenraum & Q&A", "PMO / Management", "Dateinamens-, Versionierungs- und Uploadregeln vereinbaren", "Benennung, Versionsstatus, Ersetzungsregeln und Changelog sind für alle Lieferanten klar.", "Mittel", "Ja", "PMO", "PS-030", "03_Dokumente", "A1", "VDR Upload Guide"),
+        ("4. Datenraum & Q&A", "PMO / Workstreams", "Qualitätskontrolle für Uploads einrichten", "Vollständigkeit, Lesbarkeit, Zeitraum, Anhänge und Duplikate werden innerhalb definierter SLA geprüft.", "Hoch", "Ja", "PMO", "PS-032; PS-034", "03_Dokumente", "A1", "VDR-QC-Protokoll"),
+        ("4. Datenraum & Q&A", "Legal / DPO", "Sensible Daten und Clean-Team-Bereiche klassifizieren", "Personen-, Kunden-, Preis- und Wettbewerbsdaten sind minimiert, klassifiziert und zugriffsbeschränkt.", "Kritisch", "Ja", "DPO / Legal", "PS-007; PS-030", "03_Dokumente", "A1", "Datenklassifizierung / Freigabe"),
+        ("4. Datenraum & Q&A", "Financial DD", "Finanzdaten auf Abschluss und Hauptbuch abstimmen", "Trial Balance, Management Reporting und bereitgestellte Analysedaten sind übergeleitet; Differenzen dokumentiert.", "Kritisch", "Ja", "Financial Lead", "PS-033; PS-036", "07_Finanzanalyse", "A1", "Reconciliation"),
+        ("4. Datenraum & Q&A", "PMO", "Fehlende und verspätete Pflichtdokumente eskalieren", "Eskalation nach Priorität, Frist und kritischem Pfad ist im Dokumenten-Tracker aktiv.", "Kritisch", "Ja", "PMO", "PS-016; PS-032", "03_Dokumente", "A1", "Open-Items-Liste"),
+        ("4. Datenraum & Q&A", "PMO / Management", "Q&A-Regeln, Referenzen und Evidenzstandard bestätigen", "Jede Antwort referenziert Frage, Dokument, Version und verantwortliche Person; mündliche Antworten werden bestätigt.", "Hoch", "Ja", "PMO", "PS-024; PS-031", "06_Q&A", "A1", "Q&A Working Protocol"),
+        ("4. Datenraum & Q&A", "Legal / PMO", "Datenraum-Cut-off und finales Archiv planen", "Cut-off, zulässige Nachlieferungen, Disclosure-Archiv und unveränderbare finale Kopie sind vereinbart.", "Kritisch", "Ja", "Legal Lead", "PS-020; PS-035", "03_Dokumente", "A1", "VDR Cut-off / Archivplan"),
+        # 5. Analysis planning.
+        ("5. Analyseplanung", "Financial DD", "Finanzielle Baseline und Perioden festlegen", "Historie, LTM, Budget, Währung, Konsolidierungskreis und Reporting-Definitionen sind abgestimmt.", "Kritisch", "Ja", "Financial Lead", "PS-003; PS-038", "07_Finanzanalyse", "A1", "Financial Data Book"),
+        ("5. Analyseplanung", "Financial DD", "Quality-of-Earnings-Ansatz und Evidenzstandard festlegen", "Kategorien, Vorzeichen, Run-rate-Regeln, Synergieabgrenzung und Freigabeprozess sind dokumentiert.", "Kritisch", "Ja", "Financial Lead", "PS-041", "08_QoE", "A1", "QoE-Arbeitsprogramm"),
+        ("5. Analyseplanung", "Financial DD / Legal", "NWC- und Net-Debt-Definitionen vorbereiten", "Komponenten, Vorzeichen, Monatsperiode, debt-like/cash-like Hypothesen und SPA-Schnittstelle sind festgelegt.", "Kritisch", "Ja", "Financial Lead", "PS-041", "09_NWC_NetDebt", "A1", "Definition Paper"),
+        ("5. Analyseplanung", "Commercial DD", "Commercial-Arbeitsprogramm und externe Validierung planen", "Markt, Kunden, Churn, Pipeline, Pricing und Interview-/Datenplan sind priorisiert.", "Hoch", "Ja", "Commercial Lead", "PS-005; PS-033", "02_Checkliste", "A1", "Commercial Workplan"),
+        ("5. Analyseplanung", "Legal DD", "Wesentliche Verträge und Consent-Schwellen definieren", "Materialität, Vertragstypen, Top-Gegenparteien und Change-of-Control-Prüfung sind festgelegt.", "Kritisch", "Ja", "Legal Lead", "PS-005; PS-006", "10_Verträge", "A1", "Contract Review Scope"),
+        ("5. Analyseplanung", "Tax DD", "Steuerarten, Jahre und Jurisdiktionen abgrenzen", "Offene Jahre, Steuerarten, Gesellschaften, Prüfungen und Strukturfragen sind im Tax Scope erfasst.", "Kritisch", "Ja", "Tax Lead", "PS-003; PS-005", "13_Steuern", "A1", "Tax Scope Memo"),
+        ("5. Analyseplanung", "IT / Cyber DD", "IT-, Cyber- und Separation-Scope festlegen", "Kritische Systeme, Cloud, IAM, Incidents, Backups, Lizenzen und TSA-Abhängigkeiten sind priorisiert.", "Kritisch", "Ja", "IT/Cyber Lead", "PS-005; PS-018", "11_IT_Cyber", "A1", "IT/Cyber Workplan"),
+        ("5. Analyseplanung", "HR DD", "HR-, Retention- und Pensions-Scope festlegen", "Clean-Team-Daten, Schlüsselpersonen, Boni, Mitbestimmung, Freelancer und Pensionen sind abgedeckt.", "Kritisch", "Ja", "HR Lead", "PS-005; PS-007", "12_HR", "A1", "HR Workplan"),
+        ("5. Analyseplanung", "ESG / EHS", "ESG-, Umwelt-, Arbeitssicherheits- und Produktscope festlegen", "Standorte, Altlasten, Genehmigungen, Safety, Produktkonformität und Berichtspflichten sind priorisiert.", "Hoch", "Ja", "ESG/EHS Lead", "PS-005", "02_Checkliste", "A1", "ESG/EHS Workplan"),
+        ("5. Analyseplanung", "Compliance", "Compliance-, AML-, Sanktions- und Exportkontrollscope festlegen", "Hochrisikoländer, Drittparteien, Untersuchungen, Screening und Zahlungsstichproben sind geplant.", "Kritisch", "Ja", "Compliance Lead", "PS-005; PS-008", "02_Checkliste", "A1", "Compliance Workplan"),
+        ("5. Analyseplanung", "Legal / Operations", "Real-Estate-, Insurance- und Operations-Scope bestätigen", "Wesentliche Standorte, Assets, Policen, Kapazitäten und Betriebsunterbrechungsrisiken sind abgedeckt.", "Hoch", "Ja", "Operations Lead", "PS-005", "02_Checkliste", "A1", "Operations Workplan"),
+        ("5. Analyseplanung", "Integration / Carve-out", "Day-1-, TSA- und Integrationshypothesen definieren", "Abhängigkeiten, Stand-alone-Kosten, Separation, Day 1 und Synergien sind als prüfbare Hypothesen erfasst.", "Kritisch", "Ja", "Integration Lead", "PS-003; PS-005", "02_Checkliste", "A1", "Integration Hypothesis Log"),
+        ("5. Analyseplanung", "Alle Workstreams", "Interviews, Site Visits und externe Bestätigungen terminieren", "Teilnehmer, Ziele, Leitfäden, Clean-Team-Regeln, Termine und Dokumentation sind festgelegt.", "Hoch", "Wenn relevant", "PMO", "PS-015; PS-023", "06_Q&A", "A1", "Interview-/Visit-Plan"),
+        # 6. Risk, reporting and handover.
+        ("6. Risiko & Deliverables", "Risk / PMO", "Risiko-Skala und Bewertungslogik kalibrieren", "Alle Workstreams verwenden dieselben Definitionen für Eintritt, Auswirkung, Exposure und Restrisiko.", "Kritisch", "Ja", "M&A Lead", "PS-006; PS-016", "00_Start", "A15", "Scoring-Freigabe"),
+        ("6. Risiko & Deliverables", "Alle Workstreams", "Risikoregister mit Hypothesen initialisieren", "Top-Hypothesen je Workstream sind referenziert, priorisiert und einem Owner zugeordnet.", "Kritisch", "Ja", "Risk Lead", "PS-054", "04_Risiken", "A1", "Initial Risk Register"),
+        ("6. Risiko & Deliverables", "PMO / Reviewer", "Einheitlichen Finding-Standard vereinbaren", "Jedes Finding enthält Fakt, Evidenz, Ursache, Auswirkung, Quantifizierung, Maßnahme und Deal-Folge.", "Kritisch", "Ja", "PMO", "PS-054; PS-055", "02_Checkliste", "A1", "Finding Template"),
+        ("6. Risiko & Deliverables", "Finance / Risk", "Exposure-Methodik Low/Base/High festlegen", "Zeithorizont, Brutto/Netto, Steuer, Wahrscheinlichkeit, Barwert und Doppelzählung sind geregelt.", "Kritisch", "Ja", "Financial Lead", "PS-054", "04_Risiken", "A1", "Exposure Methodology"),
+        ("6. Risiko & Deliverables", "Alle Workstreams", "Maßnahmen-Owner und Abnahmekriterien vorbereiten", "Für bestätigte Risiken werden Owner, Termin, Budget, KPI und objektiver Abschlussnachweis verlangt.", "Hoch", "Ja", "PMO", "PS-055; PS-056", "05_Maßnahmen", "A1", "Action Governance"),
+        ("6. Risiko & Deliverables", "Deal Team / Legal", "Finding-zu-Deal-Mechanismus-Mapping vereinbaren", "Preis, Freistellung, Escrow, Garantie, CP, Covenant, Earn-out, TSA oder No-go werden konsistent entschieden.", "Kritisch", "Ja", "Legal Lead", "PS-056", "14_Deal_Mechanismen", "A1", "Deal Protection Matrix"),
+        ("6. Risiko & Deliverables", "PMO", "Berichtsstruktur und Management Summary freigeben", "Red-Flag-, Draft- und Final-Report besitzen einheitliche Struktur, Materialität und Referenzen.", "Hoch", "Ja", "M&A Lead", "PS-026; PS-027", "01_Dashboard", "A1", "Report Template"),
+        ("6. Risiko & Deliverables", "PMO / Reviewer", "Cross-Review- und Sign-off-Matrix festlegen", "Fachreview, Faktencheck, Legal/Tax Review und finale Freigabe sind je Deliverable zugeordnet.", "Kritisch", "Ja", "PMO", "PS-013; PS-027", "02_Checkliste", "A1", "Sign-off Matrix"),
+        ("6. Risiko & Deliverables", "Alle Workstreams", "Open-Items- und Bring-down-Liste vorbereiten", "Ungeklärte Fragen, fehlende Belege, Änderungen nach Stichtag und Closing-Aufgaben werden zentral nachgehalten.", "Kritisch", "Ja", "PMO", "PS-028; PS-039", "06_Q&A", "A1", "Open-Items / Bring-down Log"),
+        ("6. Risiko & Deliverables", "Deal Team", "Finale Entscheidungsdokumentation und Archivierung planen", "IC-Entscheidung, Bedingungen, Berichte, VDR-Archiv, Berechnungen und Freigaben werden nachvollziehbar archiviert.", "Hoch", "Ja", "M&A Lead", "PS-017; PS-040", "01_Dashboard", "A1", "Deal Decision File"),
+        ("6. Risiko & Deliverables", "PMO", "Übergabe an Closing-, Integration- und 100-Tage-Team definieren", "Offene Maßnahmen, TSA, Consents, Owner, Budgets und KPI werden mit formaler Abnahme übergeben.", "Kritisch", "Ja", "Integration Lead", "PS-058; PS-061", "05_Maßnahmen", "A1", "Handover Pack"),
+    ]
+    keys = ["phase", "workstream", "task", "acceptance", "priority", "mandatory", "owner", "dependency", "sheet", "cell", "evidence"]
+    return [{"id": f"PS-{idx:03d}", **dict(zip(keys, row))} for idx, row in enumerate(rows, start=1)]
+
+
 def main() -> None:
     checklist = build_checklist()
+    project_tasks = build_project_start_tasks()
     workbook = xlsxwriter.Workbook(OUTPUT)
     workbook.set_properties(
         {
@@ -555,6 +633,7 @@ def main() -> None:
         "Prioritaet": ["Kritisch", "Hoch", "Mittel", "Niedrig"],
         "Phase": ["Screening", "Vollprüfung", "Signing", "Closing", "Post-Closing"],
         "JaNeinPruefen": ["Ja", "Nein", "Zu prüfen"],
+        "Pflichtgrad": ["Ja", "Nein", "Wenn relevant", "Zu prüfen"],
         "DokStatus": ["Nicht angefordert", "Angefordert", "Teilweise", "Vollständig", "Nicht verfügbar", "Nicht anwendbar"],
         "Vollstaendigkeit": ["Ungeprüft", "Unvollständig", "Plausibel", "Verifiziert"],
         "RisikoStatus": ["Zu verifizieren", "Bestätigt", "Entkräftet", "Mitigiert", "Akzeptiert"],
@@ -578,6 +657,7 @@ def main() -> None:
     ws = workbook.add_worksheet("00_Start")
     # Create guidance and dashboard early so the visible tab order is intuitive.
     # Their content is populated after the dependent sheets have been defined.
+    ws_project = workbook.add_worksheet("00_Projektstart")
     ws_help = workbook.add_worksheet("00_Ausfüllhilfe")
     ws_dash = workbook.add_worksheet("01_Dashboard")
     banner(ws, "Due-Diligence-Arbeitsmappe", "Branchenneutrale, risikoorientierte Arbeitsvorlage. Gelbe Zellen sind Eingaben, blaue Zellen enthalten Formeln. Alle Vorschläge sind auf den konkreten Deal anzupassen.", 7)
@@ -675,7 +755,103 @@ def main() -> None:
     for row, text in enumerate(notes, start=23):
         ws.merge_range(row, 0, row, 7, f"• {text}", fmt["text"])
         ws.set_row(row, 30)
+    ws.merge_range("A30:H30", "Projektstart", fmt["section"])
+    ws.write_url("A31", "internal:'00_Projektstart'!A1", fmt["link"], string="Projektstart-Checkliste öffnen →")
+    ws.merge_range("B31:H31", "Sechs verbundene Teilchecklisten führen vom Mandat bis zur Übergabe; jede Aufgabe verlinkt auf den passenden Arbeitsbereich.", fmt["text"])
     ws.freeze_panes(4, 0)
+
+    # Linked project-start checklists.
+    project_headers = [
+        "Aufgaben-ID", "Teilcheckliste / Phase", "Workstream", "Startaufgabe",
+        "Zweck / Abnahmekriterium", "Priorität", "Pflicht?", "Status", "Owner",
+        "Start geplant", "Fällig", "Erledigt am", "Abhängigkeit",
+        "Verbundenes Excel-Blatt", "Zielbereich", "Direktlink",
+        "Evidenz / Ablage", "Kommentar", "Tage überfällig", "Reviewer",
+    ]
+    banner(
+        ws_project,
+        "Verbundene Projektstart-Checklisten",
+        f"{len(project_tasks)} Startaufgaben in sechs Teilchecklisten. Status, Owner und Termine pflegen; über „Direktlink“ unmittelbar zum zugehörigen Arbeitsblatt wechseln.",
+        len(project_headers) - 1,
+    )
+    project_widths = [13, 24, 22, 42, 44, 11, 12, 17, 20, 13, 13, 13, 18, 24, 14, 14, 30, 32, 14, 18]
+    for col, width in enumerate(project_widths):
+        ws_project.set_column(col, col, width)
+    ws_project.write("A3", "Zielunternehmen", fmt["label"])
+    ws_project.merge_range("B3:D3", "", fmt["formula"])
+    ws_project.write_formula("B3", "=Zielunternehmen", fmt["formula"], "")
+    ws_project.write("E3", "Transaktion", fmt["label"])
+    ws_project.merge_range("F3:H3", "", fmt["formula"])
+    ws_project.write_formula("F3", "=Transaktionstyp_Auswahl", fmt["formula"], "Share Deal")
+    ws_project.write("I3", "DD-Stichtag", fmt["label"])
+    ws_project.merge_range("J3:L3", "", fmt["formula"])
+    ws_project.write_formula("J3", "=DD_Stichtag", fmt["formula"], "")
+    ws_project.write_url("S3", "internal:'00_Ausfüllhilfe'!A1", fmt["link"], string="Ausfüllhilfe →")
+
+    project_header_row = 8
+    project_first_row = project_header_row + 1
+    project_last_row = project_first_row + len(project_tasks) - 1
+    project_first_excel = project_first_row + 1
+    project_last_excel = project_last_row + 1
+    project_kpis = [
+        ("Startaufgaben", f"=COUNTA(A{project_first_excel}:A{project_last_excel})", len(project_tasks), fmt["kpi_value"]),
+        ("Abgeschlossen", f'=COUNTIF(H{project_first_excel}:H{project_last_excel},"Abgeschlossen")', 0, fmt["kpi_value"]),
+        ("Fortschritt", f'=IFERROR(COUNTIF(H{project_first_excel}:H{project_last_excel},"Abgeschlossen")/COUNTA(A{project_first_excel}:A{project_last_excel}),0)', 0, fmt["kpi_pct"]),
+        ("Überfällig", f'=COUNTIFS(K{project_first_excel}:K{project_last_excel},"<"&TODAY(),K{project_first_excel}:K{project_last_excel},"<>",H{project_first_excel}:H{project_last_excel},"<>Abgeschlossen")', 0, fmt["kpi_value"]),
+        ("Kritisch offen", f'=COUNTIFS(F{project_first_excel}:F{project_last_excel},"Kritisch",H{project_first_excel}:H{project_last_excel},"<>Abgeschlossen",H{project_first_excel}:H{project_last_excel},"<>Nicht anwendbar")', sum(1 for task in project_tasks if task["priority"] == "Kritisch"), fmt["kpi_value"]),
+        ("Startfreigabe", f'=IF(COUNTIFS(F{project_first_excel}:F{project_last_excel},"Kritisch",H{project_first_excel}:H{project_last_excel},"<>Abgeschlossen",H{project_first_excel}:H{project_last_excel},"<>Nicht anwendbar")=0,"Bereit","Nicht bereit")', "Nicht bereit", fmt["kpi_value"]),
+    ]
+    for idx, (label, formula, cached, value_format) in enumerate(project_kpis):
+        col = idx * 3
+        ws_project.merge_range(3, col, 3, col + 2, label, fmt["kpi_label"])
+        ws_project.merge_range(4, col, 5, col + 2, "", value_format)
+        ws_project.write_formula(4, col, formula, value_format, cached)
+    ws_project.merge_range(
+        6,
+        0,
+        6,
+        len(project_headers) - 1,
+        "Startfreigabe bedeutet: Alle kritischen Startaufgaben sind abgeschlossen oder nachvollziehbar als nicht anwendbar dokumentiert. Sie ersetzt keine Investment- oder Rechtsentscheidung.",
+        fmt["subtitle"],
+    )
+    for idx, task in enumerate(project_tasks):
+        row = project_first_row + idx
+        values = [
+            task["id"], task["phase"], task["workstream"], task["task"], task["acceptance"],
+            task["priority"], task["mandatory"], "Nicht begonnen", task["owner"], "", "", "",
+            task["dependency"], task["sheet"], task["cell"], "", "", "", "", "",
+        ]
+        for col, value in enumerate(values):
+            if col in (9, 10, 11):
+                ws_project.write_blank(row, col, None, fmt["input_date"])
+            elif col in (8, 16, 17, 19):
+                ws_project.write(row, col, value, fmt["input"])
+            elif col == 15:
+                ws_project.write_url(row, col, f"internal:'{task['sheet']}'!{task['cell']}", fmt["link"], string="Öffnen →")
+            elif col == 18:
+                continue
+            else:
+                ws_project.write(row, col, value, fmt["text"])
+        excel_row = row + 1
+        ws_project.write_formula(
+            row,
+            18,
+            f'=IF(OR(K{excel_row}="",H{excel_row}="Abgeschlossen",H{excel_row}="Nicht anwendbar"),"",MAX(0,TODAY()-K{excel_row}))',
+            fmt["formula_int"],
+            "",
+        )
+    add_table(ws_project, project_header_row, project_last_row, project_headers, "tblProjektstart", style="Table Style Medium 4")
+    ws_project.set_default_row(58)
+    ws_project.freeze_panes(3, 3)
+    ws_project.data_validation(project_first_row, 5, project_last_row, 5, input_hint("Priorität", "Deal-Relevanz und Dringlichkeit der Startaufgabe wählen.", validate="list", source="=Prioritaet"))
+    ws_project.data_validation(project_first_row, 6, project_last_row, 6, input_hint("Pflichtgrad", "Pflicht, nicht erforderlich oder situationsabhängig auswählen.", validate="list", source="=Pflichtgrad"))
+    ws_project.data_validation(project_first_row, 7, project_last_row, 7, input_hint("Startstatus", "Abgeschlossen erst nach Erfüllung des Abnahmekriteriums und vorhandener Evidenz.", validate="list", source="=Pruefstatus"))
+    ws_project.data_validation(project_first_row, 8, project_last_row, 8, input_hint("Owner", "Vorbelegte Rolle durch eine namentlich verantwortliche Person ergänzen oder ersetzen.", validate="any"))
+    ws_project.data_validation(project_first_row, 9, project_last_row, 11, input_hint("Projekttermin", "Geplanten Start, Fälligkeit und Abschluss als TT.MM.JJJJ pflegen.", validate="date", criteria="between", minimum=date(2000, 1, 1), maximum=date(2100, 12, 31)))
+    ws_project.data_validation(project_first_row, 16, project_last_row, 17, input_hint("Startnachweis", "Ablage/Referenz und relevante Entscheidung oder Abweichung dokumentieren.", validate="any"))
+    ws_project.data_validation(project_first_row, 19, project_last_row, 19, input_hint("Reviewer", "Fachlichen Reviewer bzw. Freigebenden mit Rolle eintragen.", validate="any"))
+    conditional_status(ws_project, f"F{project_first_excel}:S{project_last_excel}")
+    ws_project.conditional_format(project_first_row, 18, project_last_row, 18, {"type": "cell", "criteria": ">", "value": 0, "format": workbook.add_format({"bg_color": "#FFC7CE", "font_color": "#9C0006"})})
 
     # 02 checklist is built before dashboard to establish ranges.
     ws_check = workbook.add_worksheet("02_Checkliste")
@@ -1366,8 +1542,14 @@ def main() -> None:
     ws_dash.write("I3", "Stichtag", fmt["label"])
     ws_dash.merge_range("J3:K3", "", fmt["formula"])
     ws_dash.write_formula("J3", "=DD_Stichtag", fmt["formula"], "")
-    ws_dash.write("L3", "Checklistenpunkte", fmt["label"])
-    ws_dash.merge_range("M3:N3", len(checklist), fmt["formula_int"])
+    ws_dash.write("L3", "Projektstart", fmt["label"])
+    ws_dash.merge_range("M3:N3", "", fmt["formula"])
+    ws_dash.write_formula(
+        "M3",
+        f'=IF(COUNTIFS(\'00_Projektstart\'!$F${project_first_excel}:$F${project_last_excel},"Kritisch",\'00_Projektstart\'!$H${project_first_excel}:$H${project_last_excel},"<>Abgeschlossen",\'00_Projektstart\'!$H${project_first_excel}:$H${project_last_excel},"<>Nicht anwendbar")=0,"Bereit","Nicht bereit")',
+        fmt["formula"],
+        "Nicht bereit",
+    )
 
     kpis = [
         ("Prüfpunkte gesamt", '=COUNTA(\'02_Checkliste\'!$A$5:$A$1000)', len(checklist), fmt["kpi_value"]),
@@ -1500,10 +1682,10 @@ def main() -> None:
     ws_help.merge_range("A4:I4", "Schnellstart", fmt["section"])
     quick_steps = [
         ("1", "Im Blatt 00_Start Zielunternehmen, Deal-Typ, Stichtag, Projektleitung, Währung und Materialität festlegen."),
-        ("2", "In 03_Dokumente die Request List versenden, Owner und Fristen setzen; Datenqualität und VDR-Pfade laufend pflegen."),
-        ("3", "In 02_Checkliste Status, Evidenz und Analyse dokumentieren. Ein Finding erst nach nachvollziehbarer Primärevidenz erfassen."),
-        ("4", "Bestätigte Risiken nach 04_Risiken übertragen bzw. dort bewerten: Eintritt, Auswirkung und Exposure Low/Base/High getrennt bestimmen."),
-        ("5", "In 05_Maßnahmen nur passende Vorschläge aktivieren; genau einen Owner, Termin, Budget, KPI und ein messbares Abnahmekriterium festlegen."),
+        ("2", "In 00_Projektstart die sechs Start-Checklisten bearbeiten, namentliche Owner und Termine setzen und über Direktlinks in die verbundenen Blätter wechseln."),
+        ("3", "In 03_Dokumente die Request List versenden; Datenqualität, Fristen und VDR-Pfade laufend pflegen."),
+        ("4", "In 02_Checkliste Status, Evidenz und Analyse dokumentieren. Ein Finding erst nach nachvollziehbarer Primärevidenz erfassen."),
+        ("5", "Bestätigte Risiken in 04_Risiken bewerten und passende Vorschläge in 05_Maßnahmen aktivieren; Exposure, Owner, Termin und Abnahmekriterium ergänzen."),
         ("6", "Dashboard und Entscheidungs-Gates vor Signing/Closing reviewen; Preis-, SPA-, Finanzierungs- und Integrationsfolgen beschließen."),
     ]
     for row, (number, instruction) in enumerate(quick_steps, start=4):
@@ -1523,6 +1705,7 @@ def main() -> None:
 
     sheet_guides = [
         ("00_Start", "Projektparameter, Scoring und Grundregeln festlegen", "M&A-Projektleitung", "Projektstart / Scope-Änderung", "Freigegebene Projektbasis"),
+        ("00_Projektstart", "Sechs verbundene Start-Checklisten mit Direktlinks bearbeiten", "PMO und Workstream Leads", "Vor Analysebeginn", "Dokumentierte Startfreigabe"),
         ("00_Ausfüllhilfe", "Felddefinitionen, Beispiele und Qualitätsregeln nachschlagen", "Alle Bearbeiter", "Vor und während jeder Eingabe", "Einheitliche Datenerfassung"),
         ("01_Dashboard", "Fortschritt und Entscheidungsreife überwachen", "PMO / Deal Lead", "Wöchentlich und vor Gates", "Management- und IC-Übersicht"),
         ("02_Checkliste", "Alle Prüfhypothesen bearbeiten und Findings dokumentieren", "Workstream Leads", "Laufend", "Vollständiger DD-Status"),
@@ -1607,14 +1790,15 @@ def main() -> None:
     # practical scroll area on smaller Excel windows.
     ws_help.freeze_panes(3, 2)
 
-    # Open the workbook on the guide for first-time users.
-    ws_help.activate()
-    ws_help.set_first_sheet()
+    # Open the workbook on the linked launch checklist for a new project.
+    ws_project.activate()
+    ws_project.set_first_sheet()
     workbook.close()
     print(f"Erstellt: {OUTPUT}")
     print(f"Prüfpunkte: {len(checklist)}")
     print(f"Dokumentenanforderungen: {len(checklist)}")
     print(f"Prüfhypothesen/Maßnahmen: {len(risk_candidates)}")
+    print(f"Verbundene Projektstart-Aufgaben: {len(project_tasks)}")
     print(f"Dokumentierte Eingabefelder: {len(unique_help)}")
 
 
