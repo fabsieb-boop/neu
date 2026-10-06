@@ -1602,7 +1602,10 @@ def main() -> None:
     )
     ws_help.set_row(field_header_row, 44)
     ws_help.set_default_row(48)
-    ws_help.freeze_panes(field_first_row, 2)
+    # Keep only the title area and the two navigation columns visible.
+    # Freezing up to field_first_row would lock roughly 39 rows and leave no
+    # practical scroll area on smaller Excel windows.
+    ws_help.freeze_panes(3, 2)
 
     # Open the workbook on the guide for first-time users.
     ws_help.activate()
