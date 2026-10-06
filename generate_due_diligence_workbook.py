@@ -407,6 +407,109 @@ def main() -> None:
         "kpi_money": workbook.add_format({"bold": True, "font_size": 16, "font_color": colors["navy"], "bg_color": colors["light_teal"], "align": "center", "valign": "vcenter", "border": 1, "num_format": '#,##0" €";[Red]-#,##0" €"'}),
     }
 
+    help_registry: list[dict[str, str]] = []
+
+    def field_guidance(header: str) -> dict[str, str]:
+        """Return consistent, context-sensitive guidance for a workbook field."""
+        h = header.casefold()
+        guidance = {
+            "mode": "Eingabe",
+            "required": "Wenn relevant",
+            "entry": f"Den für „{header}“ zutreffenden, belegbaren Wert eintragen.",
+            "example": "Konkreter Wert oder kurzer, eindeutiger Text",
+            "format": "Text",
+            "source": "Primärbeleg bzw. freigegebene Projektdaten",
+            "quality": "Keine unbelegten Annahmen; Quelle oder Referenz ergänzen.",
+        }
+        if h == "id" or h.endswith("-id") or h in {"dok-id", "risiko-id", "maßnahmen-id", "q&a-id", "vertrags-id", "adj.-id"}:
+            guidance.update(mode="Vorbelegt", required="Automatisch", entry="Eindeutige Kennung beibehalten; nur beim Ergänzen neuer Zeilen fortlaufend vergeben.", example="R-014", format="Text, eindeutig", source="Arbeitsmappe", quality="Keine ID doppelt vergeben oder nachträglich umnummerieren.")
+        elif "ref." in h or "referenz" in h or h.endswith("-ref"):
+            guidance.update(required="Empfohlen", entry="Verknüpfte Checklisten-, Risiko-, Dokument- oder Q&A-ID eintragen.", example="FIN-04 / DOC-037 / Q-012", format="Eine oder mehrere IDs", source="Andere Register dieser Arbeitsmappe", quality="Nur vorhandene IDs verwenden; mehrere Referenzen mit „ / “ trennen.")
+        elif any(term in h for term in ("prüfbereich", "unterbereich", "thema", "kategorie", "vertragstyp", "komponente")):
+            guidance.update(required="Pflicht", entry="Sachverhalt einer eindeutigen Kategorie zuordnen.", example="Financial – Working Capital", format="Auswahl oder kurzer Text", source="DD-Scope / Master-Checkliste", quality="Nicht mehrere unverbundene Themen in einer Zeile mischen.")
+        elif any(term in h for term in ("prüfziel", "prüffrage", "frage")):
+            guidance.update(required="Pflicht", entry="Eine konkret beantwortbare Frage mit klarem Entscheidungsbezug formulieren.", example="Sind alle debt-like Positionen im Closing-Mechanismus erfasst?", format="Vollständiger Fragesatz", source="Prüfhypothese / offene Entscheidung", quality="Keine Suggestiv- oder Sammelfrage; pro Zeile ein Sachverhalt.")
+        elif any(term in h for term in ("unterlage", "evidenz", "nachweis")):
+            guidance.update(required="Pflicht bei Abschluss", entry="Konkreten Beleg mit Dateiname, Datum, Version und VDR-Pfad nennen.", example="VDR 3.2.1, Monatsbilanz 08/2026, Version final", format="Text / Link / Referenz", source="VDR, Vertrag, Hauptbuch, externe Bestätigung", quality="Management-Aussage allein reicht für wesentliche Findings nicht aus.")
+        elif any(term in h for term in ("analyse", "test")):
+            guidance.update(required="Pflicht bei Bearbeitung", entry="Durchgeführten Test inklusive Zeitraum, Population, Stichprobe und Ergebnis beschreiben.", example="24 Monatsabschlüsse übergeleitet; 15 Cut-off-Belege geprüft; 2 Abweichungen", format="Kurze Methodik + Ergebnis", source="Arbeitspapiere / Datenanalyse", quality="Nicht nur „geprüft“ schreiben; Umfang und Ergebnis nachvollziehbar machen.")
+        elif "red flag" in h or "hypothese" in h or "szenario" in h:
+            guidance.update(mode="Vorbelegt / anpassen", required="Empfohlen", entry="Mögliches Risikoszenario neutral beschreiben; noch nicht als Tatsache darstellen.", example="Stichtagssteuerung des NWC durch verzögerte Lieferantenzahlungen", format="Wenn–dann-Szenario", source="Prüfplanung / erste Indikatoren", quality="Hypothese und bestätigtes Finding sprachlich klar trennen.")
+        elif "priorität" in h or h == "kritikalität":
+            guidance.update(required="Pflicht", entry="Priorität nach Deal-Relevanz und zeitlicher Dringlichkeit auswählen.", example="Kritisch", format="Dropdown", source="Materialität / kritischer Transaktionspfad", quality="Nicht allein nach Arbeitsaufwand priorisieren.")
+        elif h == "phase":
+            guidance.update(required="Pflicht", entry="Zeitpunkt angeben, zu dem Prüfung oder Maßnahme abgeschlossen sein muss.", example="Vollprüfung", format="Dropdown bzw. definierte Deal-Phase", source="Transaktionszeitplan", quality="Closing-kritische Themen nicht in Post-Closing verschieben.")
+        elif "status" in h:
+            guidance.update(required="Pflicht", entry="Nur den tatsächlich erreichten Bearbeitungsstand auswählen.", example="In Prüfung", format="Dropdown", source="Aktueller Arbeitsstand", quality="„Abgeschlossen“ erst bei dokumentierter Evidenz und Reviewer-Freigabe.")
+        elif any(term in h for term in ("owner", "verantwortlich", "empfänger", "fragesteller", "reviewer", "support", "federführung")):
+            guidance.update(required="Pflicht für aktive Punkte", entry="Namentlich verantwortliche Person oder eindeutige Rolle eintragen.", example="Anna Beispiel (CFO) / Tax Lead", format="Name und Rolle", source="Projekt-RACI", quality="Keine Mehrfach-Owner; genau eine rechenschaftspflichtige Rolle festlegen.")
+        elif any(term in h for term in ("fällig", "erstellt am", "antwort am", "erhalten am", "angefordert am", "beginn", "ende", "start", "aktualisierung", "abrufdatum")):
+            guidance.update(required="Pflicht, sobald terminiert", entry="Kalenderdatum im Format TT.MM.JJJJ eintragen.", example="31.10.2026", format="Datum", source="Projektplan / Dokumentenmetadaten", quality="Keine relativen Angaben wie „nächste Woche“.")
+        elif "eintritt" in h and "rest" not in h:
+            guidance.update(required="Pflicht bei Finding", entry="Eintrittswahrscheinlichkeit anhand der Skala 1–5 und belegter Indikatoren bewerten.", example="4 – wahrscheinlich", format="Ganzzahl 1–5", source="Evidenz und Szenarioanalyse", quality="Bewertung im Finding-Kommentar begründen; nicht mit Auswirkung vermischen.")
+        elif "auswirkung" in h and "rest" not in h:
+            guidance.update(required="Pflicht bei Finding", entry="Maximal plausible Deal-/Wertauswirkung anhand der Skala 1–5 bewerten.", example="3 – wesentlich", format="Ganzzahl 1–5", source="Exposure- und Szenarioanalyse", quality="Auswirkung brutto vor Maßnahmen bewerten.")
+        elif "resteintritt" in h or "restauswirkung" in h:
+            guidance.update(required="Nach definierter Maßnahme", entry="Verbleibendes Risiko nach vollständig wirksamer Gegenmaßnahme mit 1–5 bewerten.", example="2", format="Ganzzahl 1–5", source="Maßnahmenwirksamkeit / Kontrolltest", quality="Nur reduzieren, wenn Umsetzung und Wirksamkeit nachgewiesen sind.")
+        elif any(term in h for term in ("risikoscore", "restscore", "klasse", "alter (tage)", "überfällig?")):
+            guidance.update(mode="Automatische Formel", required="Automatisch", entry="Nicht überschreiben; Wert wird aus den Eingaben berechnet.", example="12 / Hoch", format="Formel", source="Verknüpfte Eingabezellen", quality="Bei leerem Ergebnis zuerst die erforderlichen Eingabefelder vervollständigen.")
+        elif "feststellung" in h or h == "risiko" or "ergebnis" in h and "abnahmekriterium" not in h:
+            guidance.update(required="Pflicht bei Abweichung", entry="Fakt, Ursache, Umfang und Geschäftsauswirkung klar von Annahmen trennen.", example="7 von 40 Stichproben ohne Genehmigung; Exposure Base 180 T€", format="Sachverhalt + Quantifizierung", source="Primärevidenz und Analyse", quality="Keine Wertung ohne Fakten; Gegenbelege und Einschränkungen nennen.")
+        elif "maßnahme" in h or "next step" in h:
+            guidance.update(required="Pflicht bei relevantem Finding", entry="Konkrete, ausführbare Handlung mit Zielzustand formulieren.", example="MFA für alle privilegierten Konten vor Closing aktivieren und testen.", format="Verb + Objekt + Zieltermin", source="Finding / Risikobehandlung", quality="Keine unspezifischen Formulierungen wie „prüfen“ oder „beobachten“.")
+        elif "abnahmekriterium" in h:
+            guidance.update(required="Pflicht für aktive Maßnahme", entry="Objektiv messbaren Zielzustand und benötigten Nachweis definieren.", example="100 % Admin-Konten mit MFA; Export aus IdP durch CISO freigegeben", format="Messbares Kriterium", source="Maßnahmenplan / Fachstandard", quality="Kriterium muss eine eindeutige Erledigt-Entscheidung erlauben.")
+        elif "deal-implikation" in h or "transaktionsfolge" in h or "erwartete wirkung" in h:
+            guidance.update(required="Pflicht bei wesentlichem Finding", entry="Konsequenz für Preis, SPA, Closing, Finanzierung oder Integration auswählen/beschreiben.", example="SPA/Haftung – spezifische Steuerfreistellung", format="Kategorie + kurze Begründung", source="Finding und Deal-Team-Entscheidung", quality="Operative Maßnahme und vertraglichen Schutz getrennt betrachten.")
+        elif any(term in h for term in ("kaufpreiseffekt", "exposure", "budget", "jahreswert", "betrag (€)", "management-betrag", "dd-vorschlag", "akzeptierter betrag")):
+            guidance.update(required="Wenn quantifizierbar", entry="Betrag in Berichtswährung ohne Tausendertext eintragen; Vorzeichenlogik des Blatts beachten.", example="250000", format="Zahl in EUR", source="Berechnung / Vertrag / Hauptbuch", quality="Low/Base/High dokumentieren; Steuern, Wahrscheinlichkeit und Doppelzählung prüfen.")
+        elif "schutzmechanismus" in h or "deal-mechanismus" in h or "spa-behandlung" in h:
+            guidance.update(required="Bei Deal-Relevanz", entry="Geeigneten vertraglichen oder wirtschaftlichen Mechanismus konkret benennen.", example="Spezifische Freistellung mit 5 Jahren Laufzeit und 500 T€ Escrow", format="Mechanismus + Eckpunkte", source="Deal-Team / Rechts- und Steuerberatung", quality="Bekannte Risiken nicht allein auf allgemeine Garantien oder W&I stützen.")
+        elif any(term in h for term in ("vdr-pfad", "vdr-link", "quelle / ref", "quelle", "link")):
+            guidance.update(required="Empfohlen, bei Finding Pflicht", entry="Nachvollziehbare Fundstelle oder klickbaren Link mit Version angeben.", example="VDR 4.1.3 / Vertrag Kunde A vom 12.03.2024", format="Pfad, ID oder URL", source="VDR / Arbeitsmappe / externe Primärquelle", quality="Keine privaten lokalen Pfade; Zugriff und Version müssen reproduzierbar sein.")
+        elif "vollständigkeit" in h:
+            guidance.update(required="Pflicht nach Erstprüfung", entry="Qualität des erhaltenen Pakets auswählen.", example="Plausibel", format="Dropdown", source="Abgleich mit Request und Inhaltsprüfung", quality="„Vollständig“ bzw. „verifiziert“ nur nach nachvollziehbarem Abgleich.")
+        elif "vertraulichkeit" in h:
+            guidance.update(required="Pflicht", entry="Höchste im Datensatz enthaltene Schutzklasse auswählen.", example="Clean Team", format="Dropdown", source="NDA / Informationsklassifizierung", quality="HR-, Gesundheits-, Wettbewerbs- und Kundendaten besonders schützen.")
+        elif h in {"pflicht?", "aktivieren?", "einbeziehen?", "consent nötig?", "wiederkehrend?"}:
+            guidance.update(required="Pflicht", entry="Ja, Nein oder Zu prüfen anhand der dokumentierten Entscheidung auswählen.", example="Zu prüfen", format="Dropdown", source="Scope-/Finding-Entscheidung", quality="„Zu prüfen“ mit Owner und Fälligkeit versehen.")
+        elif "fortschritt" in h:
+            guidance.update(required="Bei aktiver Maßnahme", entry="Tatsächlich erreichten Fertigstellungsgrad zwischen 0 % und 100 % eintragen.", example="40 %", format="Prozent", source="Liefergegenstände / Meilensteine", quality="100 % nur bei erfülltem Abnahmekriterium.")
+        elif any(term in h for term in ("kommentar", "entscheidung")):
+            guidance.update(required="Bei Abweichung/Entscheidung", entry="Entscheidung, Begründung, Annahmen und offene Einschränkungen knapp dokumentieren.", example="IC akzeptiert Restrisiko unter Bedingung eines 300 T€ Escrows.", format="Kurzer Audit-Trail", source="Meeting-/Entscheidungsprotokoll", quality="Datum und Entscheider nennen; keine vertraulichen Nebendaten kopieren.")
+        elif "vertraulich" in h:
+            guidance.update(required="Pflicht", entry="Informationsschutz gemäß NDA und Clean-Team-Regeln festlegen.", example="Streng vertraulich", format="Auswahl", source="NDA / Legal", quality="Im Zweifel die höhere Schutzstufe verwenden.")
+        return guidance
+
+    def register_field_help(ws, row: int, col: int, header: str, override: dict[str, str] | None = None) -> None:
+        guidance = field_guidance(header)
+        if override:
+            guidance.update(override)
+        sheet_name = ws.get_name()
+        help_registry.append({"sheet": sheet_name, "field": header, **guidance})
+        comment = (
+            f"AUSFÜLLHILFE – {header}\n\n"
+            f"Was eintragen: {guidance['entry']}\n"
+            f"Beispiel: {guidance['example']}\n"
+            f"Bearbeitung: {guidance['mode']} | Pflichtgrad: {guidance['required']}\n"
+            f"Format: {guidance['format']}\n"
+            f"Quelle/Nachweis: {guidance['source']}\n"
+            f"Qualitätsregel: {guidance['quality']}"
+        )
+        ws.write_comment(row, col, comment, {"author": "Ausfüllhilfe", "width": 360, "height": 220})
+
+    def input_hint(title: str, message: str, **options) -> dict:
+        """Add an Excel input message to an existing data-validation rule."""
+        return {
+            **options,
+            "input_title": title[:32],
+            "input_message": message[:255],
+            "show_input": True,
+            "show_error": True,
+            "error_title": "Eingabe prüfen",
+            "error_message": "Bitte die vorgegebene Auswahl bzw. das geforderte Format verwenden.",
+        }
+
     def banner(ws, title: str, subtitle: str, last_col: int) -> None:
         ws.merge_range(0, 0, 0, last_col, title, fmt["title"])
         ws.merge_range(1, 0, 1, last_col, subtitle, fmt["subtitle"])
@@ -429,6 +532,8 @@ def main() -> None:
             },
         )
         ws.set_row(header_row, 42)
+        for offset, header in enumerate(headers):
+            register_field_help(ws, header_row, first_col + offset, header)
 
     def conditional_status(ws, cell_range: str) -> None:
         for value, bg, font in [
@@ -471,8 +576,9 @@ def main() -> None:
 
     # 00 Start
     ws = workbook.add_worksheet("00_Start")
-    # Create the dashboard here so the visible tab order is Start, Dashboard, then workstreams.
-    # Its content is populated after the dependent sheets have been defined.
+    # Create guidance and dashboard early so the visible tab order is intuitive.
+    # Their content is populated after the dependent sheets have been defined.
+    ws_help = workbook.add_worksheet("00_Ausfüllhilfe")
     ws_dash = workbook.add_worksheet("01_Dashboard")
     banner(ws, "Due-Diligence-Arbeitsmappe", "Branchenneutrale, risikoorientierte Arbeitsvorlage. Gelbe Zellen sind Eingaben, blaue Zellen enthalten Formeln. Alle Vorschläge sind auf den konkreten Deal anzupassen.", 7)
     ws.set_column("A:A", 30)
@@ -490,6 +596,17 @@ def main() -> None:
         ("Berichtswährung", "EUR"),
         ("Materialitätsschwelle (€)", ""),
     ]
+    project_help = {
+        "Zielunternehmen": {"required": "Pflicht", "entry": "Vollständige rechtliche Firma des Prüfungsobjekts eintragen.", "example": "Muster GmbH", "source": "Handelsregister / Term Sheet", "quality": "Bei Carve-outs den exakten Perimeter ergänzen."},
+        "Transaktionstyp": {"required": "Pflicht", "entry": "Geplante rechtliche bzw. wirtschaftliche Transaktionsform auswählen.", "example": "Share Deal", "format": "Dropdown", "source": "Term Sheet / Strukturmemorandum", "quality": "Bei Mischformen die primäre Struktur auswählen und Details kommentieren."},
+        "Käufer / Investor": {"required": "Pflicht", "entry": "Erwerbende Gesellschaft bzw. Investorengruppe nennen.", "example": "Investor Holding GmbH", "source": "Term Sheet", "quality": "Nicht nur den Projektnamen verwenden."},
+        "DD-Stichtag": {"required": "Pflicht", "entry": "Informations- bzw. Bewertungsstichtag der Prüfung eintragen.", "example": "30.09.2026", "format": "Datum TT.MM.JJJJ", "source": "Projektauftrag", "quality": "Nicht mit Signing- oder Closing-Datum verwechseln."},
+        "Projektleitung": {"required": "Pflicht", "entry": "Gesamtverantwortliche Person mit Rolle nennen.", "example": "Max Beispiel, M&A Director", "source": "Projekt-RACI", "quality": "Genau eine Gesamtverantwortung festlegen."},
+        "Version": {"required": "Pflicht", "entry": "Freigabestand der Arbeitsmappe führen.", "example": "1.1", "format": "Versionsnummer", "source": "Dokumentenlenkung", "quality": "Bei materiellen Änderungen Version erhöhen."},
+        "Vertraulichkeit": {"required": "Pflicht", "entry": "Höchste Schutzstufe für die gesamte Arbeitsmappe auswählen.", "example": "Streng vertraulich", "format": "Dropdown", "source": "NDA / Clean-Team-Regeln", "quality": "Einzelblätter können eine höhere Schutzstufe benötigen."},
+        "Berichtswährung": {"required": "Pflicht", "entry": "Einheitliche Währung für alle monetären Eingaben festlegen.", "example": "EUR", "format": "ISO-Währungscode", "source": "Investment Case", "quality": "Fremdwährungsumrechnung und Stichtagskurs separat dokumentieren."},
+        "Materialitätsschwelle (€)": {"required": "Pflicht", "entry": "Vom Deal-Team genehmigte quantitative Basisschwelle eintragen.", "example": "100000", "format": "Betrag in Berichtswährung", "source": "DD-Scope / Risikotoleranz", "quality": "Qualitative No-go-Themen bleiben unabhängig vom Betrag wesentlich."},
+    }
     for row, (label, value) in enumerate(project_fields, start=4):
         ws.write(row, 0, label, fmt["label"])
         if label == "DD-Stichtag":
@@ -498,8 +615,16 @@ def main() -> None:
             ws.write_blank(row, 1, None, fmt["money_input"])
         else:
             ws.write(row, 1, value, fmt["input"])
-    ws.data_validation("B6", {"validate": "list", "source": "=Transaktionstyp"})
-    ws.data_validation("B10", {"validate": "list", "source": "=Vertraulichkeit"})
+        register_field_help(ws, row, 1, label, project_help[label])
+    ws.data_validation("B5", input_hint("Zielunternehmen", "Vollständige rechtliche Firma bzw. exakten Carve-out-Perimeter eintragen.", validate="any"))
+    ws.data_validation("B6", input_hint("Transaktionstyp", "Transaktionsform aus der Liste wählen.", validate="list", source="=Transaktionstyp"))
+    ws.data_validation("B7", input_hint("Käufer / Investor", "Rechtliche Firma oder eindeutig benannte Investorengruppe eintragen.", validate="any"))
+    ws.data_validation("B8", input_hint("DD-Stichtag", "Informations-/Bewertungsstichtag im Format TT.MM.JJJJ.", validate="date", criteria="between", minimum=date(2000, 1, 1), maximum=date(2100, 12, 31)))
+    ws.data_validation("B9", input_hint("Projektleitung", "Eine gesamtverantwortliche Person mit Rolle nennen.", validate="any"))
+    ws.data_validation("B10", input_hint("Version", "Freigabestand, z. B. 1.1.", validate="any"))
+    ws.data_validation("B11", input_hint("Vertraulichkeit", "Schutzstufe gemäß NDA/Clean-Team-Regeln wählen.", validate="list", source="=Vertraulichkeit"))
+    ws.data_validation("B12", input_hint("Berichtswährung", "ISO-Währungscode, z. B. EUR, USD oder GBP.", validate="any"))
+    ws.data_validation("B13", input_hint("Materialität", "Genehmigte quantitative Basisschwelle als Zahl ohne Währungszeichen.", validate="decimal", criteria=">=", value=0))
     workbook.define_name("Zielunternehmen", "='00_Start'!$B$5")
     workbook.define_name("Transaktionstyp_Auswahl", "='00_Start'!$B$6")
     workbook.define_name("DD_Stichtag", "='00_Start'!$B$8")
@@ -575,12 +700,12 @@ def main() -> None:
         ]
         for col, value in enumerate(values):
             if col == 11 or col == 23:
-                ws_check.write_blank(row, col, None, fmt["date"])
+                ws_check.write_blank(row, col, None, fmt["input_date"])
             elif col in (12, 13):
                 ws_check.write_blank(row, col, None, fmt["input_int"])
             elif col == 19:
                 ws_check.write_blank(row, col, None, fmt["money_input"])
-            elif col in (16, 21, 24):
+            elif col in (10, 16, 21, 24):
                 ws_check.write(row, col, value, fmt["input"])
             elif col in (14, 15):
                 continue
@@ -596,12 +721,18 @@ def main() -> None:
         ws_check.set_column(col, col, width)
     ws_check.freeze_panes(check_first_row, 3)
     ws_check.set_default_row(66)
-    ws_check.data_validation(check_first_row, 7, check_last_row, 7, {"validate": "list", "source": "=Prioritaet"})
-    ws_check.data_validation(check_first_row, 8, check_last_row, 8, {"validate": "list", "source": "=Phase"})
-    ws_check.data_validation(check_first_row, 9, check_last_row, 9, {"validate": "list", "source": "=Pruefstatus"})
-    ws_check.data_validation(check_first_row, 11, check_last_row, 11, {"validate": "date", "criteria": "between", "minimum": date(2000, 1, 1), "maximum": date(2100, 12, 31)})
-    ws_check.data_validation(check_first_row, 12, check_last_row, 13, {"validate": "integer", "criteria": "between", "minimum": 1, "maximum": 5, "input_title": "Skala 1–5", "input_message": "Definitionen siehe 00_Start."})
-    ws_check.data_validation(check_first_row, 18, check_last_row, 18, {"validate": "list", "source": "=DealImpact"})
+    ws_check.data_validation(check_first_row, 7, check_last_row, 7, input_hint("Priorität", "Deal-Relevanz und Dringlichkeit auswählen; kritisch = sofort eskalieren.", validate="list", source="=Prioritaet"))
+    ws_check.data_validation(check_first_row, 8, check_last_row, 8, input_hint("Phase", "Phase wählen, bis zu der der Punkt geklärt sein muss.", validate="list", source="=Phase"))
+    ws_check.data_validation(check_first_row, 9, check_last_row, 9, input_hint("Prüfstatus", "Nur bei ausreichender Evidenz auf „Abgeschlossen“ setzen.", validate="list", source="=Pruefstatus"))
+    ws_check.data_validation(check_first_row, 10, check_last_row, 10, input_hint("Verantwortlich", "Eine Person oder eindeutig verantwortliche Rolle eintragen.", validate="any"))
+    ws_check.data_validation(check_first_row, 11, check_last_row, 11, input_hint("Fälligkeit", "Verbindliches Datum im Format TT.MM.JJJJ.", validate="date", criteria="between", minimum=date(2000, 1, 1), maximum=date(2100, 12, 31)))
+    ws_check.data_validation(check_first_row, 12, check_last_row, 13, input_hint("Risiko 1–5", "Eintritt und Auswirkung getrennt bewerten; Definitionen siehe 00_Start.", validate="integer", criteria="between", minimum=1, maximum=5))
+    ws_check.data_validation(check_first_row, 16, check_last_row, 16, input_hint("Finding / Evidenz", "Fakt, Ursache, Umfang, Auswirkung sowie konkrete Belegreferenz dokumentieren.", validate="any"))
+    ws_check.data_validation(check_first_row, 18, check_last_row, 18, input_hint("Deal-Implikation", "Primäre Folge für Preis, SPA, Closing, Finanzierung oder Integration wählen.", validate="list", source="=DealImpact"))
+    ws_check.data_validation(check_first_row, 19, check_last_row, 19, input_hint("Kaufpreiseffekt", "Quantifizierten Betrag ohne Währungstext eingeben; Herleitung im Finding dokumentieren.", validate="any"))
+    ws_check.data_validation(check_first_row, 21, check_last_row, 21, input_hint("Referenz", "Vorhandene Dokument-, Q&A- oder Risiko-ID eintragen.", validate="any"))
+    ws_check.data_validation(check_first_row, 23, check_last_row, 23, input_hint("Aktualisierung", "Datum der letzten materiellen Aktualisierung.", validate="date", criteria="between", minimum=date(2000, 1, 1), maximum=date(2100, 12, 31)))
+    ws_check.data_validation(check_first_row, 24, check_last_row, 24, input_hint("Reviewer", "Unabhängigen fachlichen Reviewer mit Rolle eintragen.", validate="any"))
     conditional_status(ws_check, f"H{check_first_row+1}:P{check_last_row+1}")
     ws_check.conditional_format(check_first_row, 14, check_last_row, 14, {"type": "3_color_scale", "min_color": "#C6EFCE", "mid_color": "#FFEB9C", "max_color": "#FFC7CE"})
 
@@ -631,7 +762,7 @@ def main() -> None:
         ]
         for col, value in enumerate(data):
             if col in (8, 9, 10):
-                ws_docs.write_blank(row, col, None, fmt["date"])
+                ws_docs.write_blank(row, col, None, fmt["input_date"])
             elif col in (14, 16, 18):
                 ws_docs.write(row, col, value, fmt["input"])
             elif col == 17:
@@ -647,11 +778,16 @@ def main() -> None:
         ws_docs.set_column(col, col, width)
     ws_docs.set_default_row(58)
     ws_docs.freeze_panes(doc_first_row, 3)
-    ws_docs.data_validation(doc_first_row, 5, doc_last_row, 5, {"validate": "list", "source": "=Prioritaet"})
-    ws_docs.data_validation(doc_first_row, 6, doc_last_row, 6, {"validate": "list", "source": "=JaNeinPruefen"})
-    ws_docs.data_validation(doc_first_row, 11, doc_last_row, 11, {"validate": "list", "source": "=DokStatus"})
-    ws_docs.data_validation(doc_first_row, 12, doc_last_row, 12, {"validate": "list", "source": "=Vollstaendigkeit"})
-    ws_docs.data_validation(doc_first_row, 13, doc_last_row, 13, {"validate": "list", "source": "=Vertraulichkeit"})
+    ws_docs.data_validation(doc_first_row, 5, doc_last_row, 5, input_hint("Priorität", "Priorität aus Deal-Relevanz und zeitlichem Pfad wählen.", validate="list", source="=Prioritaet"))
+    ws_docs.data_validation(doc_first_row, 6, doc_last_row, 6, input_hint("Pflicht?", "Ja, Nein oder Zu prüfen auswählen.", validate="list", source="=JaNeinPruefen"))
+    ws_docs.data_validation(doc_first_row, 7, doc_last_row, 7, input_hint("Owner Zielunternehmen", "Eine lieferverantwortliche Person oder Rolle eintragen.", validate="any"))
+    ws_docs.data_validation(doc_first_row, 8, doc_last_row, 10, input_hint("Dokumentendatum", "Anforderung, Fälligkeit und Erhalt im Format TT.MM.JJJJ pflegen.", validate="date", criteria="between", minimum=date(2000, 1, 1), maximum=date(2100, 12, 31)))
+    ws_docs.data_validation(doc_first_row, 11, doc_last_row, 11, input_hint("Dokumentenstatus", "„Vollständig“ erst nach Inhalts- und Periodenprüfung wählen.", validate="list", source="=DokStatus"))
+    ws_docs.data_validation(doc_first_row, 12, doc_last_row, 12, input_hint("Vollständigkeit", "Qualität nach Abgleich mit Request und Inhalt auswählen.", validate="list", source="=Vollstaendigkeit"))
+    ws_docs.data_validation(doc_first_row, 13, doc_last_row, 13, input_hint("Vertraulichkeit", "Höchste enthaltene Schutzklasse auswählen.", validate="list", source="=Vertraulichkeit"))
+    ws_docs.data_validation(doc_first_row, 14, doc_last_row, 14, input_hint("VDR-Pfad", "Eindeutigen, reproduzierbaren VDR-Pfad oder Link eintragen.", validate="any"))
+    ws_docs.data_validation(doc_first_row, 16, doc_last_row, 16, input_hint("Offene Punkte", "Fehlende Perioden, Anhänge, Versionen oder Widersprüche konkret benennen.", validate="any"))
+    ws_docs.data_validation(doc_first_row, 18, doc_last_row, 18, input_hint("Reviewer", "Person/Rolle der Qualitätsprüfung eintragen.", validate="any"))
     conditional_status(ws_docs, f"F{doc_first_row+1}:R{doc_last_row+1}")
     ws_docs.conditional_format(doc_first_row, 17, doc_last_row, 17, {"type": "cell", "criteria": ">", "value": 0, "format": workbook.add_format({"bg_color": "#FFC7CE", "font_color": "#9C0006"})})
 
@@ -675,7 +811,7 @@ def main() -> None:
             elif col in (11, 12, 13):
                 ws_risk.write_blank(row, col, None, fmt["money_input"])
             elif col == 16:
-                ws_risk.write_blank(row, col, None, fmt["date"])
+                ws_risk.write_blank(row, col, None, fmt["input_date"])
             elif col in (6, 15, 24, 25):
                 ws_risk.write(row, col, value, fmt["input"])
             elif col in (9, 10, 22, 23):
@@ -695,10 +831,15 @@ def main() -> None:
     ws_risk.set_default_row(64)
     ws_risk.freeze_panes(risk_first_row, 3)
     for col in (7, 8, 20, 21):
-        ws_risk.data_validation(risk_first_row, col, risk_last_row, col, {"validate": "integer", "criteria": "between", "minimum": 1, "maximum": 5})
-    ws_risk.data_validation(risk_first_row, 5, risk_last_row, 5, {"validate": "list", "source": "=RisikoStatus"})
-    ws_risk.data_validation(risk_first_row, 17, risk_last_row, 17, {"validate": "list", "source": "=MassStatus"})
-    ws_risk.data_validation(risk_first_row, 18, risk_last_row, 18, {"validate": "list", "source": "=DealImpact"})
+        ws_risk.data_validation(risk_first_row, col, risk_last_row, col, input_hint("Risikowert 1–5", "Bruttorisiko bzw. Restrisiko getrennt und anhand der Skala auf 00_Start bewerten.", validate="integer", criteria="between", minimum=1, maximum=5))
+    ws_risk.data_validation(risk_first_row, 5, risk_last_row, 5, input_hint("Bewertungsstatus", "Hypothese erst nach Evidenz als bestätigt, entkräftet oder mitigiert markieren.", validate="list", source="=RisikoStatus"))
+    ws_risk.data_validation(risk_first_row, 6, risk_last_row, 6, input_hint("Feststellung / Evidenz", "Fakten, Ursache, Umfang und konkrete Primärbelege dokumentieren.", validate="any"))
+    ws_risk.data_validation(risk_first_row, 11, risk_last_row, 13, input_hint("Exposure", "Low/Base/High als Bruttobeträge in Berichtswährung quantifizieren.", validate="any"))
+    ws_risk.data_validation(risk_first_row, 15, risk_last_row, 15, input_hint("Risiko-Owner", "Eine entscheidungsverantwortliche Person oder Rolle eintragen.", validate="any"))
+    ws_risk.data_validation(risk_first_row, 16, risk_last_row, 16, input_hint("Fälligkeit", "Verbindliches Abschlussdatum der Risikobehandlung.", validate="date", criteria="between", minimum=date(2000, 1, 1), maximum=date(2100, 12, 31)))
+    ws_risk.data_validation(risk_first_row, 17, risk_last_row, 17, input_hint("Maßnahmenstatus", "Status nach tatsächlichem Umsetzungsstand auswählen.", validate="list", source="=MassStatus"))
+    ws_risk.data_validation(risk_first_row, 18, risk_last_row, 18, input_hint("Transaktionsfolge", "Primäre Konsequenz für Deal-Struktur und Entscheidung auswählen.", validate="list", source="=DealImpact"))
+    ws_risk.data_validation(risk_first_row, 24, risk_last_row, 25, input_hint("Entscheidung / Review", "Entscheidung, Bedingungen, Datum und fachlichen Reviewer dokumentieren.", validate="any"))
     conditional_status(ws_risk, f"F{risk_first_row+1}:X{risk_last_row+1}")
     ws_risk.conditional_format(risk_first_row, 9, risk_last_row, 9, {"type": "3_color_scale", "min_color": "#C6EFCE", "mid_color": "#FFEB9C", "max_color": "#FFC7CE"})
 
@@ -721,7 +862,7 @@ def main() -> None:
             if col in (8, 9, 14, 20):
                 ws_action.write(row, col, value, fmt["input"])
             elif col in (10, 11):
-                ws_action.write_blank(row, col, None, fmt["date"])
+                ws_action.write_blank(row, col, None, fmt["input_date"])
             elif col == 13:
                 ws_action.write_number(row, col, value, fmt["pct_input"])
             elif col == 15:
@@ -735,10 +876,15 @@ def main() -> None:
         ws_action.set_column(col, col, width)
     ws_action.set_default_row(60)
     ws_action.freeze_panes(action_first_row, 5)
-    ws_action.data_validation(action_first_row, 1, action_last_row, 1, {"validate": "list", "source": "=JaNeinPruefen"})
-    ws_action.data_validation(action_first_row, 7, action_last_row, 7, {"validate": "list", "source": "=Prioritaet"})
-    ws_action.data_validation(action_first_row, 12, action_last_row, 12, {"validate": "list", "source": "=MassStatus"})
-    ws_action.data_validation(action_first_row, 13, action_last_row, 13, {"validate": "decimal", "criteria": "between", "minimum": 0, "maximum": 1})
+    ws_action.data_validation(action_first_row, 1, action_last_row, 1, input_hint("Aktivieren?", "Nur bei bestätigtem, relevantem Finding auf „Ja“ setzen.", validate="list", source="=JaNeinPruefen"))
+    ws_action.data_validation(action_first_row, 7, action_last_row, 7, input_hint("Priorität", "Dringlichkeit nach Risiko und kritischem Deal-Pfad wählen.", validate="list", source="=Prioritaet"))
+    ws_action.data_validation(action_first_row, 8, action_last_row, 9, input_hint("Verantwortung", "Genau einen Owner und bei Bedarf unterstützende Rollen eintragen.", validate="any"))
+    ws_action.data_validation(action_first_row, 10, action_last_row, 11, input_hint("Termin", "Start und verbindliche Fälligkeit im Format TT.MM.JJJJ.", validate="date", criteria="between", minimum=date(2000, 1, 1), maximum=date(2100, 12, 31)))
+    ws_action.data_validation(action_first_row, 12, action_last_row, 12, input_hint("Maßnahmenstatus", "Status nur nach tatsächlichem Umsetzungsstand wählen.", validate="list", source="=MassStatus"))
+    ws_action.data_validation(action_first_row, 13, action_last_row, 13, input_hint("Fortschritt", "Tatsächlichen Fertigstellungsgrad 0–100 % eintragen.", validate="decimal", criteria="between", minimum=0, maximum=1))
+    ws_action.data_validation(action_first_row, 14, action_last_row, 14, input_hint("Abhängigkeit", "Voraussetzungen, Consents oder vorgelagerte Maßnahmen mit ID nennen.", validate="any"))
+    ws_action.data_validation(action_first_row, 15, action_last_row, 15, input_hint("Budget", "Genehmigten oder erwarteten Bruttobetrag ohne Währungstext eingeben.", validate="any"))
+    ws_action.data_validation(action_first_row, 20, action_last_row, 20, input_hint("Kommentar", "Fortschritt, Entscheidung, Abweichung und nächste Eskalation dokumentieren.", validate="any"))
     conditional_status(ws_action, f"H{action_first_row+1}:N{action_last_row+1}")
     ws_action.conditional_format(action_first_row, 11, action_last_row, 11, {"type": "formula", "criteria": f'=AND($L{action_first_row+1}<TODAY(),$M{action_first_row+1}<>"Erledigt",$L{action_first_row+1}<>"")', "format": workbook.add_format({"bg_color": "#FFC7CE", "font_color": "#9C0006"})})
 
@@ -769,8 +915,14 @@ def main() -> None:
         ws_qa.set_column(col, col, width)
     ws_qa.set_default_row(52)
     ws_qa.freeze_panes(qa_first_row, 4)
-    ws_qa.data_validation(qa_first_row, 6, qa_last_row, 6, {"validate": "list", "source": "=Prioritaet"})
-    ws_qa.data_validation(qa_first_row, 11, qa_last_row, 11, {"validate": "list", "source": "=QAStatus"})
+    ws_qa.data_validation(qa_first_row, 1, qa_last_row, 1, input_hint("Erstellt am", "Datum der erstmaligen Erfassung.", validate="date", criteria="between", minimum=date(2000, 1, 1), maximum=date(2100, 12, 31)))
+    ws_qa.data_validation(qa_first_row, 2, qa_last_row, 5, input_hint("Q&A-Inhalt", "Bereich, Referenz, eine klare Frage und ihren Entscheidungskontext erfassen.", validate="any"))
+    ws_qa.data_validation(qa_first_row, 6, qa_last_row, 6, input_hint("Priorität", "Dringlichkeit nach Deal-Entscheidung und kritischem Pfad wählen.", validate="list", source="=Prioritaet"))
+    ws_qa.data_validation(qa_first_row, 7, qa_last_row, 8, input_hint("Q&A-Verantwortung", "Empfänger und Fragesteller jeweils namentlich oder als eindeutige Rolle erfassen.", validate="any"))
+    ws_qa.data_validation(qa_first_row, 9, qa_last_row, 10, input_hint("Q&A-Termin", "Fälligkeit bzw. Antwortdatum im Format TT.MM.JJJJ.", validate="date", criteria="between", minimum=date(2000, 1, 1), maximum=date(2100, 12, 31)))
+    ws_qa.data_validation(qa_first_row, 11, qa_last_row, 11, input_hint("Q&A-Status", "„Beantwortet“ erst bei vollständiger, evidenzbasierter Antwort wählen.", validate="list", source="=QAStatus"))
+    ws_qa.data_validation(qa_first_row, 12, qa_last_row, 14, input_hint("Antwort / Nachweis", "Antwort, konkrete VDR-Evidenz und ggf. nächste Nachfrage dokumentieren.", validate="any"))
+    ws_qa.data_validation(qa_first_row, 17, qa_last_row, 17, input_hint("Reviewer", "Fachlichen Prüfer der Antwort eintragen.", validate="any"))
     conditional_status(ws_qa, f"G{qa_first_row+1}:Q{qa_last_row+1}")
 
     # Financial analysis template.
@@ -782,11 +934,29 @@ def main() -> None:
     ws_fin.set_column("I:I", 38)
     period_labels = ["2022A", "2023A", "2024A", "LTM / aktuell", "Budget"]
     ws_fin.write("A4", "Kennzahl", fmt["header"])
+    register_field_help(
+        ws_fin,
+        3,
+        0,
+        "Kennzahl",
+        {"mode": "Vorbelegt", "required": "Automatisch", "entry": "Kennzahlenbezeichnung nicht ändern; zusätzliche Kennzahlen unterhalb des Blocks ergänzen.", "example": "Umsatz", "source": "Financial-DD-Analyseschema"},
+    )
     for col, label in enumerate(period_labels, start=1):
         ws_fin.write(3, col, label, fmt["input"])
+        register_field_help(
+            ws_fin,
+            3,
+            col,
+            f"Periode – {label}",
+            {"required": "Pflicht", "entry": "Periodenbezeichnung an das gelieferte Datenpaket anpassen.", "example": "2025A / LTM Sep-26", "format": "Kurze Periodenbezeichnung", "source": "Jahresabschluss / Monatsreporting", "quality": "Ist-, LTM- und Budgetperioden eindeutig kennzeichnen."},
+        )
     ws_fin.write("G4", "Δ LTM vs. 2024", fmt["header"])
     ws_fin.write("H4", "Δ LTM vs. Budget", fmt["header"])
     ws_fin.write("I4", "Kommentar / Quelle", fmt["header"])
+    register_field_help(ws_fin, 3, 6, "Δ LTM vs. Vorperiode", {"mode": "Automatische Formel", "required": "Automatisch", "entry": "Nicht überschreiben; prozentuale Veränderung wird berechnet.", "format": "Prozent"})
+    register_field_help(ws_fin, 3, 7, "Δ LTM vs. Budget", {"mode": "Automatische Formel", "required": "Automatisch", "entry": "Nicht überschreiben; Budgetabweichung wird berechnet.", "format": "Prozent"})
+    register_field_help(ws_fin, 3, 8, "Kommentar / Quelle", {"required": "Pflicht bei Auffälligkeit", "entry": "Datenquelle, Überleitung und Erklärung wesentlicher Abweichungen eintragen.", "example": "VDR 2.1.4; LTM-Umsatz +8 % durch Preis +5 % und Volumen +3 %", "source": "Reporting / Hauptbuch / Analyse"})
+    ws_fin.data_validation(3, 1, 3, 5, input_hint("Periodenbezeichnung", "Bezeichnungen an die gelieferten Ist-, LTM- und Budgetperioden anpassen.", validate="any"))
     metrics = [
         ("Umsatz", "input", None),
         ("Umsatzkosten (COGS)", "input", None),
@@ -832,6 +1002,26 @@ def main() -> None:
     for offset, ((label, kind, expression), key) in enumerate(zip(metrics, keys), start=4):
         row_map[key] = offset
         ws_fin.write(offset, 0, label, fmt["label"] if kind.startswith("formula") or kind == "pct" else fmt["text"])
+        is_input = kind in {"input", "input1"}
+        register_field_help(
+            ws_fin,
+            offset,
+            0,
+            label,
+            {
+                "mode": "Eingabe" if is_input else "Automatische Formel",
+                "required": "Pflicht bei verfügbaren Daten" if is_input else "Automatisch",
+                "entry": (
+                    "Wert für jede Periode eingeben. Aufwendungen, Schulden und Bestände als positive Beträge erfassen; die Formeln berücksichtigen das Vorzeichen."
+                    if kind == "input"
+                    else ("FTE je Periode als durchschnittlichen oder Stichtagswert konsistent erfassen." if kind == "input1" else "Nicht überschreiben; Kennzahl wird aus den Eingaben dieses Blatts berechnet.")
+                ),
+                "example": "1250000" if kind == "input" else ("84" if kind == "input1" else "Automatisch berechnet"),
+                "format": "Betrag in Berichtswährung" if kind == "input" else ("Ganzzahl / FTE" if kind == "input1" else "Formel"),
+                "source": "Jahresabschluss, Monatsreporting und Hauptbuch" if is_input else "Verknüpfte Eingabezeilen",
+                "quality": "Perioden und Vorzeichen konsistent halten; Abweichungen in Spalte I erklären." if is_input else "Formelzellen nicht überschreiben.",
+            },
+        )
         for col in range(1, 6):
             cell = xlsxwriter.utility.xl_rowcol_to_cell(offset, col)
             def ref(k: str) -> str:
@@ -872,6 +1062,19 @@ def main() -> None:
         ws_fin.write_formula(offset, 6, f'=IFERROR(E{er}/D{er}-1,"")', fmt["formula_pct"], "")
         ws_fin.write_formula(offset, 7, f'=IFERROR(E{er}/F{er}-1,"")', fmt["formula_pct"], "")
         ws_fin.write_blank(offset, 8, None, fmt["input"])
+        if is_input:
+            ws_fin.data_validation(
+                offset,
+                1,
+                offset,
+                5,
+                input_hint(
+                    label,
+                    "Periodenwert eingeben; Beträge grundsätzlich positiv, QoE-Anpassungen mit wirtschaftlichem Vorzeichen.",
+                    validate="any",
+                ),
+            )
+        ws_fin.data_validation(offset, 8, offset, 8, input_hint("Kommentar / Quelle", "Quelle und wesentliche Treiber oder Abweichungen dokumentieren.", validate="any"))
     ws_fin.freeze_panes(4, 1)
     ws_fin.conditional_format(4, 6, 4 + len(metrics) - 1, 7, {"type": "3_color_scale", "min_color": "#FFC7CE", "mid_color": "#FFEB9C", "max_color": "#C6EFCE"})
 
@@ -886,6 +1089,14 @@ def main() -> None:
     ws_qoe.set_column("I:P", 22)
     ws_qoe.write("A4", "EBITDA berichtet (LTM)", fmt["label"])
     ws_qoe.write_blank("B4", None, fmt["money_input"])
+    register_field_help(
+        ws_qoe,
+        3,
+        1,
+        "EBITDA berichtet (LTM)",
+        {"required": "Pflicht", "entry": "Berichtetes EBITDA der identischen LTM-Periode vor DD-Anpassungen eingeben.", "example": "4250000", "format": "Betrag in Berichtswährung", "source": "Management Reporting / GuV-Überleitung", "quality": "Periode und Definition mit 07_Finanzanalyse abstimmen."},
+    )
+    ws_qoe.data_validation("B4", input_hint("EBITDA berichtet", "Berichtetes EBITDA für exakt dieselbe LTM-Periode wie die Anpassungen eingeben.", validate="any"))
     ws_qoe.write("A5", "Akzeptierte Anpassungen", fmt["label"])
     ws_qoe.write_formula("B5", "=SUM(H10:H49)", fmt["formula"], 0)
     ws_qoe.write("A6", "EBITDA normalisiert", fmt["label"])
@@ -920,6 +1131,16 @@ def main() -> None:
             else:
                 ws_qoe.write(row, col, value, fmt["text"])
     add_table(ws_qoe, 8, qoe_first_row + 39, qoe_headers, "tblQoE")
+    qoe_last_row = qoe_first_row + 39
+    ws_qoe.data_validation(qoe_first_row, 3, qoe_last_row, 3, input_hint("Richtung", "+ erhöht, − reduziert, +/− noch offen; Synergien separat kennzeichnen.", validate="list", source=["+", "−", "+/−", "separat"]))
+    ws_qoe.data_validation(qoe_first_row, 4, qoe_last_row, 4, input_hint("Periode", "Betroffene Periode, z. B. LTM Sep-26 oder 2025A.", validate="any"))
+    ws_qoe.data_validation(qoe_first_row, 5, qoe_last_row, 7, input_hint("QoE-Betrag", "Betrag mit wirtschaftlichem Vorzeichen und ohne Währungstext eingeben.", validate="any"))
+    ws_qoe.data_validation(qoe_first_row, 8, qoe_last_row, 8, input_hint("Evidenz", "Konten, Belege und Berechnung mit VDR-/Arbeitspapier-Referenz nennen.", validate="any"))
+    ws_qoe.data_validation(qoe_first_row, 9, qoe_last_row, 9, input_hint("Wiederkehrend?", "Wiederkehr des Effekts anhand der Analyse auswählen.", validate="list", source=["Ja", "Nein", "Teilweise", "Zu prüfen"]))
+    ws_qoe.data_validation(qoe_first_row, 10, qoe_last_row, 10, input_hint("Cash / Non-Cash", "Zahlungswirkung des Effekts klassifizieren.", validate="list", source=["Cash", "Non-Cash", "Gemischt", "Zu prüfen"]))
+    ws_qoe.data_validation(qoe_first_row, 11, qoe_last_row, 11, input_hint("Konfidenz", "Belegqualität der Anpassung einstufen.", validate="list", source=["Hoch", "Mittel", "Niedrig"]))
+    ws_qoe.data_validation(qoe_first_row, 12, qoe_last_row, 12, input_hint("Status", "Bearbeitungs- bzw. Entscheidungsstand auswählen.", validate="list", source=["Offen", "In Prüfung", "Akzeptiert", "Abgelehnt", "Teilweise akzeptiert"]))
+    ws_qoe.data_validation(qoe_first_row, 13, qoe_last_row, 15, input_hint("QoE-Dokumentation", "Owner, Referenz und entscheidungsrelevanten Kommentar ergänzen.", validate="any"))
     ws_qoe.freeze_panes(qoe_first_row, 3)
     ws_qoe.set_default_row(46)
 
@@ -935,6 +1156,17 @@ def main() -> None:
     nwc_headers = ["Komponente", "Faktor"] + [f"Monat {i}" for i in range(-11, 1)] + ["Durchschnitt", "Median", "Minimum", "Maximum", "Kommentar / Definition"]
     for col, header in enumerate(nwc_headers):
         ws_nwc.write(4, col, header, fmt["header"])
+        if header == "Komponente":
+            override = {"mode": "Vorbelegt / ergänzbar", "required": "Pflicht", "entry": "Operative NWC-Komponente beibehalten oder eindeutig ergänzen.", "example": "Forderungen L&L", "source": "Closing-Accounts-Definition"}
+        elif header == "Faktor":
+            override = {"required": "Pflicht", "entry": "+1 für Aktiva, −1 für Passiva wählen.", "example": "-1", "format": "Dropdown +1/−1", "source": "Wirtschaftliche NWC-Logik"}
+        elif header.startswith("Monat"):
+            override = {"required": "Pflicht für repräsentative Historie", "entry": "Monatsendbestand als positiven Bruttobetrag eingeben.", "example": "850000", "format": "Betrag in Berichtswährung", "source": "Monatsbilanz / Hauptbuch", "quality": "Mindestens 12, bei starker Saisonalität 24–36 Monate analysieren."}
+        elif header in {"Durchschnitt", "Median", "Minimum", "Maximum"}:
+            override = {"mode": "Automatische Formel", "required": "Automatisch", "entry": "Nicht überschreiben; Kennzahl wird aus den Monatswerten berechnet.", "example": "Automatisch", "format": "Formel", "source": "Monatswerte"}
+        else:
+            override = {"required": "Bei Definitionseffekt", "entry": "Abgrenzung, Ausschlüsse, Saisonalität und Datenbesonderheiten dokumentieren.", "example": "Bonuszahlungen jeweils im März; Steuerposition ausgeschlossen.", "source": "SPA-Definition / Analyse"}
+        register_field_help(ws_nwc, 4, col, header, override)
     nwc_components = [
         ("Vorräte", 1), ("Forderungen L&L", 1), ("Vertragsvermögenswerte", 1),
         ("Sonstige operative kurzfristige Aktiva", 1), ("Verbindlichkeiten L&L", -1),
@@ -953,6 +1185,10 @@ def main() -> None:
         ws_nwc.write_formula(row, 16, f'=IF(COUNTA(C{er}:N{er})=0,"",MIN(C{er}:N{er}))', fmt["formula"], "")
         ws_nwc.write_formula(row, 17, f'=IF(COUNTA(C{er}:N{er})=0,"",MAX(C{er}:N{er}))', fmt["formula"], "")
         ws_nwc.write_blank(row, 18, None, fmt["input"])
+    nwc_last_component_row = nwc_start + len(nwc_components) - 1
+    ws_nwc.data_validation(nwc_start, 1, nwc_last_component_row, 1, input_hint("NWC-Faktor", "+1 für Aktiva, −1 für Passiva.", validate="list", source=[1, -1]))
+    ws_nwc.data_validation(nwc_start, 2, nwc_last_component_row, 13, input_hint("Monatsbestand", "Positiven Monatsendbestand ohne Währungstext eingeben.", validate="decimal", criteria=">=", value=0))
+    ws_nwc.data_validation(nwc_start, 18, nwc_last_component_row, 18, input_hint("NWC-Kommentar", "Definition, Ausschlüsse, Saisonalität und Datenauffälligkeiten erläutern.", validate="any"))
     total_row = nwc_start + len(nwc_components)
     ws_nwc.write(total_row, 0, "Net Working Capital", fmt["label"])
     for col in range(2, 14):
@@ -966,6 +1202,13 @@ def main() -> None:
     ws_nwc.write(total_row + 1, 0, "Vorgeschlagenes NWC-Peg", fmt["label"])
     ws_nwc.write_formula(total_row + 1, 2, f"=P{er}", fmt["formula"], 0)
     ws_nwc.write(total_row + 1, 18, "Ausgangspunkt: Median; Saisonalität, Wachstum, Bilanzierungsänderungen und Ausreißer separat würdigen.", fmt["note"])
+    register_field_help(
+        ws_nwc,
+        total_row + 1,
+        0,
+        "Vorgeschlagenes NWC-Peg",
+        {"mode": "Automatische Ausgangsbasis", "required": "Deal-Team-Entscheidung", "entry": "Median dient nur als Ausgangspunkt; finalen Peg nach Saisonalität, Wachstum und Definition beschließen.", "example": "1.850.000 EUR", "format": "Betrag + dokumentierte Herleitung", "source": "Monatsanalyse / SPA-Verhandlung", "quality": "Keine rein mechanische Übernahme ohne Ausreißer- und Cut-off-Prüfung."},
+    )
     debt_section = total_row + 4
     ws_nwc.merge_range(debt_section, 0, debt_section, 9, "Net-Debt-/Debt-like-Brücke", fmt["section"])
     debt_headers = ["Position", "Kategorie", "Betrag (€)", "Einbeziehen?", "Vorzeichen", "Einbezogener Betrag (€)", "Begründung", "Evidenz", "SPA-Behandlung", "Owner"]
@@ -1000,7 +1243,10 @@ def main() -> None:
     add_table(ws_nwc, debt_header_row, debt_last_row, debt_headers, "tblNetDebt")
     ws_nwc.write(debt_last_row + 2, 4, "Net Debt gesamt", fmt["label"])
     ws_nwc.write_formula(debt_last_row + 2, 5, f"=SUM(F{debt_first_row+1}:F{debt_last_row+1})", fmt["formula"], 0)
-    ws_nwc.data_validation(debt_first_row, 3, debt_last_row, 3, {"validate": "list", "source": "=JaNeinPruefen"})
+    ws_nwc.data_validation(debt_first_row, 2, debt_last_row, 2, input_hint("Net-Debt-Betrag", "Betrag gemäß Stichtagsdaten ohne Währungstext eingeben.", validate="any"))
+    ws_nwc.data_validation(debt_first_row, 3, debt_last_row, 3, input_hint("Einbeziehen?", "Wirtschaftliche Einbeziehung in Net Debt auswählen und begründen.", validate="list", source="=JaNeinPruefen"))
+    ws_nwc.data_validation(debt_first_row, 4, debt_last_row, 4, input_hint("Vorzeichen", "+1 erhöht Net Debt, −1 reduziert Net Debt, 0 schließt aus.", validate="list", source=[-1, 0, 1]))
+    ws_nwc.data_validation(debt_first_row, 6, debt_last_row, 9, input_hint("Net-Debt-Dokumentation", "Begründung, Evidenz, SPA-Behandlung und Owner vollständig dokumentieren.", validate="any"))
     ws_nwc.freeze_panes(5, 2)
 
     # Contract review tracker.
@@ -1024,9 +1270,14 @@ def main() -> None:
         ws_contract.set_column(col, col, width)
     ws_contract.set_default_row(46)
     ws_contract.freeze_panes(contract_first_row, 4)
-    ws_contract.data_validation(contract_first_row, 1, contract_last_row, 1, {"validate": "list", "source": "=Vertragstyp"})
-    ws_contract.data_validation(contract_first_row, 21, contract_last_row, 21, {"validate": "list", "source": "=JaNeinPruefen"})
-    ws_contract.data_validation(contract_first_row, 25, contract_last_row, 25, {"validate": "list", "source": "=Pruefstatus"})
+    ws_contract.data_validation(contract_first_row, 1, contract_last_row, 1, input_hint("Vertragstyp", "Vertrag nach seinem wirtschaftlichen Hauptzweck klassifizieren.", validate="list", source="=Vertragstyp"))
+    ws_contract.data_validation(contract_first_row, 2, contract_last_row, 6, input_hint("Vertragsstammdaten", "Gegenpartei, Konzernbezug, Leistung, Jahreswert und Kritikalität vollständig erfassen.", validate="any"))
+    ws_contract.data_validation(contract_first_row, 7, contract_last_row, 8, input_hint("Vertragsdatum", "Beginn und Ende gemäß unterzeichnetem Vertrag im Format TT.MM.JJJJ.", validate="date", criteria="between", minimum=date(1900, 1, 1), maximum=date(2100, 12, 31)))
+    ws_contract.data_validation(contract_first_row, 9, contract_last_row, 20, input_hint("Klauselprüfung", "Klauselinhalt, Schwellen, Fristen und Fundstelle knapp, aber eindeutig extrahieren.", validate="any"))
+    ws_contract.data_validation(contract_first_row, 21, contract_last_row, 21, input_hint("Consent nötig?", "Zustimmungsbedarf juristisch beurteilen; bei Unsicherheit „Zu prüfen“.", validate="list", source="=JaNeinPruefen"))
+    ws_contract.data_validation(contract_first_row, 22, contract_last_row, 24, input_hint("Risiko / Maßnahme", "Risiko, konkrete Behandlung und einen Owner dokumentieren.", validate="any"))
+    ws_contract.data_validation(contract_first_row, 25, contract_last_row, 25, input_hint("Prüfstatus", "Abgeschlossen erst nach Review des vollständigen Vertrags samt Nachträgen.", validate="list", source="=Pruefstatus"))
+    ws_contract.data_validation(contract_first_row, 26, contract_last_row, 27, input_hint("Vertragsreferenz", "VDR-Pfad und zugehörige Checklisten-ID eintragen.", validate="any"))
 
     # Specialized workstream sheets derived from master checklist.
     def workstream_sheet(sheet_name: str, title: str, area: str, owner_label: str) -> None:
@@ -1051,8 +1302,12 @@ def main() -> None:
             ws_local.set_column(col, col, width)
         ws_local.set_default_row(62)
         ws_local.freeze_panes(first_row, 3)
-        ws_local.data_validation(first_row, 6, last_row, 6, {"validate": "list", "source": "=Reifegrad"})
-        ws_local.data_validation(first_row, 11, last_row, 11, {"validate": "list", "source": "=Pruefstatus"})
+        ws_local.data_validation(first_row, 3, last_row, 5, input_hint("Vertiefungsnachweis", "Konkrete Evidenz, ausgeführten Test und beobachtete Red Flags dokumentieren.", validate="any"))
+        ws_local.data_validation(first_row, 6, last_row, 6, input_hint("Reifegrad", "Nur anhand getesteter Gestaltung und Wirksamkeit einstufen.", validate="list", source="=Reifegrad"))
+        ws_local.data_validation(first_row, 7, last_row, 7, input_hint("Risiko", "Bestätigtes Risiko mit Ursache, Umfang und Auswirkung beschreiben.", validate="any"))
+        ws_local.data_validation(first_row, 9, last_row, 9, input_hint("Owner", "Eine fachlich verantwortliche Person oder Rolle eintragen.", validate="any"))
+        ws_local.data_validation(first_row, 10, last_row, 10, input_hint("Fälligkeit", "Verbindliches Datum im Format TT.MM.JJJJ.", validate="date", criteria="between", minimum=date(2000, 1, 1), maximum=date(2100, 12, 31)))
+        ws_local.data_validation(first_row, 11, last_row, 11, input_hint("Prüfstatus", "Abgeschlossen erst nach Evidenz und Review.", validate="list", source="=Pruefstatus"))
         conditional_status(ws_local, f"G{first_row+1}:L{last_row+1}")
 
     workstream_sheet("11_IT_Cyber", "IT- & Cyber-Vertiefung", "IT & Cyber", "CIO / CISO")
@@ -1075,6 +1330,8 @@ def main() -> None:
         ws_deal.set_column(col, col, width)
     ws_deal.set_default_row(60)
     ws_deal.freeze_panes(deal_first_row, 1)
+    ws_deal.data_validation(deal_first_row, 6, deal_last_row, 6, input_hint("Konkrete Entscheidung", "Finding-/Risiko-ID, beschlossenen Mechanismus und wesentliche Eckpunkte dokumentieren.", validate="any"))
+    ws_deal.data_validation(deal_first_row, 7, deal_last_row, 7, input_hint("Entscheidungsstatus", "Aktuellen Abstimmungsstand auswählen.", validate="list", source=["Zu prüfen", "In Verhandlung", "Beschlossen", "Verworfen", "Umgesetzt"]))
 
     # Sources.
     ws_sources = workbook.add_worksheet("15_Quellen")
@@ -1178,6 +1435,7 @@ def main() -> None:
     gate_headers = ["Gate", "Leitfrage", "Status", "Owner", "Entscheidung / Kommentar"]
     for col, header in enumerate(gate_headers):
         ws_dash.write(gate_row + 1, col, header, fmt["header"])
+        register_field_help(ws_dash, gate_row + 1, col, header)
     gates = [
         ("G1", "Sind Deal Perimeter und Eigentum zweifelsfrei?"),
         ("G2", "Sind normalisiertes EBITDA, Net Debt und NWC belastbar?"),
@@ -1193,17 +1451,168 @@ def main() -> None:
         ws_dash.write(row, 2, "Offen", fmt["input"])
         ws_dash.write_blank(row, 3, None, fmt["input"])
         ws_dash.merge_range(row, 4, row, 13, "", fmt["input"])
+    ws_dash.data_validation(
+        gate_row + 2,
+        2,
+        gate_row + 1 + len(gates),
+        2,
+        input_hint(
+            "Gate-Status",
+            "Offen, Bedingt erfüllt, Erfüllt oder No-go eintragen; Entscheidung im Kommentarfeld belegen.",
+            validate="list",
+            source=["Offen", "Bedingt erfüllt", "Erfüllt", "No-go"],
+        ),
+    )
+    ws_dash.data_validation(
+        gate_row + 2,
+        3,
+        gate_row + 1 + len(gates),
+        3,
+        input_hint("Gate-Owner", "Eine entscheidungsverantwortliche Person oder Rolle eintragen.", validate="any"),
+    )
+    ws_dash.data_validation(
+        gate_row + 2,
+        4,
+        gate_row + 1 + len(gates),
+        13,
+        input_hint("Gate-Entscheidung", "Entscheidung, Datum, Entscheider, Bedingungen und Referenzen dokumentieren.", validate="any"),
+    )
     ws_dash.freeze_panes(3, 0)
     ws_dash.hide_gridlines(2)
 
-    # Put dashboard directly after start despite creation order.
-    ws_dash.activate()
-    ws_dash.set_first_sheet()
+    # Central fill-in guide. The registry is populated by all table headers and
+    # standalone input fields above.
+    banner(
+        ws_help,
+        "Ausfüllhilfe & Feldhandbuch",
+        "Startpunkt für die Bearbeitung: Tabellen filtern, gewünschtes Arbeitsblatt öffnen und Hinweise in den kommentierten Spaltenköpfen beachten.",
+        8,
+    )
+    ws_help.set_tab_color(colors["dark_green"])
+    ws_help.set_column("A:A", 24)
+    ws_help.set_column("B:B", 30)
+    ws_help.set_column("C:D", 18)
+    ws_help.set_column("E:E", 46)
+    ws_help.set_column("F:F", 36)
+    ws_help.set_column("G:G", 20)
+    ws_help.set_column("H:H", 34)
+    ws_help.set_column("I:I", 42)
+    ws_help.merge_range("A4:I4", "Schnellstart", fmt["section"])
+    quick_steps = [
+        ("1", "Im Blatt 00_Start Zielunternehmen, Deal-Typ, Stichtag, Projektleitung, Währung und Materialität festlegen."),
+        ("2", "In 03_Dokumente die Request List versenden, Owner und Fristen setzen; Datenqualität und VDR-Pfade laufend pflegen."),
+        ("3", "In 02_Checkliste Status, Evidenz und Analyse dokumentieren. Ein Finding erst nach nachvollziehbarer Primärevidenz erfassen."),
+        ("4", "Bestätigte Risiken nach 04_Risiken übertragen bzw. dort bewerten: Eintritt, Auswirkung und Exposure Low/Base/High getrennt bestimmen."),
+        ("5", "In 05_Maßnahmen nur passende Vorschläge aktivieren; genau einen Owner, Termin, Budget, KPI und ein messbares Abnahmekriterium festlegen."),
+        ("6", "Dashboard und Entscheidungs-Gates vor Signing/Closing reviewen; Preis-, SPA-, Finanzierungs- und Integrationsfolgen beschließen."),
+    ]
+    for row, (number, instruction) in enumerate(quick_steps, start=4):
+        ws_help.write(row, 0, number, fmt["label"])
+        ws_help.merge_range(row, 1, row, 8, instruction, fmt["text"])
+        ws_help.set_row(row, 32)
+    ws_help.merge_range("A12:I12", "Farben und Bedienung", fmt["section"])
+    legends = [
+        ("Gelb", colors["yellow"], "Eingabe oder aktiv zu bestätigende Auswahl"),
+        ("Hellblau", colors["light_blue"], "Automatische Formel – nicht überschreiben"),
+        ("Rot/Orange", colors["red"], "Eskalation, hohe Priorität oder überfälliger Punkt"),
+        ("Kommentarindikator", colors["purple"], "Spaltenkopf oder Feld auswählen/überfahren, um die kontextbezogene Ausfüllhilfe zu lesen"),
+    ]
+    for row, (label, color, meaning) in enumerate(legends, start=12):
+        ws_help.write(row, 0, label, workbook.add_format({"bold": True, "bg_color": color, "border": 1}))
+        ws_help.merge_range(row, 1, row, 8, meaning, fmt["text"])
+
+    sheet_guides = [
+        ("00_Start", "Projektparameter, Scoring und Grundregeln festlegen", "M&A-Projektleitung", "Projektstart / Scope-Änderung", "Freigegebene Projektbasis"),
+        ("00_Ausfüllhilfe", "Felddefinitionen, Beispiele und Qualitätsregeln nachschlagen", "Alle Bearbeiter", "Vor und während jeder Eingabe", "Einheitliche Datenerfassung"),
+        ("01_Dashboard", "Fortschritt und Entscheidungsreife überwachen", "PMO / Deal Lead", "Wöchentlich und vor Gates", "Management- und IC-Übersicht"),
+        ("02_Checkliste", "Alle Prüfhypothesen bearbeiten und Findings dokumentieren", "Workstream Leads", "Laufend", "Vollständiger DD-Status"),
+        ("03_Dokumente", "VDR-Anforderungen, Fristen und Datenqualität steuern", "PMO / Zielunternehmen", "Ab Scope-Freigabe", "Vollständige Request List"),
+        ("04_Risiken", "Bestätigte Risiken bewerten, quantifizieren und entscheiden", "Workstream Leads / Deal Lead", "Nach Evidenz", "Priorisiertes Risikoregister"),
+        ("05_Maßnahmen", "Mitigation, Deal-Schutz und Umsetzung nachhalten", "Maßnahmen-Owner", "Nach Finding / bis Closing", "Verbindlicher Aktionsplan"),
+        ("06_Q&A", "Offene Fragen und schriftliche Antworten steuern", "Prüfer / Management", "Während der Analyse", "Nachvollziehbarer Q&A-Audit-Trail"),
+        ("07_Finanzanalyse", "Historische Entwicklung, Cash Conversion und Bilanzkennzahlen analysieren", "Financial-DD-Team", "Nach Datenlieferung", "Normalisierte Finanzbasis"),
+        ("08_QoE", "EBITDA-Normalisierungen einzeln belegen und entscheiden", "Financial-DD-Team", "Nach GuV-/Kontenanalyse", "Reported-to-normalized Bridge"),
+        ("09_NWC_NetDebt", "NWC-Peg und Net-Debt-/Debt-like-Definition vorbereiten", "Finance / Legal", "Vor SPA-Verhandlung", "Closing-Mechanik"),
+        ("10_Verträge", "Wesentliche Klauseln und Consents je Vertrag extrahieren", "Legal-DD-Team", "Nach Vertragslieferung", "Vertragsrisiko- und Consent-Liste"),
+        ("11_IT_Cyber", "IT- und Cyberkontrollen vertieft bewerten", "CIO/CISO-DD-Team", "Vollprüfung", "IT-/Cyber-Remediation"),
+        ("12_HR", "Personal-, Retention- und Pensionsrisiken vertieft bewerten", "HR-DD-Team", "Vollprüfung / Clean Team", "People-Risikoübersicht"),
+        ("13_Steuern", "Steuerrisiken nach Themen vertieft dokumentieren", "Tax-DD-Team", "Vollprüfung", "Tax-Risk- und Indemnity-Basis"),
+        ("14_Deal_Mechanismen", "Geeignete wirtschaftliche und vertragliche Schutzmechanismen auswählen", "Deal Lead / Legal / Tax", "SPA-/Preisverhandlung", "Beschlossene Risikobehandlung"),
+        ("15_Quellen", "Methodische und rechtliche Ausgangsquellen nachvollziehen", "Alle Workstreams", "Bei Methodik-/Rechtsfragen", "Quellenverzeichnis"),
+    ]
+    nav_section_row = 17
+    ws_help.merge_range(nav_section_row, 0, nav_section_row, 8, "Blattnavigation und Bearbeitungsreihenfolge", fmt["section"])
+    nav_header_row = nav_section_row + 1
+    nav_headers = ["Arbeitsblatt", "Zweck", "Wer füllt aus?", "Wann?", "Hauptausgabe"]
+    nav_first_row = nav_header_row + 1
+    for idx, guide in enumerate(sheet_guides):
+        row = nav_first_row + idx
+        sheet_name, purpose, owner, timing, output = guide
+        ws_help.write_url(row, 0, f"internal:'{sheet_name}'!A1", fmt["link"], string=sheet_name)
+        ws_help.write_row(row, 1, [purpose, owner, timing, output], fmt["text"])
+    nav_last_row = nav_first_row + len(sheet_guides) - 1
+    ws_help.add_table(
+        nav_header_row,
+        0,
+        nav_last_row,
+        len(nav_headers) - 1,
+        {"name": "tblBlattnavigation", "style": "Table Style Medium 4", "columns": [{"header": h} for h in nav_headers]},
+    )
+    ws_help.set_row(nav_header_row, 36)
+
+    # De-duplicate standalone and table registrations while preserving order.
+    unique_help: list[dict[str, str]] = []
+    seen_help: set[tuple[str, str]] = set()
+    for item in help_registry:
+        key = (item["sheet"], item["field"])
+        if item["sheet"].startswith("_") or key in seen_help:
+            continue
+        seen_help.add(key)
+        unique_help.append(item)
+    field_section_row = nav_last_row + 2
+    ws_help.merge_range(field_section_row, 0, field_section_row, 8, "Detaillierte Feldhilfe – nach Arbeitsblatt oder Feld filtern", fmt["section"])
+    field_header_row = field_section_row + 1
+    field_first_row = field_header_row + 1
+    field_headers = ["Arbeitsblatt", "Feld / Spalte", "Bearbeitung", "Pflichtgrad", "Was eintragen?", "Beispiel", "Format", "Quelle / Nachweis", "Qualitätsregel / typischer Fehler"]
+    for idx, item in enumerate(unique_help):
+        row = field_first_row + idx
+        ws_help.write_url(row, 0, f"internal:'{item['sheet']}'!A1", fmt["link"], string=item["sheet"])
+        ws_help.write_row(
+            row,
+            1,
+            [
+                item["field"],
+                item["mode"],
+                item["required"],
+                item["entry"],
+                item["example"],
+                item["format"],
+                item["source"],
+                item["quality"],
+            ],
+            fmt["text"],
+        )
+    field_last_row = field_first_row + len(unique_help) - 1
+    ws_help.add_table(
+        field_header_row,
+        0,
+        field_last_row,
+        len(field_headers) - 1,
+        {"name": "tblFeldhilfe", "style": "Table Style Medium 2", "columns": [{"header": h} for h in field_headers]},
+    )
+    ws_help.set_row(field_header_row, 44)
+    ws_help.set_default_row(48)
+    ws_help.freeze_panes(field_first_row, 2)
+
+    # Open the workbook on the guide for first-time users.
+    ws_help.activate()
+    ws_help.set_first_sheet()
     workbook.close()
     print(f"Erstellt: {OUTPUT}")
     print(f"Prüfpunkte: {len(checklist)}")
     print(f"Dokumentenanforderungen: {len(checklist)}")
     print(f"Prüfhypothesen/Maßnahmen: {len(risk_candidates)}")
+    print(f"Dokumentierte Eingabefelder: {len(unique_help)}")
 
 
 if __name__ == "__main__":
