@@ -5,6 +5,7 @@ Unternehmenskäufe, Beteiligungen, Carve-outs und vergleichbare Transaktionen.
 
 Enthalten sind unter anderem:
 
+- 17 sichtbare Arbeitsblätter einschließlich zentraler Ausfüllhilfe
 - 156 Prüfpunkte aus 17 Due-Diligence-Bereichen
 - automatisches Risiko-Scoring und Management-Dashboard
 - 156 Dokumentenanforderungen sowie Q&A- und Vertrags-Tracker
@@ -12,9 +13,13 @@ Enthalten sind unter anderem:
 - Finanzanalyse, Quality-of-Earnings-, NWC- und Net-Debt-Vorlagen
 - Vertiefungen für IT/Cyber, HR/Pensions und Steuern
 - Deal-Mechanismen und Quellenverzeichnis
+- 305 dokumentierte Felder mit Beispielen, Pflichtgrad und Qualitätsregeln
+- 170 Excel-Eingabemeldungs- und Validierungsregeln
 
 Gelbe Zellen sind zur Eingabe vorgesehen, blaue Zellen enthalten Formeln. Die
-vorformulierten Risiken sind Hypothesen und keine Feststellungen.
+vorformulierten Risiken sind Hypothesen und keine Feststellungen. Die
+Arbeitsmappe öffnet auf `00_Ausfüllhilfe`; zusätzliche Hinweise erscheinen als
+Kommentare an Spaltenköpfen und beim Auswählen relevanter Eingabezellen.
 
 ## Arbeitsmappe neu erzeugen
 
