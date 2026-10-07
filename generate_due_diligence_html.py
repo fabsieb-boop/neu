@@ -283,6 +283,14 @@ def build_data() -> dict:
         "contracts": [],
         "mechanisms": mechanisms,
         "sources": sources,
+        "report": {
+            "executiveSummary": "",
+            "recommendation": "Entscheidung ausstehend",
+            "keyAssumptions": "",
+            "conditions": "",
+            "nextDecision": "",
+        },
+        "auditLog": [],
     }
 
 
@@ -468,6 +476,29 @@ HTML_TEMPLATE = r"""<!doctype html>
     .empty { padding: 50px 20px; text-align: center; color: var(--muted); }
     .link-card { color: inherit; text-decoration: none; transition: transform .15s ease; }
     .link-card:hover { transform: translateY(-2px); }
+    .workstream-card { position: relative; overflow: hidden; cursor: pointer; min-height: 190px; }
+    .workstream-card::after {
+      content: ""; position: absolute; inset: auto -30px -42px auto; width: 120px; height: 120px;
+      border-radius: 50%; background: linear-gradient(135deg, rgba(37,99,235,.08), rgba(15,124,131,.12));
+    }
+    .workstream-card h3 { margin: 0 0 8px; padding-right: 30px; }
+    .workstream-meta { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 12px; margin: 13px 0 7px; }
+    .report-cover {
+      padding: 28px; border-radius: 20px; color: #fff;
+      background: linear-gradient(135deg, var(--navy), #245b86 65%, var(--teal));
+      box-shadow: var(--shadow); margin-bottom: 18px;
+    }
+    .report-cover .eyebrow { color: #b8e8e4; }
+    .report-cover h2 { margin: 4px 0 6px; font-size: clamp(28px,4vw,46px); }
+    .report-cover p { margin: 0; color: #d8e7f1; }
+    .report-section { break-inside: avoid; }
+    .finding-item { padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .finding-item:last-child { border: 0; }
+    .finding-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+    .audit-value {
+      max-width: 340px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px;
+    }
     .source { display: flex; gap: 12px; align-items: flex-start; padding: 13px 0; border-bottom: 1px solid var(--line); }
     .source:last-child { border: 0; }
     .source-id { flex: 0 0 42px; font-weight: 850; color: var(--teal); }
@@ -535,6 +566,7 @@ HTML_TEMPLATE = r"""<!doctype html>
       </nav>
       <div class="nav-label">Analysen</div>
       <nav class="nav">
+        <button data-view="workstreams"><span class="ico">▦</span>Prüfbereiche</button>
         <button data-view="finance"><span class="ico">€</span>Finanzanalyse</button>
         <button data-view="qoe"><span class="ico">≈</span>Quality of Earnings</button>
         <button data-view="nwc"><span class="ico">⇄</span>NWC &amp; Net Debt</button>
@@ -545,7 +577,9 @@ HTML_TEMPLATE = r"""<!doctype html>
       </nav>
       <div class="nav-label">Entscheidung &amp; Hilfe</div>
       <nav class="nav">
+        <button data-view="report"><span class="ico">▤</span>Management-Report</button>
         <button data-view="mechanisms"><span class="ico">◇</span>Deal-Mechanismen</button>
+        <button data-view="audit"><span class="ico">◷</span>Änderungsprotokoll</button>
         <button data-view="help"><span class="ico">i</span>Ausfüllhilfe</button>
         <button data-view="sources"><span class="ico">↗</span>Quellen</button>
       </nav>
@@ -566,6 +600,7 @@ HTML_TEMPLATE = r"""<!doctype html>
           <button class="btn optional" data-action="export-csv">CSV</button>
           <button class="btn optional" data-action="export-json">JSON</button>
           <button class="btn optional" data-action="import-json">Import</button>
+          <button class="btn danger optional" data-action="new-project">Neu</button>
           <button class="btn" data-action="print">Drucken</button>
         </div>
       </header>
@@ -579,8 +614,9 @@ HTML_TEMPLATE = r"""<!doctype html>
     const VIEW_TITLES = {
       dashboard:"Übersicht", project:"Projektstart", checklist:"DD-Checkliste", documents:"Dokumente",
       risks:"Risiken", actions:"Maßnahmen", qa:"Q&A", finance:"Finanzanalyse", qoe:"Quality of Earnings",
-      nwc:"NWC & Net Debt", contracts:"Verträge", it:"IT & Cyber", hr:"HR & Pensions",
-      tax:"Steuern", mechanisms:"Deal-Mechanismen", help:"Ausfüllhilfe", sources:"Quellen"
+      nwc:"NWC & Net Debt", contracts:"Verträge", workstreams:"Prüfbereiche", it:"IT & Cyber", hr:"HR & Pensions",
+      tax:"Steuern", report:"Management-Report", mechanisms:"Deal-Mechanismen", audit:"Änderungsprotokoll",
+      help:"Ausfüllhilfe", sources:"Quellen"
     };
     const SHEET_VIEW = {
       "00_Start":"dashboard", "00_Projektstart":"project", "00_Ausfüllhilfe":"help", "01_Dashboard":"dashboard",
@@ -602,6 +638,25 @@ HTML_TEMPLATE = r"""<!doctype html>
       qaStatus:["Entwurf","Gesendet","Teilbeantwortet","Beantwortet","Nachfrage","Geschlossen"],
       dealImpact:["Bewertung/Kaufpreis","SPA/Haftung","Closing-Bedingung","Finanzierung","Integration/100-Tage-Plan","Abbruch/No-go","Kein direkter","Zu prüfen"]
     };
+    const AREA_DESCRIPTIONS = {
+      "Transaktion & Scope":"Deal Perimeter, Struktur, Materialität, Datenraum und regulatorischer Pfad.",
+      "Corporate & Governance":"Eigentum, Cap Table, Organbeschlüsse, Belastungen und Konzernbeziehungen.",
+      "Financial":"Abschlussqualität, Quality of Earnings, Cashflow, NWC, Net Debt und Planung.",
+      "Commercial":"Markt, Kunden, Churn, Pipeline, Pricing, Unit Economics und Produkt.",
+      "Tax":"Ertrag-, Umsatz- und Lohnsteuern, Prüfungen, Verrechnungspreise und Struktur.",
+      "Legal":"Wesentliche Verträge, Haftung, Streitigkeiten, Genehmigungen und Consents.",
+      "Operations":"Kapazität, Qualität, Instandhaltung, Bestände, Resilienz und Skalierung.",
+      "Supply Chain":"Lieferanten, Versorgung, Preise, Qualität, Logistik und nachhaltige Beschaffung.",
+      "IT & Cyber":"Architektur, Assets, IAM, Schwachstellen, Recovery, Cloud und Separation.",
+      "Datenschutz":"Verarbeitung, Auftragsverarbeiter, Transfers, Betroffenenrechte und Löschung.",
+      "HR & Pensions":"Belegschaft, Vergütung, Schlüsselpersonen, Mitbestimmung, Pensionen und Streitigkeiten.",
+      "Intellectual Property":"Eigentumskette, Schutzrechte, Lizenzen, Open Source und Geschäftsgeheimnisse.",
+      "ESG, EHS & Produkt":"Umwelt, Altlasten, Safety, Emissionen, Menschenrechte und Produktkonformität.",
+      "Real Estate & Assets":"Eigentum, Mieten, Baurecht, Anlagenregister und Stilllegung.",
+      "Insurance":"Deckung, Schadenhistorie, Ausschlüsse, Kontrollwechsel und D&O/W&I.",
+      "Compliance, AML & Sanctions":"CMS, Korruption, KYC, Sanktionen, Exportkontrolle und Untersuchungen.",
+      "Carve-out & Integration":"Abhängigkeiten, TSA, Stand-alone-Kosten, Day 1, Synergien und Governance."
+    };
     const FIN_METRICS = [
       ["REV","Umsatz","input"],["COGS","Umsatzkosten (COGS)","input"],["GP","Bruttoergebnis","formula"],
       ["GPM","Bruttomarge","percent"],["PERSONNEL","Personalaufwand","input"],["OPEX","Sonstige Opex","input"],
@@ -620,11 +675,20 @@ HTML_TEMPLATE = r"""<!doctype html>
     const clone = value => typeof structuredClone === "function" ? structuredClone(value) : JSON.parse(JSON.stringify(value));
     let state = loadState();
     let currentView = "project";
+    let selectedArea = "";
 
     function loadState(){
       try {
         const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        if(parsed && parsed.schemaVersion === BASE_DATA.schemaVersion) return parsed;
+        if(parsed && parsed.schemaVersion === BASE_DATA.schemaVersion) {
+          return {
+            ...clone(BASE_DATA),
+            ...parsed,
+            meta:{...clone(BASE_DATA.meta),...(parsed.meta||{})},
+            report:{...clone(BASE_DATA.report),...(parsed.report||{})},
+            auditLog:Array.isArray(parsed.auditLog)?parsed.auditLog:[]
+          };
+        }
       } catch(e) {}
       return clone(BASE_DATA);
     }
@@ -647,6 +711,19 @@ HTML_TEMPLATE = r"""<!doctype html>
     function setPath(obj,path,value){
       const parts=path.split("."); const last=parts.pop(); let cur=obj;
       parts.forEach(key=>{ if(cur[key]===undefined) cur[key]={}; cur=cur[key]; }); cur[last]=value;
+    }
+    function recordChange(path,oldValue,newValue,action="Änderung"){
+      if(String(oldValue??"")===String(newValue??"")) return;
+      if(!Array.isArray(state.auditLog)) state.auditLog=[];
+      state.auditLog.unshift({
+        timestamp:new Date().toISOString(),
+        action,
+        field:path,
+        oldValue:oldValue??"",
+        newValue:newValue??"",
+        view:currentView
+      });
+      if(state.auditLog.length>1000) state.auditLog.length=1000;
     }
     function input(path,value,type="text",extra=""){
       return `<input type="${type}" data-bind="${esc(path)}" value="${esc(value)}" ${extra}>`;
@@ -718,9 +795,10 @@ HTML_TEMPLATE = r"""<!doctype html>
       const renderers={
         dashboard:renderDashboard, project:renderProject, checklist:renderChecklist, documents:renderDocuments,
         risks:renderRisks, actions:renderActions, qa:renderQA, finance:renderFinance, qoe:renderQoE,
-        nwc:renderNWC, contracts:renderContracts, it:()=>renderWorkstream("IT & Cyber","IT & Cyber"),
+        nwc:renderNWC, contracts:renderContracts, workstreams:renderWorkstreams,
+        it:()=>renderWorkstream("IT & Cyber","IT & Cyber"),
         hr:()=>renderWorkstream("HR & Pensions","HR & Pensions"), tax:()=>renderWorkstream("Tax","Steuern"),
-        mechanisms:renderMechanisms, help:renderHelp, sources:renderSources
+        report:renderReport, mechanisms:renderMechanisms, audit:renderAudit, help:renderHelp, sources:renderSources
       };
       document.getElementById("viewRoot").innerHTML=(renderers[currentView]||renderDashboard)();
       document.getElementById("projectName").textContent=state.meta.target||"Neues Due-Diligence-Projekt";
@@ -742,7 +820,7 @@ HTML_TEMPLATE = r"""<!doctype html>
       }).join("");
       const next=state.projectTasks.filter(x=>x.priority==="Kritisch"&&!["Abgeschlossen","Nicht anwendbar"].includes(x.status)).slice(0,6);
       return pageHead("Managementübersicht","Due-Diligence-Dashboard","Projektparameter, Startreife, Prüfungsfortschritt und Transaktionsrisiken auf einen Blick.",
-        `<button class="btn primary" data-view="project">Projektstart öffnen</button>`) + `
+        `<button class="btn" data-view="report">Management-Report</button><button class="btn primary" data-view="project">Projektstart öffnen</button>`) + `
         <div class="card" style="margin-bottom:16px">
           <div class="form-grid">
             <div class="field"><label>Zielunternehmen</label>${input("meta.target",state.meta.target)}</div>
@@ -819,7 +897,12 @@ HTML_TEMPLATE = r"""<!doctype html>
           <td>${badge(item.deal_impact)}<div class="cell-sub">${esc(item.protection)}</div></td>
         </tr>`;
       }).join("");
-      return pageHead("Prüfungsarbeit",title,areaFilter?`Vertiefung aus der verbundenen Master-Checkliste: ${areaFilter}. Änderungen wirken direkt in Dashboard und Risikologik.`:"156 risikoorientierte Prüfpunkte mit Analysen, Red Flags, Maßnahmen und Deal-Folgen.") +
+      return pageHead(
+        "Prüfungsarbeit",
+        title,
+        areaFilter?`Vertiefung aus der verbundenen Master-Checkliste: ${areaFilter}. Änderungen wirken direkt in Dashboard und Risikologik.`:"156 risikoorientierte Prüfpunkte mit Analysen, Red Flags, Maßnahmen und Deal-Folgen.",
+        areaFilter?`<button class="btn" data-action="back-workstreams">← Alle Prüfbereiche</button>`:""
+      ) +
         (areaFilter?"":filterBar("checklist",[{type:"search",placeholder:"ID, Bereich, Frage, Finding oder Owner suchen …"},{field:"area",label:"Alle Bereiche",options:areas},{field:"priority",label:"Alle Prioritäten",options:OPTIONS.priority},{field:"status",label:"Alle Status",options:OPTIONS.status}]))+
         `<div class="table-wrap"><table><thead><tr><th>ID</th><th>Bereich</th><th>Prüffrage</th><th>Status</th><th>Owner / Termin</th><th>Risiko E/A</th><th>Finding / Maßnahme</th><th>Deal-Folge</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     }
@@ -876,6 +959,7 @@ HTML_TEMPLATE = r"""<!doctype html>
     function addQA(){
       const n=state.qa.length+1;
       state.qa.push({id:`Q-${String(n).padStart(3,"0")}`,created:new Date().toISOString().slice(0,10),area:"",reference:"",question:"",context:"",priority:"Mittel",recipient:"",requester:"",dueDate:"",answerDate:"",status:"Entwurf",answer:"",evidence:"",nextStep:"",reviewer:""});
+      recordChange(`qa.${n-1}`,"","Neue Q&A-Frage","Datensatz angelegt");
       saveState(); renderCurrent();
     }
     function renderQA(){
@@ -925,6 +1009,7 @@ HTML_TEMPLATE = r"""<!doctype html>
     function addQoE(){
       const n=state.qoe.rows.length+1;
       state.qoe.rows.push({id:`ADJ-${String(n).padStart(3,"0")}`,category:"",description:"",direction:"+/−",period:"LTM",managementAmount:"",ddAmount:"",acceptedAmount:"",evidence:"",recurring:"Zu prüfen",cashType:"Zu prüfen",confidence:"",status:"Offen",owner:"",reference:"",comment:""});
+      recordChange(`qoe.rows.${n-1}`,"","Neue QoE-Anpassung","Datensatz angelegt");
       saveState(); renderCurrent();
     }
     function renderQoE(){
@@ -956,6 +1041,7 @@ HTML_TEMPLATE = r"""<!doctype html>
     function addContract(){
       const n=state.contracts.length+1;
       state.contracts.push({id:`V-${String(n).padStart(3,"0")}`,type:"",counterparty:"",subject:"",annualValue:"",start:"",end:"",changeControl:"",termination:"",liability:"",consent:"Zu prüfen",risk:"",measure:"",owner:"",status:"Nicht begonnen",vdr:"",checkRef:""});
+      recordChange(`contracts.${n-1}`,"","Neuer Vertrag","Datensatz angelegt");
       saveState(); renderCurrent();
     }
     function renderContracts(){
@@ -964,7 +1050,91 @@ HTML_TEMPLATE = r"""<!doctype html>
         `<button class="btn primary" data-action="add-contract">+ Vertrag</button>`) +
         (state.contracts.length?`<div class="table-wrap"><table><thead><tr><th>ID</th><th>Typ</th><th>Gegenpartei</th><th>Leistung</th><th>Jahreswert</th><th>Kernklauseln</th><th>Consent?</th><th>Risiko</th><th>Maßnahme</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`:`<div class="card empty"><h3>Noch keine Verträge erfasst</h3><p>Ersten wesentlichen Vertrag hinzufügen.</p><button class="btn primary" data-action="add-contract">+ Vertrag</button></div>`);
     }
-    function renderWorkstream(area,title){ return renderChecklist(area,`${title}-Vertiefung`); }
+    function renderWorkstreams(){
+      if(selectedArea) return renderChecklist(selectedArea,`${selectedArea}-Vertiefung`);
+      const areas=[...new Set(state.checklist.map(x=>x.area))];
+      const cards=areas.map(area=>{
+        const checks=state.checklist.filter(x=>x.area===area);
+        const done=checks.filter(x=>x.status==="Abgeschlossen").length;
+        const documents=state.documents.filter(x=>x.area===area);
+        const docsDone=documents.filter(x=>x.status==="Vollständig").length;
+        const openRisk=checks.filter(x=>["Hoch","Kritisch"].includes(riskInfo(x.probability,x.impact).label)).length;
+        const progress=checks.length?done/checks.length:0;
+        return `<button class="card workstream-card" data-workstream="${esc(area)}" style="text-align:left;border:1px solid var(--line)">
+          <div style="display:flex;justify-content:space-between;gap:10px"><h3>${esc(area)}</h3>${openRisk?badge(openRisk+" hoch/kritisch"):badge("kein bewertetes Hochrisiko")}</div>
+          <p class="cell-sub">${esc(AREA_DESCRIPTIONS[area]||"Verbundener Due-Diligence-Prüfbereich.")}</p>
+          <div class="workstream-meta"><span>${done}/${checks.length} Prüfpunkte</span><span>${docsDone}/${documents.length} Dokumente</span></div>
+          <div class="progress blue"><span style="width:${progress*100}%"></span></div>
+          <div class="cell-sub" style="margin-top:12px">Prüfbereich öffnen →</div>
+        </button>`;
+      }).join("");
+      return pageHead("Workstream-Steuerung","Alle 17 Prüfbereiche","Jeder Prüfbereich ist direkt mit der Master-Checkliste, Dokumentenstatus und Risikobewertung verbunden.")+
+        `<div class="grid three">${cards}</div>`;
+    }
+    function renderWorkstream(area,title){ selectedArea=area; return renderChecklist(area,`${title}-Vertiefung`); }
+    function renderReport(){
+      const projectDone=state.projectTasks.filter(x=>x.status==="Abgeschlossen").length;
+      const checksDone=state.checklist.filter(x=>x.status==="Abgeschlossen").length;
+      const docsDone=state.documents.filter(x=>x.status==="Vollständig").length;
+      const projectCritical=state.projectTasks.filter(x=>x.priority==="Kritisch"&&!["Abgeschlossen","Nicht anwendbar"].includes(x.status));
+      const findings=state.checklist.map((item,index)=>({item,index,risk:riskInfo(item.probability,item.impact)}))
+        .filter(x=>x.item.finding||["Hoch","Kritisch"].includes(x.risk.label))
+        .sort((a,b)=>(b.risk.score||0)-(a.risk.score||0));
+      const confirmedRisks=state.risks.map(risk=>({risk,info:riskInfo(risk.probability,risk.impact)}))
+        .filter(x=>x.risk.status==="Bestätigt"||["Hoch","Kritisch"].includes(x.info.label))
+        .sort((a,b)=>(b.info.score||0)-(a.info.score||0));
+      const criticalDocs=state.documents.filter(x=>x.priority==="Kritisch"&&!["Vollständig","Nicht anwendbar"].includes(x.status));
+      const openActions=state.actions.filter(x=>x.active==="Ja"&&!["Erledigt","Verworfen"].includes(x.status));
+      const exposure=state.risks.reduce((s,x)=>s+num(x.exposureBase),0);
+      const findingHtml=findings.slice(0,12).map(({item,risk})=>`<div class="finding-item"><div class="finding-top"><div><strong>${esc(item.id)} · ${esc(item.area)}</strong><div class="cell-sub">${esc(item.finding||item.question)}</div></div>${badge(risk.score?risk.score+" · "+risk.label:risk.label)}</div><div class="cell-sub"><strong>Deal-Folge:</strong> ${esc(item.deal_impact)} · ${esc(item.protection)}</div></div>`).join("");
+      const riskHtml=confirmedRisks.slice(0,10).map(({risk,info})=>`<div class="finding-item"><div class="finding-top"><div><strong>${esc(risk.id)} · ${esc(risk.area)}</strong><div class="cell-sub">${esc(risk.finding||risk.scenario)}</div></div>${badge(info.score?info.score+" · "+info.label:info.label)}</div><div class="cell-sub">Exposure Base: ${fmtMoney(risk.exposureBase)} · ${esc(risk.transactionEffect)}</div></div>`).join("");
+      const actionHtml=openActions.slice(0,10).map(action=>`<div class="finding-item"><div class="finding-top"><div><strong>${esc(action.id)} · ${esc(action.area)}</strong><div class="cell-sub">${esc(action.measure)}</div></div>${badge(action.status)}</div><div class="cell-sub">Owner: ${esc(action.owner||"offen")} · Fällig: ${esc(action.dueDate||"offen")}</div></div>`).join("");
+      return `
+        <div class="page-head no-print"><div><div class="eyebrow">Entscheidungsunterlage</div><h2>Management-Report</h2><p>Automatisch aus dem aktuellen Projektstand abgeleitete Zusammenfassung. Narrative Aussagen und Empfehlung fachlich freigeben.</p></div><div class="sticky-actions"><button class="btn primary" data-action="print">Report drucken / PDF</button><button class="btn" data-view="audit">Änderungen anzeigen</button></div></div>
+        <div class="report-cover">
+          <div class="eyebrow">Due-Diligence-Management-Report</div>
+          <h2>${esc(state.meta.target||"Zielunternehmen noch nicht benannt")}</h2>
+          <p>${esc(state.meta.transactionType)} · DD-Stichtag ${esc(state.meta.ddDate||"offen")} · Version ${esc(state.meta.version||"1.0")} · ${esc(state.meta.confidentiality)}</p>
+        </div>
+        <div class="grid cards report-section">
+          ${metric("Startfreigabe",projectCritical.length===0?"Bereit":"Nicht bereit",projectCritical.length+" kritische Startaufgaben offen",projectCritical.length?"alert":"good")}
+          ${metric("Projektstart",pct(projectDone/state.projectTasks.length),projectDone+" / "+state.projectTasks.length)}
+          ${metric("DD-Fortschritt",pct(checksDone/state.checklist.length),checksDone+" / "+state.checklist.length)}
+          ${metric("Dokumente",pct(docsDone/state.documents.length),docsDone+" / "+state.documents.length+" vollständig")}
+          ${metric("Hoch / kritisch",findings.filter(x=>["Hoch","Kritisch"].includes(x.risk.label)).length,"bewertete Findings","alert")}
+          ${metric("Exposure Base",fmtMoney(exposure),confirmedRisks.length+" relevante Risiken")}
+        </div>
+        <div class="grid two report-section" style="margin-top:16px">
+          <div class="card"><h3>Executive Summary</h3>${textarea("report.executiveSummary",state.report.executiveSummary,"Deal Thesis, wesentliche Erkenntnisse und verbleibende Unsicherheiten zusammenfassen.")}</div>
+          <div class="card"><h3>Empfehlung</h3>${select("report.recommendation",state.report.recommendation,["Entscheidung ausstehend","Fortfahren","Fortfahren mit Bedingungen","Nachverhandeln","Pausieren","Abbruch / No-go"])}<div class="field" style="margin-top:10px"><label>Nächste Entscheidung / Termin</label>${input("report.nextDecision",state.report.nextDecision)}</div></div>
+          <div class="card"><h3>Schlüsselannahmen</h3>${textarea("report.keyAssumptions",state.report.keyAssumptions,"Bewertungs-, Finanzierungs- und Umsetzungsannahmen")}</div>
+          <div class="card"><h3>Bedingungen / Deal Protection</h3>${textarea("report.conditions",state.report.conditions,"Kaufpreisanpassung, Freistellung, CP, Escrow, TSA oder weitere Bedingungen")}</div>
+        </div>
+        <div class="grid two report-section" style="margin-top:16px">
+          <div class="card"><div class="section-title"><h3>Top Findings</h3><button class="btn no-print" data-view="checklist">Checkliste</button></div>${findingHtml||'<div class="empty">Noch keine bewerteten Findings.</div>'}</div>
+          <div class="card"><div class="section-title"><h3>Bestätigte / hohe Risiken</h3><button class="btn no-print" data-view="risks">Risikoregister</button></div>${riskHtml||'<div class="empty">Noch keine bestätigten oder hoch bewerteten Risiken.</div>'}</div>
+          <div class="card"><div class="section-title"><h3>Aktive Maßnahmen</h3><button class="btn no-print" data-view="actions">Maßnahmen</button></div>${actionHtml||'<div class="empty">Noch keine Maßnahmen aktiviert.</div>'}</div>
+          <div class="card"><h3>Offene Entscheidungsgrundlagen</h3>
+            <div class="finding-item"><strong>${projectCritical.length}</strong> kritische Projektstart-Aufgaben offen</div>
+            <div class="finding-item"><strong>${criticalDocs.length}</strong> kritische Dokumente noch nicht vollständig</div>
+            <div class="finding-item"><strong>${state.qa.filter(x=>!["Beantwortet","Geschlossen"].includes(x.status)).length}</strong> Q&A-Fragen offen</div>
+            <div class="finding-item"><strong>${state.risks.filter(x=>x.status==="Bestätigt"&&!x.decision).length}</strong> bestätigte Risiken ohne dokumentierte Entscheidung</div>
+          </div>
+        </div>`;
+    }
+    function renderAudit(){
+      const rows=(state.auditLog||[]).map(entry=>`<tr data-filter-row="audit" data-search="${esc([entry.action,entry.field,entry.oldValue,entry.newValue,entry.view].join(" "))}">
+        <td class="compact">${esc(new Date(entry.timestamp).toLocaleString("de-DE"))}</td>
+        <td>${badge(entry.action)}</td>
+        <td><strong>${esc(entry.field)}</strong><div class="cell-sub">${esc(VIEW_TITLES[entry.view]||entry.view)}</div></td>
+        <td><div class="audit-value" title="${esc(entry.oldValue)}">${esc(entry.oldValue)}</div></td>
+        <td><div class="audit-value" title="${esc(entry.newValue)}">${esc(entry.newValue)}</div></td>
+      </tr>`).join("");
+      return pageHead("Nachvollziehbarkeit","Änderungsprotokoll","Die letzten 1.000 Feldänderungen dieses lokalen Browser-Projektstands. Das Protokoll ist kein manipulationssicheres Audit-System.",
+        `<button class="btn danger" data-action="clear-audit">Protokoll leeren</button>`) +
+        filterBar("audit",[{type:"search",placeholder:"Feld, alter/neuer Wert oder Ansicht suchen …"}])+
+        ((state.auditLog||[]).length?`<div class="table-wrap"><table><thead><tr><th>Zeitpunkt</th><th>Aktion</th><th>Feld / Ansicht</th><th>Alter Wert</th><th>Neuer Wert</th></tr></thead><tbody>${rows}</tbody></table></div>`:`<div class="card empty"><h3>Noch keine Änderungen protokolliert</h3><p>Neue Eingaben und Statusänderungen erscheinen automatisch hier.</p></div>`);
+    }
     function renderMechanisms(){
       const cards=state.mechanisms.map((m,i)=>`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px"><h3 style="margin:0">${esc(m.mechanism)}</h3>${badge(m.status)}</div><p><strong>Geeignet für:</strong> ${esc(m.suitable)}</p><p class="cell-sub">${esc(m.examples)}</p><details class="inline"><summary>Ausgestaltung und Risiko</summary><div class="detail-body">${esc(m.design)}<br><strong>Adressiert:</strong> ${esc(m.risk)}<br><strong>Lead:</strong> ${esc(m.lead)}</div></details><div class="field" style="margin-top:12px"><label>Entscheidung / Bezug</label>${textarea(`mechanisms.${i}.decision`,m.decision,"Finding-ID und Eckpunkte")}</div><div class="field" style="margin-top:8px"><label>Status</label>${select(`mechanisms.${i}.status`,m.status,["Zu prüfen","In Verhandlung","Beschlossen","Verworfen","Umgesetzt"])}</div></div>`).join("");
       return pageHead("Transaktionsschutz","Deal-Mechanismen","Mechanismus aus dem bestätigten Finding ableiten, wirtschaftliche Doppelzählungen vermeiden und Wirksamkeit fachlich prüfen.")+`<div class="grid three">${cards}</div>`;
@@ -992,6 +1162,9 @@ HTML_TEMPLATE = r"""<!doctype html>
           <div class="card"><h3>Lokale Speicherung</h3><p>Der Browser speichert Änderungen lokal. Andere Nutzer und Browser erhalten sie nicht automatisch.</p></div>
           <div class="card"><h3>JSON-Sicherung</h3><p>Regelmäßig JSON exportieren. Die Datei enthält alle HTML-Eingaben und kann wieder importiert werden.</p></div>
           <div class="card"><h3>Excel</h3><p>HTML und Excel sind separate Arbeitsstände. Ein direkter Link lädt die Excel-Vorlage; eine automatische Synchronisierung findet nicht statt.</p></div>
+          <div class="card"><h3>Änderungsprotokoll</h3><p>Feldänderungen werden lokal mit Zeit, Ansicht sowie altem und neuem Wert protokolliert. Dies ersetzt kein revisionssicheres Audit-System.</p></div>
+          <div class="card"><h3>Management-Report</h3><p>Der Bericht bündelt Fortschritt, Findings, bestätigte Risiken, Exposure, Maßnahmen und offene Entscheidungsgrundlagen für Druck oder PDF.</p></div>
+          <div class="card"><h3>Neues Projekt</h3><p>„Neu“ setzt den lokalen Stand nach Bestätigung zurück. Zuvor immer eine JSON-Sicherung exportieren.</p></div>
         </div>`;
     }
     function renderSources(){
@@ -1001,12 +1174,14 @@ HTML_TEMPLATE = r"""<!doctype html>
     function dataRowsForView(){
       if(currentView==="project") return state.projectTasks;
       if(currentView==="checklist"||["it","hr","tax"].includes(currentView)) return state.checklist;
+      if(currentView==="workstreams") return selectedArea?state.checklist.filter(x=>x.area===selectedArea):state.checklist;
       if(currentView==="documents") return state.documents;
       if(currentView==="risks") return state.risks;
       if(currentView==="actions") return state.actions;
       if(currentView==="qa") return state.qa;
       if(currentView==="contracts") return state.contracts;
       if(currentView==="mechanisms") return state.mechanisms;
+      if(currentView==="audit") return state.auditLog||[];
       return [];
     }
     function download(content,name,type){
@@ -1023,21 +1198,39 @@ HTML_TEMPLATE = r"""<!doctype html>
     }
     function importJSON(file){
       const reader=new FileReader();
-      reader.onload=()=>{ try { const parsed=JSON.parse(reader.result); if(parsed.schemaVersion!==BASE_DATA.schemaVersion) throw new Error("Versionskonflikt"); state=parsed; saveState(); showView("dashboard"); alert("Projektstand wurde importiert."); } catch(e){ alert("Die Datei ist kein kompatibler Projektstand."); } };
+      reader.onload=()=>{ try {
+        const parsed=JSON.parse(reader.result);
+        if(parsed.schemaVersion!==BASE_DATA.schemaVersion) throw new Error("Versionskonflikt");
+        state={...clone(BASE_DATA),...parsed,meta:{...clone(BASE_DATA.meta),...(parsed.meta||{})},report:{...clone(BASE_DATA.report),...(parsed.report||{})},auditLog:Array.isArray(parsed.auditLog)?parsed.auditLog:[]};
+        recordChange("project","","JSON-Projektstand","Import");
+        saveState(); showView("dashboard"); alert("Projektstand wurde importiert.");
+      } catch(e){ alert("Die Datei ist kein kompatibler Projektstand."); } };
       reader.readAsText(file);
+    }
+    function newProject(){
+      if(!confirm("Neues Projekt beginnen? Der aktuelle lokale Stand wird ersetzt. Exportieren Sie vorher bei Bedarf eine JSON-Sicherung.")) return;
+      state=clone(BASE_DATA);
+      recordChange("project","","Neues Projekt","Projekt neu angelegt");
+      localStorage.removeItem(STORAGE_KEY);
+      saveState();
+      selectedArea="";
+      showView("project");
     }
     function closeMenu(){ document.getElementById("sidebar").classList.remove("open"); document.getElementById("overlay").classList.remove("show"); }
     document.addEventListener("change",event=>{
       const el=event.target;
       if(el.dataset.bind){
         let value=el.type==="range"?Number(el.value):el.value;
+        const oldValue=getPath(state,el.dataset.bind);
+        recordChange(el.dataset.bind,oldValue,value);
         setPath(state,el.dataset.bind,value); saveState(); renderCurrent();
       }
       if(el.dataset.filterFor) filterRows(el.dataset.filterFor);
     });
     document.addEventListener("input",event=>{ if(event.target.dataset.filterFor) filterRows(event.target.dataset.filterFor); });
     document.addEventListener("click",event=>{
-      const viewButton=event.target.closest("[data-view]"); if(viewButton){ showView(viewButton.dataset.view); return; }
+      const viewButton=event.target.closest("[data-view]"); if(viewButton){ if(viewButton.dataset.view==="workstreams") selectedArea=""; showView(viewButton.dataset.view); return; }
+      const workstream=event.target.closest("[data-workstream]"); if(workstream){ selectedArea=workstream.dataset.workstream; showView("workstreams"); return; }
       const link=event.target.closest("[data-link-sheet]"); if(link){ showView(SHEET_VIEW[link.dataset.linkSheet]||"dashboard"); return; }
       const action=event.target.closest("[data-action]")?.dataset.action;
       if(action==="add-qa") addQA();
@@ -1046,9 +1239,13 @@ HTML_TEMPLATE = r"""<!doctype html>
       else if(action==="export-json") exportJSON();
       else if(action==="export-csv") exportCSV();
       else if(action==="import-json") document.getElementById("importFile").click();
+      else if(action==="new-project") newProject();
+      else if(action==="back-workstreams"){ selectedArea=""; showView("workstreams"); }
+      else if(action==="clear-audit"){ if(confirm("Änderungsprotokoll wirklich leeren?")){ state.auditLog=[]; saveState(); renderCurrent(); } }
       else if(action==="print") window.print();
       else if(action==="complete-visible-project"){
         document.querySelectorAll('[data-filter-row="project"]').forEach(row=>{ if(row.style.display!=="none"){ const id=row.querySelector("strong")?.textContent; const task=state.projectTasks.find(x=>x.id===id); if(task){ task.status="Abgeschlossen"; task.completedDate=new Date().toISOString().slice(0,10); } } });
+        recordChange("projectTasks.visible","Offen","Abgeschlossen","Massenänderung");
         saveState(); renderCurrent();
       }
     });
