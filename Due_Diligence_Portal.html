@@ -430,13 +430,13 @@
       if(state.auditLog.length>1000) state.auditLog.length=1000;
     }
     function input(path,value,type="text",extra=""){
-      return `<input type="${type}" data-bind="${esc(path)}" value="${esc(value)}" ${extra}>`;
+      return `<input type="${type}" name="${esc(path)}" aria-label="${esc(path)}" data-bind="${esc(path)}" value="${esc(value)}" ${extra}>`;
     }
     function textarea(path,value,placeholder=""){
-      return `<textarea data-bind="${esc(path)}" placeholder="${esc(placeholder)}">${esc(value)}</textarea>`;
+      return `<textarea name="${esc(path)}" aria-label="${esc(placeholder||path)}" data-bind="${esc(path)}" placeholder="${esc(placeholder)}">${esc(value)}</textarea>`;
     }
     function select(path,value,options,extra=""){
-      return `<select data-bind="${esc(path)}" ${extra}>${["",...options].map(option=>`<option value="${esc(option)}" ${String(option)===String(value)?"selected":""}>${esc(option||"– wählen –")}</option>`).join("")}</select>`;
+      return `<select name="${esc(path)}" aria-label="${esc(path)}" data-bind="${esc(path)}" ${extra}>${["",...options].map(option=>`<option value="${esc(option)}" ${String(option)===String(value)?"selected":""}>${esc(option||"– wählen –")}</option>`).join("")}</select>`;
     }
     function badge(value){
       const s=String(value||"");
@@ -469,8 +469,8 @@
     }
     function filterBar(prefix,fields){
       return `<div class="filters no-print">${fields.map(f=>{
-        if(f.type==="search") return `<input data-filter-for="${prefix}" data-filter-field="search" placeholder="${esc(f.placeholder||"Suchen …")}">`;
-        return `<select data-filter-for="${prefix}" data-filter-field="${esc(f.field)}"><option value="">${esc(f.label||"Alle")}</option>${f.options.map(x=>`<option>${esc(x)}</option>`).join("")}</select>`;
+        if(f.type==="search") return `<input name="${prefix}-search" aria-label="${esc(f.placeholder||"Suchen")}" data-filter-for="${prefix}" data-filter-field="search" placeholder="${esc(f.placeholder||"Suchen …")}">`;
+        return `<select name="${prefix}-${esc(f.field)}" aria-label="${esc(f.label||f.field)}" data-filter-for="${prefix}" data-filter-field="${esc(f.field)}"><option value="">${esc(f.label||"Alle")}</option>${f.options.map(x=>`<option>${esc(x)}</option>`).join("")}</select>`;
       }).join("")}</div>`;
     }
     function filterRows(prefix){
@@ -651,7 +651,7 @@
         <td><div class="cell-title">${esc(action.area)}</div><div class="cell-sub">${esc(action.phase)}</div></td>
         <td class="wide"><div>${esc(action.measure)}</div><details class="inline"><summary>Abnahmekriterium</summary><div class="detail-body">${esc(action.acceptance)}</div></details></td>
         <td>${input(`actions.${i}.owner`,action.owner,"text","placeholder='Owner'")}${input(`actions.${i}.dueDate`,action.dueDate,"date","style='margin-top:5px'")}</td>
-        <td>${select(`actions.${i}.status`,action.status,OPTIONS.actionStatus)}<input type="range" min="0" max="100" data-bind="actions.${i}.progress" value="${esc(action.progress)}"><div class="cell-sub">${esc(action.progress)} %</div></td>
+        <td>${select(`actions.${i}.status`,action.status,OPTIONS.actionStatus)}<input type="range" name="actions.${i}.progress" aria-label="Fortschritt ${esc(action.id)}" min="0" max="100" data-bind="actions.${i}.progress" value="${esc(action.progress)}"><div class="cell-sub">${esc(action.progress)} %</div></td>
         <td>${input(`actions.${i}.budget`,action.budget,"number","placeholder='Budget'")}<div class="cell-sub">${esc(action.effect)}</div></td>
         <td>${textarea(`actions.${i}.comment`,action.comment,"Fortschritt / Entscheidung")}</td>
       </tr>`).join("");
