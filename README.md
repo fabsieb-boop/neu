@@ -29,6 +29,11 @@ Kommentare an Spaltenköpfen und beim Auswählen relevanter Eingabezellen.
 Das Portal bietet lokale Browser-Speicherung, verbundene Fachansichten,
 automatische Risiko- und Fortschrittsberechnungen, JSON-/CSV-Export,
 JSON-Import, Druckansicht und einen direkten Download der Excel-Arbeitsmappe.
+Ein Workstream-Hub verbindet alle 17 Prüfbereiche. Der Management-Report
+bündelt Findings, Risiken, Exposure, Maßnahmen und offene Entscheidungen;
+Feldänderungen werden in einem lokalen Änderungsprotokoll nachvollzogen.
+Die Funktion `Neu` startet nach einer Sicherheitsabfrage einen leeren
+Projektstand.
 HTML- und Excel-Eingaben sind getrennte Arbeitsstände.
 
 ## Dateien neu erzeugen
