@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Vorstandsbericht | TVF ALTWERT</title>
+<style>
+:root{--primary:#1F4E79;--accent:#5B2C6F;--surface:#F3F6F9;--text:#1A1A1A;--muted:#5F6B7A;--ok:#1B7A4E;--warn:#B45309}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",system-ui,sans-serif;color:var(--text);background:linear-gradient(165deg,#e8eef5 0%,#f7f3f9 45%,#f3f6f9 100%)}
+.hero{background:linear-gradient(120deg,var(--primary),var(--accent));color:#fff;padding:28px 32px 36px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 85% 20%,rgba(255,255,255,.18),transparent 45%);pointer-events:none}
+.brand{font-size:28px;font-weight:700;letter-spacing:.04em;margin:0 0 6px}
+.hero p{margin:0;max-width:52ch;opacity:.92;font-size:15px;line-height:1.45}
+.navpills{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.navpills a{background:rgba(255,255,255,.14);color:#fff;text-decoration:none;padding:8px 14px;border:1px solid rgba(255,255,255,.28);font-size:13px;font-weight:600}
+.navpills a:hover{background:rgba(255,255,255,.28)}
+.wrap{padding:22px 28px 40px;max-width:1180px;margin:0 auto}
+.gruppe{margin:0 0 26px}
+.gruppe h2{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 12px;font-weight:700}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.tile{display:block;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d7dee8;padding:16px 16px 14px;min-height:110px;transition:transform .15s ease,border-color .15s}
+.tile:hover{transform:translateY(-2px);border-color:var(--primary)}
+.tile .lab{font-weight:700;font-size:15px;margin:0 0 6px;color:var(--primary)}
+.tile .sub{font-size:12px;color:var(--muted);margin:0;line-height:1.35}
+.kpirow{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:18px 0 8px}
+.kpi{background:#fff;border-left:4px solid var(--primary);padding:12px 14px}
+.kpi .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.kpi .v{font-size:20px;font-weight:700;margin-top:4px;color:var(--primary)}
+.note{font-size:12px;color:var(--muted);margin-top:10px}
+.footer{margin-top:28px;padding-top:14px;border-top:1px solid #d7dee8;font-size:12px;color:var(--muted)}
+.subhero{background:linear-gradient(120deg,var(--primary),#2a5f8f);color:#fff;padding:20px 28px}
+.subhero h1{margin:0 0 4px;font-size:22px}
+.subhero p{margin:0;opacity:.9;font-size:14px}
+</style></head><body>
+<header class="subhero">
+  <div class="brand" style="font-size:18px;letter-spacing:.08em">TVF ALTWERT</div>
+  <h1>Vorstandsbericht</h1>
+  <p>Gruppe Berichte · App-Route /bericht/vorstand · Excel Berichte.xlsx</p>
+  <div class="navpills">
+    <a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-ALTWERT-GMBH-Dashboard.aspx">Start</a>
+    <a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-Cockpit.aspx">Cockpit</a>
+    <a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-GuV.aspx">GuV</a>
+    <a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-Forecast.aspx">Forecast</a>
+    <a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-Regionen.aspx">Regionen</a>
+    <a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-Projekte.aspx">Projekte</a>
+  </div>
+</header>
+<main class="wrap">
+  <section class="gruppe">
+    <h2>Inhalt</h2>
+    <p>Diese SharePoint-Seite entspricht der App-Seite <b>/bericht/vorstand</b>.</p>
+    <p>Excel-Datei in der Bibliothek <b>Dokumente / TVF-Controlling-Cockpit</b> einbetten (Dateiviewer-Webpart): <b>Berichte.xlsx</b>.</p>
+    
+    
+  </section>
+  <div class="footer">PnP-Skript: scripts/New-TVFDashboardDesign.ps1 · Manuell: HTML in Einbetten-Webpart kopieren</div>
+</main>
+</body></html>

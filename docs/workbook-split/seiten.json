@@ -1,0 +1,426 @@
+{
+  "schema": "tvf-sharepoint-seitenkatalog-v2",
+  "quelle": "Anleitung-Blatt Originalseite → Excel-Blatt aus TVF_Controlling_Cockpit_Import1.xlsx",
+  "bibliothek_ordner": "TVF-Controlling-Cockpit",
+  "startseite": {
+    "seitenname": "TVF-ALTWERT-GMBH-Dashboard",
+    "titel": "TVF ALTWERT – Controlling Cockpit",
+    "originalseite": "Übersicht / Lagebild",
+    "excel": "Cockpit.xlsx",
+    "blatt": "Cockpit",
+    "als_homepage": false,
+    "vorhandene_seite": true,
+    "url": "https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-ALTWERT-GMBH-Dashboard.aspx"
+  },
+  "gruppen_reihenfolge": [
+    "Start",
+    "Eingabe",
+    "Auswertung",
+    "Projekte",
+    "Abschluss",
+    "System"
+  ],
+  "seiten": [
+    {
+      "reihenfolge": 1,
+      "seitenname": "TVF-ALTWERT-GMBH-Dashboard",
+      "titel": "TVF ALTWERT – Controlling Cockpit",
+      "originalseite": "Übersicht / Lagebild",
+      "excel": "Cockpit.xlsx",
+      "blatt": "Cockpit",
+      "gruppe": "Start",
+      "typ": "start",
+      "startseite": true
+    },
+    {
+      "reihenfolge": 10,
+      "seitenname": "TVF-Steuerung",
+      "titel": "Annahmen / Steuerung",
+      "originalseite": "Annahmen",
+      "excel": "Steuerung.xlsx",
+      "blatt": "Steuerung",
+      "gruppe": "Eingabe",
+      "typ": "eingabe"
+    },
+    {
+      "reihenfolge": 11,
+      "seitenname": "TVF-FC-Eingabe",
+      "titel": "Forecast eingeben",
+      "originalseite": "Forecast eingeben",
+      "excel": "FC Eingabe.xlsx",
+      "blatt": "FC Eingabe",
+      "gruppe": "Eingabe",
+      "typ": "eingabe",
+      "hinweis": "Jahr, Monat, Region, Auftrag und die drei Deltas eintragen. Status Wirksam fließt in Forecast."
+    },
+    {
+      "reihenfolge": 12,
+      "seitenname": "TVF-Import",
+      "titel": "Daten importieren",
+      "originalseite": "Import",
+      "excel": "Import.xlsx",
+      "blatt": "Import",
+      "gruppe": "Eingabe",
+      "typ": "eingabe"
+    },
+    {
+      "reihenfolge": 13,
+      "seitenname": "TVF-Import-Monatsdaten",
+      "titel": "Import Monatsdaten",
+      "originalseite": "Import Monatsdaten",
+      "excel": "Import Monatsdaten.xlsx",
+      "blatt": "Import Monatsdaten",
+      "gruppe": "Eingabe",
+      "typ": "eingabe",
+      "hinweis": "Tabelle TVFImportMonate – Monats-GuV-Werte."
+    },
+    {
+      "reihenfolge": 14,
+      "seitenname": "TVF-Import-Stunden",
+      "titel": "Import Stunden",
+      "originalseite": "Import Stunden",
+      "excel": "Import Stunden.xlsx",
+      "blatt": "Import Stunden",
+      "gruppe": "Eingabe",
+      "typ": "eingabe",
+      "hinweis": "Tabelle TVFImportStunden."
+    },
+    {
+      "reihenfolge": 20,
+      "seitenname": "TVF-GuV",
+      "titel": "GuV / EBITDA",
+      "originalseite": "GuV / EBITDA",
+      "excel": "GuV.xlsx",
+      "blatt": "GuV",
+      "gruppe": "Auswertung",
+      "typ": "auswertung"
+    },
+    {
+      "reihenfolge": 21,
+      "seitenname": "TVF-Monatsanalyse",
+      "titel": "Monatssicht / Monatsanalyse",
+      "originalseite": "Monatssicht / Monatsanalyse",
+      "excel": "Monatsanalyse.xlsx",
+      "blatt": "Monatsanalyse",
+      "gruppe": "Auswertung",
+      "typ": "auswertung"
+    },
+    {
+      "reihenfolge": 22,
+      "seitenname": "TVF-Forecast",
+      "titel": "Forecast / Auftrag / Projekt",
+      "originalseite": "Forecast / Auftrag / Projekt",
+      "excel": "Forecast.xlsx",
+      "blatt": "Forecast",
+      "gruppe": "Auswertung",
+      "typ": "auswertung",
+      "hinweis": "Liest wirksame Zeilen aus FC Eingabe."
+    },
+    {
+      "reihenfolge": 23,
+      "seitenname": "TVF-Regionen",
+      "titel": "Regionen",
+      "originalseite": "Regionen",
+      "excel": "Regionen.xlsx",
+      "blatt": "Regionen",
+      "gruppe": "Auswertung",
+      "typ": "auswertung"
+    },
+    {
+      "reihenfolge": 24,
+      "seitenname": "TVF-Berichte",
+      "titel": "Managementbericht / Mein Bericht",
+      "originalseite": "Managementbericht / Mein Bericht",
+      "excel": "Berichte.xlsx",
+      "blatt": "Berichte",
+      "gruppe": "Auswertung",
+      "typ": "auswertung"
+    },
+    {
+      "reihenfolge": 25,
+      "seitenname": "TVF-Bilanz",
+      "titel": "Bilanz",
+      "originalseite": "Bilanz",
+      "excel": "Bilanz.xlsx",
+      "blatt": "Bilanz",
+      "gruppe": "Auswertung",
+      "typ": "auswertung"
+    },
+    {
+      "reihenfolge": 26,
+      "seitenname": "TVF-Liquiditaet",
+      "titel": "Liquiditätsplan",
+      "originalseite": "Liquiditätsplan",
+      "excel": "Liquidität.xlsx",
+      "blatt": "Liquidität",
+      "gruppe": "Auswertung",
+      "typ": "auswertung"
+    },
+    {
+      "reihenfolge": 27,
+      "seitenname": "TVF-Monatsroll",
+      "titel": "Monatsroll",
+      "originalseite": "Monatsroll",
+      "excel": "Monatsroll.xlsx",
+      "blatt": "Monatsroll",
+      "gruppe": "Auswertung",
+      "typ": "auswertung"
+    },
+    {
+      "reihenfolge": 28,
+      "seitenname": "TVF-Mehrjahresplan",
+      "titel": "Plan / Mehrjahresplan",
+      "originalseite": "Plan",
+      "excel": "Mehrjahresplan.xlsx",
+      "blatt": "Mehrjahresplan",
+      "gruppe": "Auswertung",
+      "typ": "auswertung"
+    },
+    {
+      "reihenfolge": 29,
+      "seitenname": "TVF-KLR",
+      "titel": "KLR / Deckungsbeiträge",
+      "originalseite": "KLR / Deckungsbeiträge",
+      "excel": "KLR.xlsx",
+      "blatt": "KLR",
+      "gruppe": "Auswertung",
+      "typ": "auswertung"
+    },
+    {
+      "reihenfolge": 30,
+      "seitenname": "TVF-Stunden",
+      "titel": "Stunden",
+      "originalseite": "Stunden",
+      "excel": "Stunden.xlsx",
+      "blatt": "Stunden",
+      "gruppe": "Auswertung",
+      "typ": "auswertung"
+    },
+    {
+      "reihenfolge": 31,
+      "seitenname": "TVF-Stundensaetze",
+      "titel": "Stundensatzanalyse",
+      "originalseite": "Stundensatzanalyse",
+      "excel": "Stundensätze.xlsx",
+      "blatt": "Stundensätze",
+      "gruppe": "Auswertung",
+      "typ": "auswertung"
+    },
+    {
+      "reihenfolge": 32,
+      "seitenname": "TVF-Kalkulation",
+      "titel": "Kalkulation HK/SK",
+      "originalseite": "Kalkulation HK/SK",
+      "excel": "Kalkulation.xlsx",
+      "blatt": "Kalkulation",
+      "gruppe": "Auswertung",
+      "typ": "auswertung"
+    },
+    {
+      "reihenfolge": 33,
+      "seitenname": "TVF-Vertrieb",
+      "titel": "Sales / Vertrieb",
+      "originalseite": "Sales",
+      "excel": "Vertrieb.xlsx",
+      "blatt": "Vertrieb",
+      "gruppe": "Auswertung",
+      "typ": "auswertung"
+    },
+    {
+      "reihenfolge": 34,
+      "seitenname": "TVF-Bereinigungen",
+      "titel": "Bereinigung / Bewertung",
+      "originalseite": "Bereinigung / Bewertung",
+      "excel": "Bereinigungen.xlsx",
+      "blatt": "Bereinigungen",
+      "gruppe": "Auswertung",
+      "typ": "auswertung"
+    },
+    {
+      "reihenfolge": 35,
+      "seitenname": "TVF-Pruefungen",
+      "titel": "Abnahme / Golden Tests",
+      "originalseite": "Abnahme / Golden Tests",
+      "excel": "Prüfungen.xlsx",
+      "blatt": "Prüfungen",
+      "gruppe": "Auswertung",
+      "typ": "auswertung"
+    },
+    {
+      "reihenfolge": 40,
+      "seitenname": "TVF-Projekte",
+      "titel": "Projekte und Unteraufträge",
+      "originalseite": "Unteraufträge",
+      "excel": "Projekte.xlsx",
+      "blatt": "Projekte",
+      "gruppe": "Projekte",
+      "typ": "projekte"
+    },
+    {
+      "reihenfolge": 41,
+      "seitenname": "TVF-Projektakte",
+      "titel": "Projektakte / Statusbericht",
+      "originalseite": "Projektsuche / Projektakte / Statusbericht",
+      "excel": "Projektakte.xlsx",
+      "blatt": "Projektakte",
+      "gruppe": "Projekte",
+      "typ": "projekte",
+      "hinweis": "Projekt auf Steuerung wählen."
+    },
+    {
+      "reihenfolge": 42,
+      "seitenname": "TVF-Kostenverfolgung",
+      "titel": "Kostenverfolgung / Projektkosten",
+      "originalseite": "Kostenverfolgung / Projektkosten",
+      "excel": "Kostenverfolgung.xlsx",
+      "blatt": "Kostenverfolgung",
+      "gruppe": "Projekte",
+      "typ": "projekte"
+    },
+    {
+      "reihenfolge": 43,
+      "seitenname": "TVF-Bestaende",
+      "titel": "Bestände",
+      "originalseite": "Bestände",
+      "excel": "Bestände.xlsx",
+      "blatt": "Bestände",
+      "gruppe": "Projekte",
+      "typ": "projekte"
+    },
+    {
+      "reihenfolge": 44,
+      "seitenname": "TVF-Risiken",
+      "titel": "Risiken",
+      "originalseite": "Risiken",
+      "excel": "Risiken.xlsx",
+      "blatt": "Risiken",
+      "gruppe": "Projekte",
+      "typ": "projekte"
+    },
+    {
+      "reihenfolge": 45,
+      "seitenname": "TVF-Massnahmen",
+      "titel": "Maßnahmen",
+      "originalseite": "Maßnahmen",
+      "excel": "Maßnahmen.xlsx",
+      "blatt": "Maßnahmen",
+      "gruppe": "Projekte",
+      "typ": "projekte"
+    },
+    {
+      "reihenfolge": 46,
+      "seitenname": "TVF-Fremdleistungen",
+      "titel": "Fremdleistungen",
+      "originalseite": "Fremdleistungen",
+      "excel": "Fremdleistungen.xlsx",
+      "blatt": "Fremdleistungen",
+      "gruppe": "Projekte",
+      "typ": "projekte"
+    },
+    {
+      "reihenfolge": 50,
+      "seitenname": "TVF-Abgrenzungen",
+      "titel": "Abgrenzungen",
+      "originalseite": "Abgrenzungen",
+      "excel": "Abgrenzungen.xlsx",
+      "blatt": "Abgrenzungen",
+      "gruppe": "Abschluss",
+      "typ": "abschluss"
+    },
+    {
+      "reihenfolge": 51,
+      "seitenname": "TVF-Skonto",
+      "titel": "Skonto",
+      "originalseite": "Skonto",
+      "excel": "Skonto.xlsx",
+      "blatt": "Skonto",
+      "gruppe": "Abschluss",
+      "typ": "abschluss"
+    },
+    {
+      "reihenfolge": 52,
+      "seitenname": "TVF-Rueckstellungen",
+      "titel": "Rückstellungsspiegel",
+      "originalseite": "Rückstellungsspiegel",
+      "excel": "Rückstellungen.xlsx",
+      "blatt": "Rückstellungen",
+      "gruppe": "Abschluss",
+      "typ": "abschluss"
+    },
+    {
+      "reihenfolge": 53,
+      "seitenname": "TVF-Umlagen",
+      "titel": "Umlagen",
+      "originalseite": "Umlagen",
+      "excel": "Umlagen.xlsx",
+      "blatt": "Umlagen",
+      "gruppe": "Abschluss",
+      "typ": "abschluss"
+    },
+    {
+      "reihenfolge": 54,
+      "seitenname": "TVF-Monatsabschluss",
+      "titel": "Datenstatus / Freigaben",
+      "originalseite": "Datenstatus / Freigaben",
+      "excel": "Monatsabschluss.xlsx",
+      "blatt": "Monatsabschluss",
+      "gruppe": "Abschluss",
+      "typ": "abschluss"
+    },
+    {
+      "reihenfolge": 55,
+      "seitenname": "TVF-Jahresabschluss",
+      "titel": "Jahresabschluss",
+      "originalseite": "Jahresabschluss",
+      "excel": "Jahresabschluss.xlsx",
+      "blatt": "Jahresabschluss",
+      "gruppe": "Abschluss",
+      "typ": "abschluss"
+    },
+    {
+      "reihenfolge": 60,
+      "seitenname": "TVF-System",
+      "titel": "Import / Benutzer / Mailversand",
+      "originalseite": "Import / Benutzer / Mailversand",
+      "excel": "System.xlsx",
+      "blatt": "System",
+      "gruppe": "System",
+      "typ": "system"
+    },
+    {
+      "reihenfolge": 61,
+      "seitenname": "TVF-Anleitung",
+      "titel": "Bedienung und Funktionsumfang",
+      "originalseite": "Anleitung",
+      "excel": "Anleitung.xlsx",
+      "blatt": "Anleitung",
+      "gruppe": "System",
+      "typ": "system"
+    },
+    {
+      "reihenfolge": 62,
+      "seitenname": "TVF-Referenzen",
+      "titel": "Rechenwerk / Wirkung",
+      "originalseite": "Rechenwerk / Wirkung",
+      "excel": "Referenzen.xlsx",
+      "blatt": "Referenzen",
+      "gruppe": "System",
+      "typ": "system"
+    }
+  ],
+  "quelldaten_ohne_eigene_seite": [
+    "D Finanzen.xlsx",
+    "D Projekte.xlsx",
+    "D Risiken.xlsx",
+    "D Liquidität.xlsx",
+    "D KLR.xlsx",
+    "Daten.xlsx",
+    "Buchungen.xlsx",
+    "Import Vorschau.xlsx",
+    "Import Protokoll.xlsx",
+    "Import Sicherung.xlsx"
+  ],
+  "hinweis": "Auswertung = Kennzahlen/Reports. Eingabe = Forecast-Deltas, Steuerung, CSV-Import. Projekte = Projektakte, Kosten, Risiken, Maßnahmen. Quelldaten-Excel werden mit hochgeladen und bleiben über Formeln verknüpft.",
+  "site_url": "https://tvfaltwert.sharepoint.com/sites/03-Finance",
+  "entra_client_id": "409b0310-a1b1-4684-9a92-f79ab67b9c05"
+}

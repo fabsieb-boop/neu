@@ -1,0 +1,949 @@
+{
+  "buchungen_anzahl": 10509,
+  "projekte_anzahl": 153,
+  "kostenarten_anzahl": 108,
+  "perioden": [
+    {
+      "geschaeftsjahr": null,
+      "periode": null,
+      "summe_wert": -361720.87,
+      "anzahl": 1
+    },
+    {
+      "geschaeftsjahr": 2026,
+      "periode": 1,
+      "summe_wert": 3400.72,
+      "anzahl": 1114
+    },
+    {
+      "geschaeftsjahr": 2026,
+      "periode": 2,
+      "summe_wert": -102745.45,
+      "anzahl": 1452
+    },
+    {
+      "geschaeftsjahr": 2026,
+      "periode": 3,
+      "summe_wert": -26736.68,
+      "anzahl": 1667
+    },
+    {
+      "geschaeftsjahr": 2026,
+      "periode": 4,
+      "summe_wert": -121673.39,
+      "anzahl": 1618
+    },
+    {
+      "geschaeftsjahr": 2026,
+      "periode": 5,
+      "summe_wert": 60196.64,
+      "anzahl": 1481
+    },
+    {
+      "geschaeftsjahr": 2026,
+      "periode": 6,
+      "summe_wert": -40137.29,
+      "anzahl": 1607
+    },
+    {
+      "geschaeftsjahr": 2026,
+      "periode": 7,
+      "summe_wert": -134025.42,
+      "anzahl": 1569
+    }
+  ],
+  "top_projekte_nach_abs_summe": [
+    {
+      "auftrag": "W4102154411",
+      "summe_wert": -471490.44,
+      "anzahl": 599
+    },
+    {
+      "auftrag": "",
+      "summe_wert": -361720.87,
+      "anzahl": 1
+    },
+    {
+      "auftrag": "P4102307433",
+      "summe_wert": -340000.0,
+      "anzahl": 381
+    },
+    {
+      "auftrag": "W4102504222",
+      "summe_wert": 330945.91,
+      "anzahl": 448
+    },
+    {
+      "auftrag": "W4102604411",
+      "summe_wert": -311659.58,
+      "anzahl": 388
+    },
+    {
+      "auftrag": "P4102157453",
+      "summe_wert": 310103.49,
+      "anzahl": 321
+    },
+    {
+      "auftrag": "W4102304411",
+      "summe_wert": -239877.66,
+      "anzahl": 459
+    },
+    {
+      "auftrag": "W4102504951",
+      "summe_wert": 101941.74,
+      "anzahl": 28
+    },
+    {
+      "auftrag": "P4102608263",
+      "summe_wert": -69639.61,
+      "anzahl": 296
+    },
+    {
+      "auftrag": "P4102307444",
+      "summe_wert": -66000.0,
+      "anzahl": 103
+    },
+    {
+      "auftrag": "P4102658225",
+      "summe_wert": 63000.0,
+      "anzahl": 9
+    },
+    {
+      "auftrag": "W4102304611",
+      "summe_wert": 60077.82,
+      "anzahl": 212
+    },
+    {
+      "auftrag": "W4102504262",
+      "summe_wert": 56472.63,
+      "anzahl": 119
+    },
+    {
+      "auftrag": "W4102654411",
+      "summe_wert": -50206.3,
+      "anzahl": 232
+    },
+    {
+      "auftrag": "W4102504104",
+      "summe_wert": 44726.0,
+      "anzahl": 10
+    },
+    {
+      "auftrag": "P4102307449",
+      "summe_wert": -20000.0,
+      "anzahl": 13
+    },
+    {
+      "auftrag": "P4102307435",
+      "summe_wert": 18000.0,
+      "anzahl": 101
+    },
+    {
+      "auftrag": "W4102604611",
+      "summe_wert": 15961.25,
+      "anzahl": 138
+    },
+    {
+      "auftrag": "W4102654611",
+      "summe_wert": 15033.67,
+      "anzahl": 127
+    },
+    {
+      "auftrag": "W4102154611",
+      "summe_wert": 13093.46,
+      "anzahl": 155
+    },
+    {
+      "auftrag": "W4102604941",
+      "summe_wert": 12746.6,
+      "anzahl": 47
+    },
+    {
+      "auftrag": "W4102654945",
+      "summe_wert": 11745.91,
+      "anzahl": 52
+    },
+    {
+      "auftrag": "W4102504973",
+      "summe_wert": 11063.62,
+      "anzahl": 52
+    },
+    {
+      "auftrag": "W4102154967",
+      "summe_wert": 10366.26,
+      "anzahl": 38
+    },
+    {
+      "auftrag": "W4102504974",
+      "summe_wert": 9558.19,
+      "anzahl": 41
+    }
+  ],
+  "projekte_liste": [
+    {
+      "projekt_nr": "P4102157208",
+      "projektname": "Waggonverschrottung",
+      "projektart": "RECYCLING"
+    },
+    {
+      "projekt_nr": "P4102157411",
+      "projektname": "ARGE RB Chemiepark Krefeld",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157414",
+      "projektname": "Krandemontage",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157420",
+      "projektname": "ARGE RB GWA+SGA 4",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157429",
+      "projektname": "Covestro - Rückbau LEV O13",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102157431",
+      "projektname": "RB drei Sandfilter",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157436",
+      "projektname": "Sanierung Kompensatoren",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102157439",
+      "projektname": "RB Sperrmüllschereefeld",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157440",
+      "projektname": "tkse RB 2025",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157442",
+      "projektname": "RB Leitstand Flämmaschine",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157443",
+      "projektname": "Medice Arzneim. RB 2 Tanks",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157445",
+      "projektname": "RB 2 Stahlwände Lüra Halle",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157447",
+      "projektname": "Hkm Demontage DN 500",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157449",
+      "projektname": "RB Kessel KW Lausward",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157450",
+      "projektname": "Verschr. Brennkammer BA-301 Oxygen",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157451",
+      "projektname": "Sanierung Campus Golzheim",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102157452",
+      "projektname": "RB Cont.anlage TKSE Gelände",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157453",
+      "projektname": "Wbw 4 Hallenrückbau",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102157455",
+      "projektname": "Currenta San.+RB G22 Los 1+2 Anm.fehlt",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157456",
+      "projektname": "RB und Entsorgung Fundament Schleifbank",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157457",
+      "projektname": "tkse RB 2026",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157458",
+      "projektname": "Kleinaufträge Region West 2026",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157459",
+      "projektname": "RB alte Beizanlage",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157461",
+      "projektname": "Brücke D 1 Seitenteile",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102157462",
+      "projektname": "Waggonverschrottung 2026",
+      "projektart": "RECYCLING"
+    },
+    {
+      "projekt_nr": "P4102157463",
+      "projektname": "RB Maschinenhaus Bl. B+C",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157464",
+      "projektname": "Asbest Schadstoffsanierung C 601",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102157465",
+      "projektname": "Reinigungsarbeiten Block B",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157466",
+      "projektname": "Verschrottung Anlagenteile",
+      "projektart": "RECYCLING"
+    },
+    {
+      "projekt_nr": "P4102157467",
+      "projektname": "Plakoma - Dem. Roheisenfähren",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157468",
+      "projektname": "Verschr. Kondensattank Kokerei Schwelger",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102157469",
+      "projektname": "Anmeldung fehlt",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307304",
+      "projektname": "HKW Süd",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307306",
+      "projektname": "RB Halle Karlsruhe",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307411",
+      "projektname": "BASF G 521",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307416",
+      "projektname": "BASF O 405 Ammoniak",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307422",
+      "projektname": "BASF M 950",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307423",
+      "projektname": "BASF F 712",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307424",
+      "projektname": "BASF P 703",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307426",
+      "projektname": "BASF Z 300",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307427",
+      "projektname": "BASF N 720",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307428",
+      "projektname": "BASF O 405",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307429",
+      "projektname": "BASF C 509",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307430",
+      "projektname": "BASF E 701",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307431",
+      "projektname": "HNVG Bauph. II Gaswerk",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102307432",
+      "projektname": "HNVG - Bauph. III Gaswerk",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102307433",
+      "projektname": "BASF U 505 Blauer Block",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307434",
+      "projektname": "BASF S 304",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307435",
+      "projektname": "ENBW - KW Walheim",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307436",
+      "projektname": "BASF O 914 - O 915",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307437",
+      "projektname": "ENBW - KW Walheim, Permutit-Anlage",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307438",
+      "projektname": "Netze BW- UW Bruchsal",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307439",
+      "projektname": "BASF U 405 Teil 1",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307440",
+      "projektname": "BASF  L 605",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307441",
+      "projektname": "BASF  E 301",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307442",
+      "projektname": "Leingarten Schwimmhalle 1",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307443",
+      "projektname": "Leingarten Schwimmhalle 2",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307444",
+      "projektname": "BASF  N 416-O 405",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307447",
+      "projektname": "BASF C 317",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307448",
+      "projektname": "Kopf SynGas - Klärschlammvergasung",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102307449",
+      "projektname": "BASF S 607",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102309044",
+      "projektname": "RB BASF 2022",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102309045",
+      "projektname": "BASF Sonstige Kleinmaßnahmen",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102309046",
+      "projektname": "Sonstige Kleinmaßnahmen",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102602023",
+      "projektname": "nachlaufende Kosten",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102604612",
+      "projektname": "Recyclingplatz Boxberg",
+      "projektart": "RECYCLING"
+    },
+    {
+      "projekt_nr": "P4102607989",
+      "projektname": "Kleinaufträge",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102608224",
+      "projektname": "RB Turbinen Hirschfelde",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102608226",
+      "projektname": "RB Kohlebunker Lübbenau",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102608232",
+      "projektname": "Seilbaggerarbeiten Platz der Republik",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102608246",
+      "projektname": "RB Kohlebunker/Brücke Lübbenau",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102608258",
+      "projektname": "BTU Dachsanierung Halle 3b",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102608260",
+      "projektname": "RB Floorflexplatten Berlin",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102608263",
+      "projektname": "RB Föderbrücke AFB 60",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102608264",
+      "projektname": "Mastrückbau Mainflingen",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102608265",
+      "projektname": "RB Gebäude Grüneberg",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102608266",
+      "projektname": "RB Kurmark- Kaserne Storkow",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102608267",
+      "projektname": "Sprengarbeiten FLJS",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102608268",
+      "projektname": "Gutenbergstrasse Potsdam",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102608270",
+      "projektname": "Baggergestellung LH 956 Jänschwalde",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102608271",
+      "projektname": "Seilbagger Tagebau Jänschwalde",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102608275",
+      "projektname": "An der Spreewaldbahn lübben",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102652023",
+      "projektname": "Nachlaufende Kosten",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102657982",
+      "projektname": "Kleinaufträge",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102658225",
+      "projektname": "B1 Brandenburg Potsdamer Straße",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102658228",
+      "projektname": "ENB EÜ Wollankstraße",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102658229",
+      "projektname": "Markgrafenbrücke Berlin",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102658235",
+      "projektname": "ENB Neue Fahlenbergbrücke",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102658250",
+      "projektname": "Parkallee Velten, Brücke Stichkanal",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102658254",
+      "projektname": "EÜ Langendreerstraße Bochum",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102658256",
+      "projektname": "Schleuse Wolfswinkel",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102658257",
+      "projektname": "Brücke An der Wuhlheide - Notunterstützu",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102658259",
+      "projektname": "ENB Eisenbahnbrücke Güsen",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "P4102658269",
+      "projektname": "B102 OD Jüterbog Alte Nuthe",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102658272",
+      "projektname": "Beräumung Herzberger Straße",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "P4102658276",
+      "projektname": "EÜ Braunsbedra",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102154411",
+      "projektname": "Vetrieb Region West",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102154501",
+      "projektname": "Gehalt BL Region West",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102154611",
+      "projektname": "Werkstatt Region West",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102154953",
+      "projektname": "CB-AA 140 Hr. Kraft",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102154961",
+      "projektname": "DO-AW 251 Ludwigs",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102154964",
+      "projektname": "PKW Schalk CB - TV 93",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102154966",
+      "projektname": "PKW Kilinc",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102154967",
+      "projektname": "CB - VT 585  Hr. Büskens",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102154968",
+      "projektname": "PKW Hr. Lanzar Tore",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102157414",
+      "projektname": "Krandemontage",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102304411",
+      "projektname": "Vetrieb Region Sued-West",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102304412",
+      "projektname": "Fremdfirmenstuetzupunkt",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102304611",
+      "projektname": "Lager Region Sued-West",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102304943",
+      "projektname": "CB - TV 90 Hr. Flamme",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102304946",
+      "projektname": "CB-AA 552 Sesjunin",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102304947",
+      "projektname": "CB-AB 644 Passat Herr Yavuz",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102307366",
+      "projektname": "UW Niederbühl",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102307411",
+      "projektname": "BASF - G 521",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504101",
+      "projektname": "Kaufm. Geschäftsfüh.",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504102",
+      "projektname": "Techn. Geschäftsfüh.",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504104",
+      "projektname": "Dienstleistungsverrechn.",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504106",
+      "projektname": "Geschäftsfüh.",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504107",
+      "projektname": "Geschäftsfüh. Hr Kay",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504108",
+      "projektname": "Geschäftsführer Hr. Kenski",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504109",
+      "projektname": "Geschäftsführerin Frau Langosch",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504211",
+      "projektname": "Rechnungsw./Finanzen",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504221",
+      "projektname": "Übriges Personal",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504222",
+      "projektname": "Sonstige Sachkosten",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504262",
+      "projektname": "Zentrale EDV",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504941",
+      "projektname": "Betriebsrat",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504951",
+      "projektname": "Steuern",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504967",
+      "projektname": "CB-VT 476 Krull",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504971",
+      "projektname": "CB-CR 107 Werban",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504973",
+      "projektname": "CB- TV 300E Hr. Kemper Mercedes",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504974",
+      "projektname": "CB-TV 55E Volvo Herr Kay",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504975",
+      "projektname": "PKW Frau Noack",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102504976",
+      "projektname": "CB-TV 104 Skoda Superb - Herr Kenski",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102602023",
+      "projektname": "nachlaufende Kosten",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102604411",
+      "projektname": "Vertrieb Region Ost",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102604414",
+      "projektname": "Halle Boxberg",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102604611",
+      "projektname": "Lager Regon Sued",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102604612",
+      "projektname": "Recyclingplatz Boxberg",
+      "projektart": "RECYCLING"
+    },
+    {
+      "projekt_nr": "W4102604938",
+      "projektname": "CB-AA 501 Spindler",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102604940",
+      "projektname": "CB-VT 475 Heilmann",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102604941",
+      "projektname": "CB-TV 22E Tayron Hr Lorenz",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102604949",
+      "projektname": "CB - VT 686 Passat Fr. Kolber",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102604950",
+      "projektname": "CB-TV 97 Hr. Mühlberg",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102604951",
+      "projektname": "PKW Herr Tymczy",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102607081",
+      "projektname": "Abbr.Lager  radioakt. Abfälle  Los 3/EWN",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102608246",
+      "projektname": "RB Kohlebunker/Brücke Lübbenau",
+      "projektart": "BAU"
+    },
+    {
+      "projekt_nr": "W4102651216",
+      "projektname": "Bagger CAT 326 07 FLN",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102652709",
+      "projektname": "CB-TV 96 Remault Kangoo",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102654411",
+      "projektname": "VVK Berlin",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102654611",
+      "projektname": "Lager Region Berlin",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102654945",
+      "projektname": "CB- TV 300E Hr. Kemper Mercedes",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102654946",
+      "projektname": "CB-TV 65 Hr Braun",
+      "projektart": "SONSTIGES"
+    },
+    {
+      "projekt_nr": "W4102654947",
+      "projektname": "CB-TV 200 Hr. Adil",
+      "projektart": "SONSTIGES"
+    }
+  ]
+}
