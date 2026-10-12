@@ -1,0 +1,882 @@
+{
+  "schema": "tvf-dashboard-design-v2-app",
+  "quelle": "app.zip Shell.tsx.bak-ersetzt + db.zip database.sql Zahlenrettung",
+  "siteUrl": "https://tvfaltwert.sharepoint.com/sites/03-Finance",
+  "bibliothek": "Dokumente",
+  "excelOrdner": "TVF-Controlling-Cockpit",
+  "zahlenOrdner": "TVF-Controlling-Cockpit/zahlen",
+  "hubExcel": "Cockpit-Hub-SharePoint.xlsx",
+  "hubExcelZielname": "Cockpit.xlsx",
+  "zahlenExcel": "TVF_Zahlen_Export.xlsx",
+  "startseite": {
+    "seitenname": "TVF-ALTWERT-GMBH-Dashboard",
+    "titel": "TVF ALTWERT – Controlling Cockpit",
+    "vorhanden": true,
+    "url": "https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-ALTWERT-GMBH-Dashboard.aspx"
+  },
+  "farben": {
+    "primary": "#1F4E79",
+    "accent": "#5B2C6F",
+    "surface": "#F3F6F9",
+    "text": "#1A1A1A",
+    "muted": "#5F6B7A",
+    "kpiPositive": "#1B7A4E",
+    "kpiWarn": "#B45309"
+  },
+  "kpiAusDb": {
+    "buchungen": 10509,
+    "projekte": 153,
+    "kostenarten": 108,
+    "perioden": [
+      {
+        "geschaeftsjahr": null,
+        "periode": null,
+        "summe_wert": -361720.87,
+        "anzahl": 1
+      },
+      {
+        "geschaeftsjahr": 2026,
+        "periode": 1,
+        "summe_wert": 3400.72,
+        "anzahl": 1114
+      },
+      {
+        "geschaeftsjahr": 2026,
+        "periode": 2,
+        "summe_wert": -102745.45,
+        "anzahl": 1452
+      },
+      {
+        "geschaeftsjahr": 2026,
+        "periode": 3,
+        "summe_wert": -26736.68,
+        "anzahl": 1667
+      },
+      {
+        "geschaeftsjahr": 2026,
+        "periode": 4,
+        "summe_wert": -121673.39,
+        "anzahl": 1618
+      },
+      {
+        "geschaeftsjahr": 2026,
+        "periode": 5,
+        "summe_wert": 60196.64,
+        "anzahl": 1481
+      },
+      {
+        "geschaeftsjahr": 2026,
+        "periode": 6,
+        "summe_wert": -40137.29,
+        "anzahl": 1607
+      },
+      {
+        "geschaeftsjahr": 2026,
+        "periode": 7,
+        "summe_wert": -134025.42,
+        "anzahl": 1569
+      }
+    ]
+  },
+  "navigation": {
+    "schnell": [
+      {
+        "key": "dashboard",
+        "label": "Controlling-Dashboard 2026 / Cockpit",
+        "app": "/dash",
+        "seite": "TVF-ALTWERT-GMBH-Dashboard",
+        "excel": "Cockpit.xlsx",
+        "hubBlatt": "Cockpit",
+        "layout": "start"
+      },
+      {
+        "key": "regionen",
+        "label": "Regionen",
+        "app": "/regionen",
+        "seite": "TVF-Regionen",
+        "excel": "Regionen.xlsx",
+        "layout": "regionen-hub"
+      }
+    ],
+    "gruppen": [
+      {
+        "gruppe": "Ergebnisrechnung",
+        "items": [
+          {
+            "key": "db",
+            "label": "DB1 – DB4",
+            "app": "/db",
+            "seite": "TVF-DB-Staffel",
+            "excel": "KLR.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "guv",
+            "label": "GuV-Staffel",
+            "app": "/guv",
+            "seite": "TVF-GuV",
+            "excel": "Cockpit.xlsx",
+            "hubBlatt": "GuV",
+            "layout": "excel"
+          },
+          {
+            "key": "sap-guv",
+            "label": "GuV wie in SAP",
+            "app": "/guv/sap",
+            "seite": "TVF-GuV-SAP",
+            "excel": "GuV.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "klr",
+            "label": "Kostenarten",
+            "app": "/klr",
+            "seite": "TVF-KLR",
+            "excel": "KLR.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "projekte",
+            "label": "Projekte",
+            "app": "/projekte",
+            "seite": "TVF-Projekte",
+            "excel": "Projekte.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "auftragsauswertung",
+            "label": "Auftragsauswertung",
+            "app": "/projekte/auswertung",
+            "seite": "TVF-Auftragsauswertung",
+            "excel": "Projektakte.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "kv",
+            "label": "Kostenverfolgung",
+            "app": "/kv",
+            "seite": "TVF-Kostenverfolgung",
+            "excel": "Kostenverfolgung.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "bestand",
+            "label": "Bestandsprüfung",
+            "app": "/bestand",
+            "seite": "TVF-Bestand",
+            "excel": "Bestände.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "buchungen",
+            "label": "Belegjournal",
+            "app": "/buchungen",
+            "seite": "TVF-Buchungen",
+            "excel": "Buchungen.xlsx",
+            "layout": "excel",
+            "zahlen": "buchungen_agg_auftrag_periode.csv"
+          },
+          {
+            "key": "mitarbeiter",
+            "label": "Mitarbeiter",
+            "app": "/mitarbeiter",
+            "seite": "TVF-Mitarbeiter",
+            "excel": "Stunden.xlsx",
+            "layout": "excel"
+          }
+        ]
+      },
+      {
+        "gruppe": "Planung",
+        "items": [
+          {
+            "key": "pipeline",
+            "label": "Angebote",
+            "app": "/pipeline",
+            "seite": "TVF-Pipeline",
+            "excel": "Vertrieb.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "forecast",
+            "label": "Forecast",
+            "app": "/forecast",
+            "seite": "TVF-Forecast",
+            "excel": "Cockpit.xlsx",
+            "hubBlatt": "Forecast",
+            "layout": "excel"
+          },
+          {
+            "key": "forecastplanung",
+            "label": "Forecast-Planung",
+            "app": "/dash#forecasteingabe",
+            "seite": "TVF-FC-Eingabe",
+            "excel": "Cockpit.xlsx",
+            "hubBlatt": "FC Eingabe",
+            "layout": "excel"
+          },
+          {
+            "key": "planung",
+            "label": "Mehrjahresplanung",
+            "app": "/planung/konten",
+            "seite": "TVF-Mehrjahresplan",
+            "excel": "Mehrjahresplan.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "liquiditaet",
+            "label": "Liquidität",
+            "app": "/liquiditaet",
+            "seite": "TVF-Liquiditaet",
+            "excel": "Liquidität.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "risiken",
+            "label": "Risiken",
+            "app": "/risiken",
+            "seite": "TVF-Risiken",
+            "excel": "Risiken.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "nachtraege",
+            "label": "Nachträge",
+            "app": "/nachtraege",
+            "seite": "TVF-Nachtraege",
+            "excel": "Maßnahmen.xlsx",
+            "layout": "excel"
+          }
+        ]
+      },
+      {
+        "gruppe": "Berichte",
+        "items": [
+          {
+            "key": "bericht",
+            "label": "Berichtsgenerator",
+            "app": "/bericht",
+            "seite": "TVF-Berichte",
+            "excel": "Berichte.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "vorstand",
+            "label": "Vorstandsbericht",
+            "app": "/bericht/vorstand",
+            "seite": "TVF-Vorstand",
+            "excel": "Berichte.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "folienwerte",
+            "label": "Folienwerte",
+            "app": "/folienwerte",
+            "seite": "TVF-Folienwerte",
+            "excel": "D Finanzen.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "baukasten",
+            "label": "Berichtsbaukasten",
+            "app": "/bericht/baukasten",
+            "seite": "TVF-Baukasten",
+            "excel": "Berichte.xlsx",
+            "layout": "hub"
+          }
+        ]
+      },
+      {
+        "gruppe": "Regionen",
+        "items": [
+          {
+            "key": "region-west",
+            "label": "Region West",
+            "app": "/regionen",
+            "seite": "TVF-Region-West",
+            "excel": "Regionen.xlsx",
+            "layout": "region",
+            "region": "West"
+          },
+          {
+            "key": "region-suedwest",
+            "label": "Region Süd-West",
+            "app": "/regionen",
+            "seite": "TVF-Region-Sued-West",
+            "excel": "Regionen.xlsx",
+            "layout": "region",
+            "region": "Süd-West"
+          },
+          {
+            "key": "region-ost",
+            "label": "Region Ost",
+            "app": "/regionen",
+            "seite": "TVF-Region-Ost",
+            "excel": "Regionen.xlsx",
+            "layout": "region",
+            "region": "Ost"
+          },
+          {
+            "key": "region-berlin",
+            "label": "Region Berlin",
+            "app": "/regionen",
+            "seite": "TVF-Region-Berlin",
+            "excel": "Regionen.xlsx",
+            "layout": "region",
+            "region": "Berlin"
+          },
+          {
+            "key": "region-verwaltung",
+            "label": "Verwaltung",
+            "app": "/regionen",
+            "seite": "TVF-Region-Verwaltung",
+            "excel": "Regionen.xlsx",
+            "layout": "region",
+            "region": "Verwaltung"
+          }
+        ]
+      },
+      {
+        "gruppe": "Grundlagen",
+        "items": [
+          {
+            "key": "kostenarten",
+            "label": "Kostenartenstamm",
+            "app": "/kostenarten",
+            "seite": "TVF-Kostenartenstamm",
+            "excel": "KLR.xlsx",
+            "layout": "excel",
+            "zahlen": "kostenarten.csv"
+          },
+          {
+            "key": "abstimmung",
+            "label": "Abstimmung",
+            "app": "/abstimmung",
+            "seite": "TVF-Abstimmung",
+            "excel": "Prüfungen.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "methodik",
+            "label": "Rechenwege",
+            "app": "/methodik",
+            "seite": "TVF-Methodik",
+            "excel": null,
+            "layout": "html"
+          },
+          {
+            "key": "grundsaetze",
+            "label": "Grundsätze",
+            "app": "/grundsaetze",
+            "seite": "TVF-Grundsaetze",
+            "excel": null,
+            "layout": "html"
+          },
+          {
+            "key": "handbuch",
+            "label": "Handbuch",
+            "app": "/handbuch",
+            "seite": "TVF-Handbuch",
+            "excel": "Anleitung.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "steuerung",
+            "label": "Steuerung / Annahmen",
+            "app": "/dash",
+            "seite": "TVF-Steuerung",
+            "excel": "Cockpit.xlsx",
+            "hubBlatt": "Steuerung",
+            "layout": "excel"
+          }
+        ]
+      },
+      {
+        "gruppe": "System",
+        "items": [
+          {
+            "key": "import",
+            "label": "Datenimport",
+            "app": "/dash#importmanager",
+            "seite": "TVF-Import",
+            "excel": "Import.xlsx",
+            "layout": "excel"
+          },
+          {
+            "key": "import-monat",
+            "label": "Import Monatsdaten",
+            "app": "/import",
+            "seite": "TVF-Import-Monatsdaten",
+            "excel": "Cockpit.xlsx",
+            "hubBlatt": "Import Monatsdaten",
+            "layout": "excel"
+          },
+          {
+            "key": "zahlen",
+            "label": "Zahlen-Export (gerettet)",
+            "app": null,
+            "seite": "TVF-Zahlen",
+            "excel": "TVF_Zahlen_Export.xlsx",
+            "layout": "excel",
+            "ordner": "zahlen"
+          },
+          {
+            "key": "einstellungen",
+            "label": "Einstellungen",
+            "app": "/einstellungen",
+            "seite": "TVF-Einstellungen",
+            "excel": "System.xlsx",
+            "layout": "excel"
+          }
+        ]
+      }
+    ]
+  },
+  "seitenbaum": [
+    {
+      "gruppe": "Start",
+      "seiten": [
+        {
+          "seitenname": "TVF-ALTWERT-GMBH-Dashboard",
+          "titel": "TVF ALTWERT – Controlling Cockpit",
+          "layout": "start",
+          "excel": "Cockpit.xlsx",
+          "beschreibung": "Lagebild aus App-Cockpit; Kacheln zu allen Bereichen."
+        },
+        {
+          "seitenname": "TVF-Cockpit",
+          "titel": "Cockpit",
+          "layout": "excel",
+          "excel": "Cockpit.xlsx",
+          "hubBlatt": "Cockpit"
+        }
+      ]
+    },
+    {
+      "gruppe": "Ergebnisrechnung",
+      "seiten": [
+        {
+          "seitenname": "TVF-DB-Staffel",
+          "titel": "DB1 – DB4",
+          "layout": "excel",
+          "excel": "KLR.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/db",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /db."
+        },
+        {
+          "seitenname": "TVF-GuV",
+          "titel": "GuV-Staffel",
+          "layout": "excel",
+          "excel": "Cockpit.xlsx",
+          "hubBlatt": "GuV",
+          "region": null,
+          "appRoute": "/guv",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /guv."
+        },
+        {
+          "seitenname": "TVF-GuV-SAP",
+          "titel": "GuV wie in SAP",
+          "layout": "excel",
+          "excel": "GuV.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/guv/sap",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /guv/sap."
+        },
+        {
+          "seitenname": "TVF-KLR",
+          "titel": "Kostenarten",
+          "layout": "excel",
+          "excel": "KLR.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/klr",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /klr."
+        },
+        {
+          "seitenname": "TVF-Projekte",
+          "titel": "Projekte",
+          "layout": "excel",
+          "excel": "Projekte.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/projekte",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /projekte."
+        },
+        {
+          "seitenname": "TVF-Auftragsauswertung",
+          "titel": "Auftragsauswertung",
+          "layout": "excel",
+          "excel": "Projektakte.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/projekte/auswertung",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /projekte/auswertung."
+        },
+        {
+          "seitenname": "TVF-Kostenverfolgung",
+          "titel": "Kostenverfolgung",
+          "layout": "excel",
+          "excel": "Kostenverfolgung.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/kv",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /kv."
+        },
+        {
+          "seitenname": "TVF-Bestand",
+          "titel": "Bestandsprüfung",
+          "layout": "excel",
+          "excel": "Bestände.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/bestand",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /bestand."
+        },
+        {
+          "seitenname": "TVF-Buchungen",
+          "titel": "Belegjournal",
+          "layout": "excel",
+          "excel": "Buchungen.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/buchungen",
+          "zahlen": "buchungen_agg_auftrag_periode.csv",
+          "beschreibung": "Übernommen aus App-Route /buchungen."
+        },
+        {
+          "seitenname": "TVF-Mitarbeiter",
+          "titel": "Mitarbeiter",
+          "layout": "excel",
+          "excel": "Stunden.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/mitarbeiter",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /mitarbeiter."
+        }
+      ]
+    },
+    {
+      "gruppe": "Planung",
+      "seiten": [
+        {
+          "seitenname": "TVF-Pipeline",
+          "titel": "Angebote",
+          "layout": "excel",
+          "excel": "Vertrieb.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/pipeline",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /pipeline."
+        },
+        {
+          "seitenname": "TVF-Forecast",
+          "titel": "Forecast",
+          "layout": "excel",
+          "excel": "Cockpit.xlsx",
+          "hubBlatt": "Forecast",
+          "region": null,
+          "appRoute": "/forecast",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /forecast."
+        },
+        {
+          "seitenname": "TVF-FC-Eingabe",
+          "titel": "Forecast-Planung",
+          "layout": "excel",
+          "excel": "Cockpit.xlsx",
+          "hubBlatt": "FC Eingabe",
+          "region": null,
+          "appRoute": "/dash#forecasteingabe",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /dash#forecasteingabe."
+        },
+        {
+          "seitenname": "TVF-Mehrjahresplan",
+          "titel": "Mehrjahresplanung",
+          "layout": "excel",
+          "excel": "Mehrjahresplan.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/planung/konten",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /planung/konten."
+        },
+        {
+          "seitenname": "TVF-Liquiditaet",
+          "titel": "Liquidität",
+          "layout": "excel",
+          "excel": "Liquidität.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/liquiditaet",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /liquiditaet."
+        },
+        {
+          "seitenname": "TVF-Risiken",
+          "titel": "Risiken",
+          "layout": "excel",
+          "excel": "Risiken.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/risiken",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /risiken."
+        },
+        {
+          "seitenname": "TVF-Nachtraege",
+          "titel": "Nachträge",
+          "layout": "excel",
+          "excel": "Maßnahmen.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/nachtraege",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /nachtraege."
+        }
+      ]
+    },
+    {
+      "gruppe": "Berichte",
+      "seiten": [
+        {
+          "seitenname": "TVF-Berichte",
+          "titel": "Berichtsgenerator",
+          "layout": "excel",
+          "excel": "Berichte.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/bericht",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /bericht."
+        },
+        {
+          "seitenname": "TVF-Vorstand",
+          "titel": "Vorstandsbericht",
+          "layout": "excel",
+          "excel": "Berichte.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/bericht/vorstand",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /bericht/vorstand."
+        },
+        {
+          "seitenname": "TVF-Folienwerte",
+          "titel": "Folienwerte",
+          "layout": "excel",
+          "excel": "D Finanzen.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/folienwerte",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /folienwerte."
+        },
+        {
+          "seitenname": "TVF-Baukasten",
+          "titel": "Berichtsbaukasten",
+          "layout": "hub",
+          "excel": "Berichte.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/bericht/baukasten",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /bericht/baukasten."
+        }
+      ]
+    },
+    {
+      "gruppe": "Regionen",
+      "seiten": [
+        {
+          "seitenname": "TVF-Region-West",
+          "titel": "Region West",
+          "layout": "region",
+          "excel": "Regionen.xlsx",
+          "hubBlatt": null,
+          "region": "West",
+          "appRoute": "/regionen",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /regionen."
+        },
+        {
+          "seitenname": "TVF-Region-Sued-West",
+          "titel": "Region Süd-West",
+          "layout": "region",
+          "excel": "Regionen.xlsx",
+          "hubBlatt": null,
+          "region": "Süd-West",
+          "appRoute": "/regionen",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /regionen."
+        },
+        {
+          "seitenname": "TVF-Region-Ost",
+          "titel": "Region Ost",
+          "layout": "region",
+          "excel": "Regionen.xlsx",
+          "hubBlatt": null,
+          "region": "Ost",
+          "appRoute": "/regionen",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /regionen."
+        },
+        {
+          "seitenname": "TVF-Region-Berlin",
+          "titel": "Region Berlin",
+          "layout": "region",
+          "excel": "Regionen.xlsx",
+          "hubBlatt": null,
+          "region": "Berlin",
+          "appRoute": "/regionen",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /regionen."
+        },
+        {
+          "seitenname": "TVF-Region-Verwaltung",
+          "titel": "Verwaltung",
+          "layout": "region",
+          "excel": "Regionen.xlsx",
+          "hubBlatt": null,
+          "region": "Verwaltung",
+          "appRoute": "/regionen",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /regionen."
+        }
+      ]
+    },
+    {
+      "gruppe": "Grundlagen",
+      "seiten": [
+        {
+          "seitenname": "TVF-Kostenartenstamm",
+          "titel": "Kostenartenstamm",
+          "layout": "excel",
+          "excel": "KLR.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/kostenarten",
+          "zahlen": "kostenarten.csv",
+          "beschreibung": "Übernommen aus App-Route /kostenarten."
+        },
+        {
+          "seitenname": "TVF-Abstimmung",
+          "titel": "Abstimmung",
+          "layout": "excel",
+          "excel": "Prüfungen.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/abstimmung",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /abstimmung."
+        },
+        {
+          "seitenname": "TVF-Methodik",
+          "titel": "Rechenwege",
+          "layout": "html",
+          "excel": null,
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/methodik",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /methodik."
+        },
+        {
+          "seitenname": "TVF-Grundsaetze",
+          "titel": "Grundsätze",
+          "layout": "html",
+          "excel": null,
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/grundsaetze",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /grundsaetze."
+        },
+        {
+          "seitenname": "TVF-Handbuch",
+          "titel": "Handbuch",
+          "layout": "excel",
+          "excel": "Anleitung.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/handbuch",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /handbuch."
+        },
+        {
+          "seitenname": "TVF-Steuerung",
+          "titel": "Steuerung / Annahmen",
+          "layout": "excel",
+          "excel": "Cockpit.xlsx",
+          "hubBlatt": "Steuerung",
+          "region": null,
+          "appRoute": "/dash",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /dash."
+        }
+      ]
+    },
+    {
+      "gruppe": "System",
+      "seiten": [
+        {
+          "seitenname": "TVF-Import",
+          "titel": "Datenimport",
+          "layout": "excel",
+          "excel": "Import.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/dash#importmanager",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /dash#importmanager."
+        },
+        {
+          "seitenname": "TVF-Import-Monatsdaten",
+          "titel": "Import Monatsdaten",
+          "layout": "excel",
+          "excel": "Cockpit.xlsx",
+          "hubBlatt": "Import Monatsdaten",
+          "region": null,
+          "appRoute": "/import",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /import."
+        },
+        {
+          "seitenname": "TVF-Zahlen",
+          "titel": "Zahlen-Export (gerettet)",
+          "layout": "excel",
+          "excel": "TVF_Zahlen_Export.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": null,
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route —."
+        },
+        {
+          "seitenname": "TVF-Einstellungen",
+          "titel": "Einstellungen",
+          "layout": "excel",
+          "excel": "System.xlsx",
+          "hubBlatt": null,
+          "region": null,
+          "appRoute": "/einstellungen",
+          "zahlen": null,
+          "beschreibung": "Übernommen aus App-Route /einstellungen."
+        }
+      ]
+    }
+  ]
+}

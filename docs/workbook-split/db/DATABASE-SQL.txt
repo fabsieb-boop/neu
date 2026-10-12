@@ -1,0 +1,3 @@
+Vollständiges database.sql (~25 MB) liegt im Agent-Store und in TVF_DB_Paket.zip.
+Pfad Store: docs/workbook-split/db/database.sql
+Zahlen-Export (aggregiert): ../zahlen/

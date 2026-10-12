@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Datenimport | TVF ALTWERT</title>
+<style>
+:root{--primary:#1F4E79;--accent:#5B2C6F;--surface:#F3F6F9;--text:#1A1A1A;--muted:#5F6B7A;--ok:#1B7A4E;--warn:#B45309}
+*{box-sizing:border-box}
+.tvf-root,body{margin:0;font-family:"Segoe UI",system-ui,sans-serif;color:var(--text);background:linear-gradient(165deg,#e8eef5 0%,#f7f3f9 45%,#f3f6f9 100%)}
+.hero{background:linear-gradient(120deg,var(--primary),var(--accent));color:#fff;padding:28px 32px 36px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 85% 20%,rgba(255,255,255,.18),transparent 45%);pointer-events:none}
+.brand{font-size:28px;font-weight:700;letter-spacing:.04em;margin:0 0 6px;position:relative;z-index:1}
+.hero p{margin:0;max-width:52ch;opacity:.92;font-size:15px;line-height:1.45;position:relative;z-index:1}
+.navpills{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;position:relative;z-index:1}
+.navpills a{background:rgba(255,255,255,.14);color:#fff;text-decoration:none;padding:8px 14px;border:1px solid rgba(255,255,255,.28);font-size:13px;font-weight:600}
+.navpills a:hover{background:rgba(255,255,255,.28)}
+.wrap{padding:22px 28px 40px;max-width:1180px;margin:0 auto}
+.gruppe{margin:0 0 26px}
+.gruppe h2{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 12px;font-weight:700}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.tile{display:block;text-decoration:none;color:var(--text);background:#fff;border:1px solid #d7dee8;padding:16px 16px 14px;min-height:110px}
+.tile:hover{border-color:var(--primary)}
+.tile .lab{font-weight:700;font-size:15px;margin:0 0 6px;color:var(--primary)}
+.tile .sub{font-size:12px;color:var(--muted);margin:0;line-height:1.35}
+.kpirow{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:18px 0 8px}
+.kpi{background:#fff;border-left:4px solid var(--primary);padding:12px 14px}
+.kpi .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.kpi .v{font-size:20px;font-weight:700;margin-top:4px;color:var(--primary)}
+.note{font-size:12px;color:var(--muted);margin-top:10px}
+.footer{margin-top:28px;padding-top:14px;border-top:1px solid #d7dee8;font-size:12px;color:var(--muted)}
+.subhero{background:linear-gradient(120deg,var(--primary),#2a5f8f);color:#fff;padding:20px 28px;position:relative}
+.subhero .brand{font-size:18px;letter-spacing:.08em}
+.subhero h1{margin:0 0 4px;font-size:22px}
+.subhero p{margin:0;opacity:.9;font-size:14px}
+.box{background:#fff;border:1px solid #d7dee8;padding:16px;margin:12px 0}
+.box a{color:var(--primary);font-weight:600}
+</style></head><body>
+
+<header class="subhero">
+  <div class="brand">TVF ALTWERT</div>
+  <h1>Datenimport</h1>
+  <p>Gruppe System · Seite TVF-Import · App /dash#importmanager</p>
+  <div class="navpills"><a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-ALTWERT-GMBH-Dashboard.aspx">Dashboard</a><a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-Cockpit.aspx">Cockpit</a><a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-Steuerung.aspx">Steuerung</a><a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-GuV.aspx">GuV</a><a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-Forecast.aspx">Forecast</a><a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-Regionen.aspx">Regionen</a><a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-Projekte.aspx">Projekte</a><a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-FC-Eingabe.aspx">FC Eingabe</a><a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-Zahlen.aspx">Zahlen</a></div>
+</header>
+<main class="wrap">
+  <section class="gruppe">
+    <h2>Inhalt</h2>
+    <p>SharePoint-Seite <b>TVF-Import</b> unter <b>Seiten</b> (Site Pages).</p>
+    <p>Excel liegt in <b>Dokumente / TVF-Controlling-Cockpit</b>.</p>
+    
+  </section>
+  
+  <div class="box">
+    <p><b>Excel öffnen:</b> <a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/Shared%20Documents/TVF-Controlling-Cockpit/Import.xlsx" data-interception="off" target="_blank">Import.xlsx</a></p>
+    <p class="note">Im SharePoint-Seiten-Editor zusätzlich Webpart „Datei-Viewer“ auf dieselbe Datei setzen.</p>
+  </div>
+  <div class="footer"><a href="https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-ALTWERT-GMBH-Dashboard.aspx">← Dashboard</a> · HTML-Quelle: design-html/seiten/TVF-Import.html</div>
+</main>
+
+</body></html>

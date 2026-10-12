@@ -1,0 +1,1187 @@
+{
+  "quelle": "TVF_Controlling_Cockpit_Import1_db4a.xlsx",
+  "ordner_sharepoint": "TVF-Controlling-Cockpit",
+  "dateien": [
+    {
+      "blatt": "Cockpit",
+      "datei": "Cockpit.xlsx",
+      "abhaengigkeiten": [
+        "Anleitung",
+        "Berichte",
+        "Bestände",
+        "Bilanz",
+        "Daten",
+        "Forecast",
+        "GuV",
+        "Import",
+        "Jahresabschluss",
+        "KLR",
+        "Kalkulation",
+        "Kostenverfolgung",
+        "Liquidität",
+        "Mehrjahresplan",
+        "Monatsabschluss",
+        "Monatsroll",
+        "Projektakte",
+        "Projekte",
+        "Prüfungen",
+        "Regionen",
+        "Risiken",
+        "Steuerung",
+        "Stunden",
+        "Stundensätze"
+      ],
+      "bytes": 9806
+    },
+    {
+      "blatt": "Steuerung",
+      "datei": "Steuerung.xlsx",
+      "abhaengigkeiten": [
+        "D Finanzen"
+      ],
+      "bytes": 9235
+    },
+    {
+      "blatt": "Import",
+      "datei": "Import.xlsx",
+      "abhaengigkeiten": [
+        "Import Monatsdaten",
+        "Import Stunden",
+        "Steuerung"
+      ],
+      "bytes": 7510
+    },
+    {
+      "blatt": "GuV",
+      "datei": "GuV.xlsx",
+      "abhaengigkeiten": [
+        "D Finanzen",
+        "Import Monatsdaten",
+        "Steuerung"
+      ],
+      "bytes": 11627
+    },
+    {
+      "blatt": "Monatsanalyse",
+      "datei": "Monatsanalyse.xlsx",
+      "abhaengigkeiten": [
+        "D Finanzen",
+        "GuV",
+        "Steuerung"
+      ],
+      "bytes": 9225
+    },
+    {
+      "blatt": "Forecast",
+      "datei": "Forecast.xlsx",
+      "abhaengigkeiten": [
+        "D Finanzen",
+        "FC Eingabe",
+        "GuV",
+        "Import Monatsdaten",
+        "Steuerung"
+      ],
+      "bytes": 30604
+    },
+    {
+      "blatt": "Regionen",
+      "datei": "Regionen.xlsx",
+      "abhaengigkeiten": [
+        "D Finanzen",
+        "D KLR",
+        "Steuerung"
+      ],
+      "bytes": 9186
+    },
+    {
+      "blatt": "Projekte",
+      "datei": "Projekte.xlsx",
+      "abhaengigkeiten": [
+        "D Projekte",
+        "Steuerung"
+      ],
+      "bytes": 25837
+    },
+    {
+      "blatt": "Projektakte",
+      "datei": "Projektakte.xlsx",
+      "abhaengigkeiten": [
+        "D Projekte",
+        "Risiken",
+        "Steuerung"
+      ],
+      "bytes": 8719
+    },
+    {
+      "blatt": "Kostenverfolgung",
+      "datei": "Kostenverfolgung.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 41041
+    },
+    {
+      "blatt": "Bestände",
+      "datei": "Bestände.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 18916
+    },
+    {
+      "blatt": "KLR",
+      "datei": "KLR.xlsx",
+      "abhaengigkeiten": [
+        "D KLR",
+        "Steuerung"
+      ],
+      "bytes": 19221
+    },
+    {
+      "blatt": "Stunden",
+      "datei": "Stunden.xlsx",
+      "abhaengigkeiten": [
+        "D KLR",
+        "Import Stunden",
+        "Steuerung"
+      ],
+      "bytes": 10019
+    },
+    {
+      "blatt": "Stundensätze",
+      "datei": "Stundensätze.xlsx",
+      "abhaengigkeiten": [
+        "Mehrjahresplan",
+        "Referenzen",
+        "Steuerung"
+      ],
+      "bytes": 10926
+    },
+    {
+      "blatt": "Kalkulation",
+      "datei": "Kalkulation.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 8236
+    },
+    {
+      "blatt": "Liquidität",
+      "datei": "Liquidität.xlsx",
+      "abhaengigkeiten": [
+        "Steuerung"
+      ],
+      "bytes": 34932
+    },
+    {
+      "blatt": "Monatsroll",
+      "datei": "Monatsroll.xlsx",
+      "abhaengigkeiten": [
+        "D Liquidität",
+        "FC Eingabe",
+        "Steuerung"
+      ],
+      "bytes": 11103
+    },
+    {
+      "blatt": "Bilanz",
+      "datei": "Bilanz.xlsx",
+      "abhaengigkeiten": [
+        "D Finanzen"
+      ],
+      "bytes": 10075
+    },
+    {
+      "blatt": "Mehrjahresplan",
+      "datei": "Mehrjahresplan.xlsx",
+      "abhaengigkeiten": [
+        "Referenzen",
+        "Steuerung"
+      ],
+      "bytes": 9403
+    },
+    {
+      "blatt": "Vertrieb",
+      "datei": "Vertrieb.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 10527
+    },
+    {
+      "blatt": "Bereinigungen",
+      "datei": "Bereinigungen.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 10503
+    },
+    {
+      "blatt": "Fremdleistungen",
+      "datei": "Fremdleistungen.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 9934
+    },
+    {
+      "blatt": "Risiken",
+      "datei": "Risiken.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 304653
+    },
+    {
+      "blatt": "Maßnahmen",
+      "datei": "Maßnahmen.xlsx",
+      "abhaengigkeiten": [
+        "Risiken",
+        "Steuerung"
+      ],
+      "bytes": 15277
+    },
+    {
+      "blatt": "FC Eingabe",
+      "datei": "FC Eingabe.xlsx",
+      "abhaengigkeiten": [
+        "Steuerung"
+      ],
+      "bytes": 44048
+    },
+    {
+      "blatt": "Abgrenzungen",
+      "datei": "Abgrenzungen.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 11770
+    },
+    {
+      "blatt": "Rückstellungen",
+      "datei": "Rückstellungen.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 9006
+    },
+    {
+      "blatt": "Umlagen",
+      "datei": "Umlagen.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 20187
+    },
+    {
+      "blatt": "Skonto",
+      "datei": "Skonto.xlsx",
+      "abhaengigkeiten": [
+        "Steuerung"
+      ],
+      "bytes": 16853
+    },
+    {
+      "blatt": "Monatsabschluss",
+      "datei": "Monatsabschluss.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 10304
+    },
+    {
+      "blatt": "Berichte",
+      "datei": "Berichte.xlsx",
+      "abhaengigkeiten": [
+        "Bilanz",
+        "D Finanzen",
+        "D KLR",
+        "D Liquidität",
+        "GuV",
+        "Import Stunden",
+        "Steuerung",
+        "Stunden"
+      ],
+      "bytes": 12313
+    },
+    {
+      "blatt": "Jahresabschluss",
+      "datei": "Jahresabschluss.xlsx",
+      "abhaengigkeiten": [
+        "Steuerung"
+      ],
+      "bytes": 16895
+    },
+    {
+      "blatt": "System",
+      "datei": "System.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 11805
+    },
+    {
+      "blatt": "Daten",
+      "datei": "Daten.xlsx",
+      "abhaengigkeiten": [
+        "D Finanzen",
+        "D KLR",
+        "D Liquidität",
+        "D Projekte",
+        "D Risiken",
+        "Referenzen"
+      ],
+      "bytes": 10486
+    },
+    {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 174056
+    },
+    {
+      "blatt": "D Projekte",
+      "datei": "D Projekte.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 367476
+    },
+    {
+      "blatt": "D Risiken",
+      "datei": "D Risiken.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 154238
+    },
+    {
+      "blatt": "D Liquidität",
+      "datei": "D Liquidität.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 60395
+    },
+    {
+      "blatt": "D KLR",
+      "datei": "D KLR.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 102346
+    },
+    {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 35441
+    },
+    {
+      "blatt": "Buchungen",
+      "datei": "Buchungen.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 1969909
+    },
+    {
+      "blatt": "Import Monatsdaten",
+      "datei": "Import Monatsdaten.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 8495
+    },
+    {
+      "blatt": "Import Stunden",
+      "datei": "Import Stunden.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 8384
+    },
+    {
+      "blatt": "Import Vorschau",
+      "datei": "Import Vorschau.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 7354
+    },
+    {
+      "blatt": "Import Protokoll",
+      "datei": "Import Protokoll.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 8016
+    },
+    {
+      "blatt": "Import Sicherung",
+      "datei": "Import Sicherung.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 8258
+    },
+    {
+      "blatt": "Prüfungen",
+      "datei": "Prüfungen.xlsx",
+      "abhaengigkeiten": [
+        "Bilanz",
+        "D Finanzen",
+        "D KLR",
+        "D Projekte",
+        "D Risiken",
+        "Forecast",
+        "GuV",
+        "KLR",
+        "Kalkulation",
+        "Kostenverfolgung",
+        "Risiken",
+        "Steuerung",
+        "Stunden",
+        "Umlagen"
+      ],
+      "bytes": 15739
+    },
+    {
+      "blatt": "Anleitung",
+      "datei": "Anleitung.xlsx",
+      "abhaengigkeiten": [],
+      "bytes": 10642
+    }
+  ],
+  "tabellen": {
+    "TVF_81": {
+      "blatt": "Monatsanalyse",
+      "datei": "Monatsanalyse.xlsx",
+      "bereich": "C18:K30"
+    },
+    "TVF_104": {
+      "blatt": "Forecast",
+      "datei": "Forecast.xlsx",
+      "bereich": "C48:O222"
+    },
+    "TVF_82": {
+      "blatt": "Projekte",
+      "datei": "Projekte.xlsx",
+      "bereich": "C6:P174"
+    },
+    "TVF_83": {
+      "blatt": "Kostenverfolgung",
+      "datei": "Kostenverfolgung.xlsx",
+      "bereich": "C6:Q294"
+    },
+    "TVF_84": {
+      "blatt": "Bestände",
+      "datei": "Bestände.xlsx",
+      "bereich": "C6:P106"
+    },
+    "TVF_85": {
+      "blatt": "KLR",
+      "datei": "KLR.xlsx",
+      "bereich": "C26:H188"
+    },
+    "TVF_86": {
+      "blatt": "Liquidität",
+      "datei": "Liquidität.xlsx",
+      "bereich": "C26:M371"
+    },
+    "TVF_87": {
+      "blatt": "Bilanz",
+      "datei": "Bilanz.xlsx",
+      "bereich": "C7:F28"
+    },
+    "TVF_90": {
+      "blatt": "Vertrieb",
+      "datei": "Vertrieb.xlsx",
+      "bereich": "C8:E14"
+    },
+    "TVF_91": {
+      "blatt": "Vertrieb",
+      "datei": "Vertrieb.xlsx",
+      "bereich": "C20:E26"
+    },
+    "TVF_92": {
+      "blatt": "Vertrieb",
+      "datei": "Vertrieb.xlsx",
+      "bereich": "C32:E38"
+    },
+    "TVF_93": {
+      "blatt": "Vertrieb",
+      "datei": "Vertrieb.xlsx",
+      "bereich": "C44:G48"
+    },
+    "TVF_94": {
+      "blatt": "Vertrieb",
+      "datei": "Vertrieb.xlsx",
+      "bereich": "C54:D59"
+    },
+    "TVF_95": {
+      "blatt": "Bereinigungen",
+      "datei": "Bereinigungen.xlsx",
+      "bereich": "C27:I35"
+    },
+    "TVF_96": {
+      "blatt": "Fremdleistungen",
+      "datei": "Fremdleistungen.xlsx",
+      "bereich": "C6:G16"
+    },
+    "TVF_97": {
+      "blatt": "Fremdleistungen",
+      "datei": "Fremdleistungen.xlsx",
+      "bereich": "C22:F32"
+    },
+    "TVF_88": {
+      "blatt": "Risiken",
+      "datei": "Risiken.xlsx",
+      "bereich": "C6:P2271"
+    },
+    "TVF_89": {
+      "blatt": "Maßnahmen",
+      "datei": "Maßnahmen.xlsx",
+      "bereich": "C6:K126"
+    },
+    "TVF_80": {
+      "blatt": "FC Eingabe",
+      "datei": "FC Eingabe.xlsx",
+      "bereich": "C6:L506"
+    },
+    "TVF_98": {
+      "blatt": "Abgrenzungen",
+      "datei": "Abgrenzungen.xlsx",
+      "bereich": "C6:G31"
+    },
+    "TVF_99": {
+      "blatt": "Abgrenzungen",
+      "datei": "Abgrenzungen.xlsx",
+      "bereich": "C37:K117"
+    },
+    "TVF_100": {
+      "blatt": "Rückstellungen",
+      "datei": "Rückstellungen.xlsx",
+      "bereich": "C6:J18"
+    },
+    "TVF_101": {
+      "blatt": "Umlagen",
+      "datei": "Umlagen.xlsx",
+      "bereich": "C6:H25"
+    },
+    "TVF_102": {
+      "blatt": "Umlagen",
+      "datei": "Umlagen.xlsx",
+      "bereich": "C31:J197"
+    },
+    "TVF_103": {
+      "blatt": "Skonto",
+      "datei": "Skonto.xlsx",
+      "bereich": "C6:N86"
+    },
+    "TVF_105": {
+      "blatt": "Monatsabschluss",
+      "datei": "Monatsabschluss.xlsx",
+      "bereich": "C6:P15"
+    },
+    "TVF_106": {
+      "blatt": "Monatsabschluss",
+      "datei": "Monatsabschluss.xlsx",
+      "bereich": "C22:E28"
+    },
+    "TVF_107": {
+      "blatt": "Jahresabschluss",
+      "datei": "Jahresabschluss.xlsx",
+      "bereich": "C6:L90"
+    },
+    "TVF_108": {
+      "blatt": "System",
+      "datei": "System.xlsx",
+      "bereich": "C6:E15"
+    },
+    "TVF_109": {
+      "blatt": "System",
+      "datei": "System.xlsx",
+      "bereich": "C21:D27"
+    },
+    "TVF_110": {
+      "blatt": "System",
+      "datei": "System.xlsx",
+      "bereich": "C33:G53"
+    },
+    "TVF_111": {
+      "blatt": "System",
+      "datei": "System.xlsx",
+      "bereich": "C59:H89"
+    },
+    "TVF_112": {
+      "blatt": "System",
+      "datei": "System.xlsx",
+      "bereich": "C95:G115"
+    },
+    "TVF_1": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A7:J16"
+    },
+    "TVF_2": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A21:H33"
+    },
+    "TVF_3": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A38:J39"
+    },
+    "TVF_4": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A44:F115"
+    },
+    "TVF_9": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A120:O176"
+    },
+    "TVF_10": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A181:I193"
+    },
+    "TVF_12": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A198:O207"
+    },
+    "TVF_13": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A212:N263"
+    },
+    "TVF_14": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A268:D272"
+    },
+    "TVF_17": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A277:H301"
+    },
+    "TVF_23": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A306:G438"
+    },
+    "TVF_26": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A443:P617"
+    },
+    "TVF_37": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A622:A623"
+    },
+    "TVF_46": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A628:H797"
+    },
+    "TVF_47": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A802:H1052"
+    },
+    "TVF_48": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A1057:U1066"
+    },
+    "TVF_49": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A1071:J1135"
+    },
+    "TVF_50": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A1140:Q1152"
+    },
+    "TVF_51": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A1157:F3557"
+    },
+    "TVF_52": {
+      "blatt": "D Finanzen",
+      "datei": "D Finanzen.xlsx",
+      "bereich": "A3562:G3571"
+    },
+    "TVF_6": {
+      "blatt": "D Projekte",
+      "datei": "D Projekte.xlsx",
+      "bereich": "A7:U107"
+    },
+    "TVF_7": {
+      "blatt": "D Projekte",
+      "datei": "D Projekte.xlsx",
+      "bereich": "A112:AC152"
+    },
+    "TVF_16": {
+      "blatt": "D Projekte",
+      "datei": "D Projekte.xlsx",
+      "bereich": "A157:I349"
+    },
+    "TVF_18": {
+      "blatt": "D Projekte",
+      "datei": "D Projekte.xlsx",
+      "bereich": "A354:N381"
+    },
+    "TVF_29": {
+      "blatt": "D Projekte",
+      "datei": "D Projekte.xlsx",
+      "bereich": "A386:R387"
+    },
+    "TVF_30": {
+      "blatt": "D Projekte",
+      "datei": "D Projekte.xlsx",
+      "bereich": "A392:J394"
+    },
+    "TVF_31": {
+      "blatt": "D Projekte",
+      "datei": "D Projekte.xlsx",
+      "bereich": "A399:V499"
+    },
+    "TVF_32": {
+      "blatt": "D Projekte",
+      "datei": "D Projekte.xlsx",
+      "bereich": "A504:Q655"
+    },
+    "TVF_33": {
+      "blatt": "D Projekte",
+      "datei": "D Projekte.xlsx",
+      "bereich": "A660:O828"
+    },
+    "TVF_34": {
+      "blatt": "D Projekte",
+      "datei": "D Projekte.xlsx",
+      "bereich": "A833:AA1121"
+    },
+    "TVF_35": {
+      "blatt": "D Projekte",
+      "datei": "D Projekte.xlsx",
+      "bereich": "A1126:AC1414"
+    },
+    "TVF_40": {
+      "blatt": "D Projekte",
+      "datei": "D Projekte.xlsx",
+      "bereich": "A1419:I4919"
+    },
+    "TVF_8": {
+      "blatt": "D Risiken",
+      "datei": "D Risiken.xlsx",
+      "bereich": "A7:M2272"
+    },
+    "TVF_5": {
+      "blatt": "D Liquidität",
+      "datei": "D Liquidität.xlsx",
+      "bereich": "A7:J20"
+    },
+    "TVF_15": {
+      "blatt": "D Liquidität",
+      "datei": "D Liquidität.xlsx",
+      "bereich": "A25:E85"
+    },
+    "TVF_19": {
+      "blatt": "D Liquidität",
+      "datei": "D Liquidität.xlsx",
+      "bereich": "A90:I191"
+    },
+    "TVF_20": {
+      "blatt": "D Liquidität",
+      "datei": "D Liquidität.xlsx",
+      "bereich": "A196:I255"
+    },
+    "TVF_36": {
+      "blatt": "D Liquidität",
+      "datei": "D Liquidität.xlsx",
+      "bereich": "A260:E276"
+    },
+    "TVF_38": {
+      "blatt": "D Liquidität",
+      "datei": "D Liquidität.xlsx",
+      "bereich": "A281:N626"
+    },
+    "TVF_41": {
+      "blatt": "D Liquidität",
+      "datei": "D Liquidität.xlsx",
+      "bereich": "A631:I655"
+    },
+    "TVF_42": {
+      "blatt": "D Liquidität",
+      "datei": "D Liquidität.xlsx",
+      "bereich": "A660:D668"
+    },
+    "TVF_43": {
+      "blatt": "D Liquidität",
+      "datei": "D Liquidität.xlsx",
+      "bereich": "A673:E676"
+    },
+    "TVF_44": {
+      "blatt": "D Liquidität",
+      "datei": "D Liquidität.xlsx",
+      "bereich": "A681:K685"
+    },
+    "TVF_11": {
+      "blatt": "D KLR",
+      "datei": "D KLR.xlsx",
+      "bereich": "A7:S16"
+    },
+    "TVF_21": {
+      "blatt": "D KLR",
+      "datei": "D KLR.xlsx",
+      "bereich": "A21:U68"
+    },
+    "TVF_22": {
+      "blatt": "D KLR",
+      "datei": "D KLR.xlsx",
+      "bereich": "A73:K74"
+    },
+    "TVF_24": {
+      "blatt": "D KLR",
+      "datei": "D KLR.xlsx",
+      "bereich": "A79:N757"
+    },
+    "TVF_25": {
+      "blatt": "D KLR",
+      "datei": "D KLR.xlsx",
+      "bereich": "A762:F781"
+    },
+    "TVF_27": {
+      "blatt": "D KLR",
+      "datei": "D KLR.xlsx",
+      "bereich": "A786:H952"
+    },
+    "TVF_28": {
+      "blatt": "D KLR",
+      "datei": "D KLR.xlsx",
+      "bereich": "A957:J969"
+    },
+    "TVF_39": {
+      "blatt": "D KLR",
+      "datei": "D KLR.xlsx",
+      "bereich": "A974:R1136"
+    },
+    "TVF_45": {
+      "blatt": "D KLR",
+      "datei": "D KLR.xlsx",
+      "bereich": "A1141:M1146"
+    },
+    "TVF_53": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A7:O22"
+    },
+    "TVF_54": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A27:G35"
+    },
+    "TVF_55": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A40:B44"
+    },
+    "TVF_56": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A49:E55"
+    },
+    "TVF_57": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A60:C66"
+    },
+    "TVF_58": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A71:C77"
+    },
+    "TVF_59": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A82:C88"
+    },
+    "TVF_60": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A93:C99"
+    },
+    "TVF_61": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A104:E108"
+    },
+    "TVF_62": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A113:B118"
+    },
+    "TVF_63": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A123:E133"
+    },
+    "TVF_64": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A138:D148"
+    },
+    "TVF_65": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A153:B158"
+    },
+    "TVF_66": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A163:B170"
+    },
+    "TVF_67": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A175:G215"
+    },
+    "TVF_68": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A220:G224"
+    },
+    "TVF_69": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A229:F239"
+    },
+    "TVF_70": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A244:D255"
+    },
+    "TVF_71": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A260:I270"
+    },
+    "TVF_72": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A275:C283"
+    },
+    "TVF_73": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A288:E295"
+    },
+    "TVF_74": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A300:O311"
+    },
+    "TVF_75": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A316:F330"
+    },
+    "TVF_76": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A335:F346"
+    },
+    "TVF_77": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A351:F359"
+    },
+    "TVF_78": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A364:E376"
+    },
+    "TVF_79": {
+      "blatt": "Referenzen",
+      "datei": "Referenzen.xlsx",
+      "bereich": "A381:B398"
+    },
+    "TVF_113": {
+      "blatt": "Buchungen",
+      "datei": "Buchungen.xlsx",
+      "bereich": "A6:T10515"
+    },
+    "TVFImportMonate": {
+      "blatt": "Import Monatsdaten",
+      "datei": "Import Monatsdaten.xlsx",
+      "bereich": "C6:M8"
+    },
+    "TVFImportStunden": {
+      "blatt": "Import Stunden",
+      "datei": "Import Stunden.xlsx",
+      "bereich": "C6:J8"
+    },
+    "TVFImportLog": {
+      "blatt": "Import Protokoll",
+      "datei": "Import Protokoll.xlsx",
+      "bereich": "C6:J7"
+    },
+    "TVFImportBackup": {
+      "blatt": "Import Sicherung",
+      "datei": "Import Sicherung.xlsx",
+      "bereich": "C6:F7"
+    },
+    "TVF_114": {
+      "blatt": "Prüfungen",
+      "datei": "Prüfungen.xlsx",
+      "bereich": "C25:J89"
+    },
+    "TVF_115": {
+      "blatt": "Prüfungen",
+      "datei": "Prüfungen.xlsx",
+      "bereich": "C96:H106"
+    },
+    "TVF_116": {
+      "blatt": "Prüfungen",
+      "datei": "Prüfungen.xlsx",
+      "bereich": "C112:G119"
+    },
+    "TVF_117": {
+      "blatt": "Anleitung",
+      "datei": "Anleitung.xlsx",
+      "bereich": "C27:D59"
+    }
+  },
+  "abhaengigkeitsgraph": {
+    "Cockpit": [
+      "Anleitung",
+      "Berichte",
+      "Bestände",
+      "Bilanz",
+      "Daten",
+      "Forecast",
+      "GuV",
+      "Import",
+      "Jahresabschluss",
+      "KLR",
+      "Kalkulation",
+      "Kostenverfolgung",
+      "Liquidität",
+      "Mehrjahresplan",
+      "Monatsabschluss",
+      "Monatsroll",
+      "Projektakte",
+      "Projekte",
+      "Prüfungen",
+      "Regionen",
+      "Risiken",
+      "Steuerung",
+      "Stunden",
+      "Stundensätze"
+    ],
+    "Steuerung": [
+      "D Finanzen"
+    ],
+    "Import": [
+      "Import Monatsdaten",
+      "Import Stunden",
+      "Steuerung"
+    ],
+    "GuV": [
+      "D Finanzen",
+      "Import Monatsdaten",
+      "Steuerung"
+    ],
+    "Monatsanalyse": [
+      "D Finanzen",
+      "GuV",
+      "Steuerung"
+    ],
+    "Forecast": [
+      "D Finanzen",
+      "FC Eingabe",
+      "GuV",
+      "Import Monatsdaten",
+      "Steuerung"
+    ],
+    "Regionen": [
+      "D Finanzen",
+      "D KLR",
+      "Steuerung"
+    ],
+    "Projekte": [
+      "D Projekte",
+      "Steuerung"
+    ],
+    "Projektakte": [
+      "D Projekte",
+      "Risiken",
+      "Steuerung"
+    ],
+    "Kostenverfolgung": [],
+    "Bestände": [],
+    "KLR": [
+      "D KLR",
+      "Steuerung"
+    ],
+    "Stunden": [
+      "D KLR",
+      "Import Stunden",
+      "Steuerung"
+    ],
+    "Stundensätze": [
+      "Mehrjahresplan",
+      "Referenzen",
+      "Steuerung"
+    ],
+    "Kalkulation": [],
+    "Liquidität": [
+      "Steuerung"
+    ],
+    "Monatsroll": [
+      "D Liquidität",
+      "FC Eingabe",
+      "Steuerung"
+    ],
+    "Bilanz": [
+      "D Finanzen"
+    ],
+    "Mehrjahresplan": [
+      "Referenzen",
+      "Steuerung"
+    ],
+    "Vertrieb": [],
+    "Bereinigungen": [],
+    "Fremdleistungen": [],
+    "Risiken": [],
+    "Maßnahmen": [
+      "Risiken",
+      "Steuerung"
+    ],
+    "FC Eingabe": [
+      "Steuerung"
+    ],
+    "Abgrenzungen": [],
+    "Rückstellungen": [],
+    "Umlagen": [],
+    "Skonto": [
+      "Steuerung"
+    ],
+    "Monatsabschluss": [],
+    "Berichte": [
+      "Bilanz",
+      "D Finanzen",
+      "D KLR",
+      "D Liquidität",
+      "GuV",
+      "Import Stunden",
+      "Steuerung",
+      "Stunden"
+    ],
+    "Jahresabschluss": [
+      "Steuerung"
+    ],
+    "System": [],
+    "Daten": [
+      "D Finanzen",
+      "D KLR",
+      "D Liquidität",
+      "D Projekte",
+      "D Risiken",
+      "Referenzen"
+    ],
+    "D Finanzen": [],
+    "D Projekte": [],
+    "D Risiken": [],
+    "D Liquidität": [],
+    "D KLR": [],
+    "Referenzen": [],
+    "Buchungen": [],
+    "Import Monatsdaten": [],
+    "Import Stunden": [],
+    "Import Vorschau": [],
+    "Import Protokoll": [],
+    "Import Sicherung": [],
+    "Prüfungen": [
+      "Bilanz",
+      "D Finanzen",
+      "D KLR",
+      "D Projekte",
+      "D Risiken",
+      "Forecast",
+      "GuV",
+      "KLR",
+      "Kalkulation",
+      "Kostenverfolgung",
+      "Risiken",
+      "Steuerung",
+      "Stunden",
+      "Umlagen"
+    ],
+    "Anleitung": []
+  }
+}

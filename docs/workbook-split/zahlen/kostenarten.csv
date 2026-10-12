@@ -1,0 +1,109 @@
+kostenart_nr,bezeichnung,klr_typ,db_stufe,guv_gruppe,variabel,einzelkosten
+201000.0,Sonstige periodenfremde Aufwendungen,AUTO,3,,FALSE,FALSE
+340050.0,Fremdleistungen Wartung/Pflege,AUTO,1,,TRUE,TRUE
+392000.0,Bestandsveränderungen unfertige Erzeugni,AUTO,3,,FALSE,FALSE
+830510.0,Erlöse Abrisse/Demontagen,AUTO,1,,TRUE,TRUE
+7611200.0,Lohnverr. Gruppe 2,AUTO,1,,TRUE,TRUE
+7612000.0,Verrechnung Geräte,AUTO,3,,FALSE,FALSE
+7801020.0,Gemeinkostenzuschläge 12 % TVF Altwert,AUTO,3,,FALSE,FALSE
+330900.0,Erhaltene Skonti,AUTO,3,,FALSE,FALSE
+401000.0,Aufwand Diesel,AUTO,1,,TRUE,TRUE
+7611100.0,Lohnverr. Gruppe1,AUTO,1,,TRUE,TRUE
+430120.0,Sonstige Versicherungen,AUTO,3,,FALSE,FALSE
+411100.0,Arbeitskleidung und Arbeitschutzbedarf,AUTO,3,,FALSE,FALSE
+420060.0,Aufwand eigene Entsorgung,AUTO,3,,FALSE,FALSE
+420100.0,Instandhaltung Betriebsausstattung,AUTO,3,,FALSE,FALSE
+840040.0,Erlöse Verkauf HW Schrott,AUTO,1,,TRUE,TRUE
+420400.0,Instandhaltung Geschäftsausstattung,AUTO,3,,FALSE,FALSE
+251000.0,Sonstige periodenfremde Erträge,AUTO,3,,FALSE,FALSE
+340600.0,Bezogene Leistung periodenfremd,AUTO,3,,FALSE,FALSE
+431020.0,Mieten Plätze,AUTO,3,,FALSE,FALSE
+310080.0,Technische Gase,AUTO,3,,FALSE,FALSE
+411900.0,Sonstige Personalkosten,AUTO,3,,FALSE,FALSE
+420700.0,Verbrauch Hilfs- u. Betriebsstoffe,AUTO,3,,FALSE,FALSE
+431041.0,Miete Behälter,AUTO,3,,FALSE,FALSE
+450030.0,Bewirtung zu 100 % abzugsfähig,AUTO,3,,FALSE,FALSE
+450080.0,Werbung,AUTO,3,,FALSE,FALSE
+213200.0,Avalgebühren und -provisionen,AUTO,3,,FALSE,FALSE
+890800.0,Erlöse Zahlungsdifferenzen Debitoren,AUTO,1,,TRUE,TRUE
+890100.0,Gewährte Skonti,AUTO,3,,FALSE,FALSE
+400030.0,Instandhaltung selbstfahrende Arbeitsmas,AUTO,3,,FALSE,FALSE
+310900.0,Sonstige Hilfs- und Betriebsstoffe,AUTO,3,,FALSE,FALSE
+420600.0,"Werkstattbedarf (Kleinwerkzeuge b.100,-D",AUTO,3,,FALSE,FALSE
+460010.0,Büromaterial,AUTO,1,,TRUE,FALSE
+401050.0,Autobahngebühren LKW,AUTO,3,,FALSE,FALSE
+460040.0,Portogebühren,AUTO,3,,FALSE,FALSE
+450039.0,Bewirtung zu 70 % abzugsfähig,AUTO,3,,FALSE,FALSE
+460060.0,Kosten EDV,AUTO,3,,FALSE,FALSE
+300075.0,Materialaufwand Abbruch u. Rückbau,AUTO,1,,TRUE,FALSE
+420012.0,Sonstige Kosten Grundstücke und Gebäude,AUTO,3,,FALSE,FALSE
+860000.0,Erlöse weiterberechnete Fremdkosten,AUTO,1,,TRUE,TRUE
+273500.0,Erträge Auflösung von Rückstellungen (ac,AUTO,3,,FALSE,FALSE
+252000.0,andere sonst.betriebl. Erträge,AUTO,3,,FALSE,FALSE
+289200.0,Verr. kalk. Zinsen,AUTO,3,,FALSE,FALSE
+289300.0,Verr. kalk. Abschreibungen,AUTO,3,,FALSE,FALSE
+340030.0,Fremdleistungen Personal,AUTO,1,,TRUE,TRUE
+400121.0,Anmietung PKW,AUTO,3,,FALSE,FALSE
+401010.0,Benzin/Super,AUTO,3,,FALSE,FALSE
+411070.0,Personalwerbung,AUTO,3,,FALSE,FALSE
+411090.0,Schulung und Ausbildung,AUTO,3,,FALSE,FALSE
+420022.0,Raumpflege fremde Gebäude,AUTO,3,,FALSE,FALSE
+420030.0,Aufwand Energie,AUTO,3,,FALSE,FALSE
+420040.0,Aufwand Wasser,AUTO,3,,FALSE,FALSE
+420500.0,Instandhaltung Behälter,AUTO,3,,FALSE,FALSE
+430110.0,Aufwendungen für Versicherungsschäden,AUTO,3,,FALSE,FALSE
+431010.0,Mieten Räume,AUTO,3,,FALSE,FALSE
+450010.0,Reisekosten Betriebsangehörige,AUTO,3,,FALSE,FALSE
+450011.0,Verpfl.mehraufwand (pauschal),AUTO,3,,FALSE,FALSE
+450050.0,Allgemeine Repräsentationskosten,AUTO,3,,FALSE,FALSE
+450061.0,Geschenke Zuwend. < Wertgrenze Dritte/Ar,AUTO,3,,FALSE,FALSE
+460020.0,"Zeitungen, Zeitschrift.und Bücher",AUTO,3,,FALSE,FALSE
+460030.0,Telekommunikation,AUTO,3,,FALSE,FALSE
+460200.0,Beiträge Fachtagungen,AUTO,3,,FALSE,FALSE
+460900.0,Sonstige Verwaltungskosten,AUTO,3,,FALSE,FALSE
+470010.0,Anwalts- und Gerichtskosten,AUTO,3,,FALSE,FALSE
+470030.0,Beratungskosten Allgemeine Verwaltung,AUTO,3,,FALSE,FALSE
+480100.0,Normalabschreibung auf Anlagen,AUTO,3,,FALSE,FALSE
+480110.0,Abschreibungen auf Anlagen (GWG),AUTO,3,,FALSE,FALSE
+499200.0,Kalk. Zinsen,AUTO,3,,FALSE,FALSE
+499300.0,Kalk. Abschreibungen,AUTO,3,,FALSE,FALSE
+410130.0,Sonderzahlungen und Prämien Gehaltsempfä,AUTO,3,,FALSE,FALSE
+400035.0,Instandhaltung Miet-und Leasingfahrzeuge,AUTO,3,,FALSE,FALSE
+400040.0,DEKRA / TÜV / sonstige Gebühren Fuhrpark,AUTO,3,,FALSE,FALSE
+401030.0,Kfz-Steuern,AUTO,3,,FALSE,FALSE
+440050.0,Transportkosten (außerhalb Recy),AUTO,1,,TRUE,FALSE
+400011.0,Reifenkosten,AUTO,3,,FALSE,FALSE
+400020.0,Instandhaltung Personenkraftwagen,AUTO,3,,FALSE,FALSE
+401040.0,Kfz-Versicherungen,AUTO,3,,FALSE,FALSE
+400122.0,Leasing PKW,AUTO,3,,FALSE,FALSE
+210000.0,Übrige Zinsen und ähnliche Aufwendungen,AUTO,3,,FALSE,FALSE
+310010.0,Reinigungsmaterial,AUTO,1,,TRUE,FALSE
+420015.0,Instandhaltungskosten fremde  Gebäude,AUTO,3,,FALSE,FALSE
+450012.0,Kilometergeld (pauschal),AUTO,3,,FALSE,FALSE
+450013.0,Kürzung Verpfleg.mehraufwand,AUTO,3,,FALSE,FALSE
+401020.0,Öle und Fette,AUTO,3,,FALSE,FALSE
+274200.0,Versicherungsentschädigungen,AUTO,3,,FALSE,FALSE
+460090.0,Schreib- und Verwaltungsgebühren an Behö,AUTO,3,,FALSE,FALSE
+213101.0,Zinsen Factoring,AUTO,3,,FALSE,FALSE
+265900.0,Sonstige Zinsen und ähnl. Erträge verb.U,AUTO,3,,FALSE,FALSE
+411050.0,Personalversicherung,AUTO,3,,FALSE,FALSE
+430121.0,Warenkreditversicherung,AUTO,3,,FALSE,FALSE
+450020.0,Reisekosten Betriebsfremde,AUTO,3,,FALSE,FALSE
+460080.0,Pflichtbeiträge zu Verbänden,AUTO,3,,FALSE,FALSE
+460081.0,Beiträge zu sonstigen Vereinigungen,AUTO,3,,FALSE,FALSE
+470020.0,kaufm. Beratung und Buchführung,AUTO,3,,FALSE,FALSE
+470025.0,Steuerberatungskosten,AUTO,3,,FALSE,FALSE
+470036.0,Aufwendungen Umlage zentrale Verwaltung,AUTO,3,,FALSE,FALSE
+460065.0,IT Lizenzgebühren,AUTO,3,,FALSE,FALSE
+220000.0,Körperschaftsteuer,AUTO,3,,FALSE,FALSE
+221200.0,Solidaritätszuschlag,AUTO,3,,FALSE,FALSE
+430010.0,"Vermögensteuer, Grundsteuer u.a.",AUTO,3,,FALSE,FALSE
+430020.0,Gewerbeertragsteuer,AUTO,3,,FALSE,FALSE
+401015.0,"Alternative Antriebe (u.a. Strom, Wasser",AUTO,3,,FALSE,FALSE
+310040.0,Gas (vornehmlich industr. Anlagen),AUTO,3,,FALSE,FALSE
+420021.0,Raumpflege eigene Gebäude,AUTO,3,,FALSE,FALSE
+420450.0,Instandh./Reparatur/Wartung Miet- u. Lea,AUTO,3,,FALSE,FALSE
+431090.0,Sonstige Mieten,AUTO,3,,FALSE,FALSE
+450081.0,Sponsoring,AUTO,3,,FALSE,FALSE
+210900.0,Zinsaufwendungen an verbundene Unternehm,AUTO,3,,FALSE,FALSE
+400010.0,Instandhaltung Lastkraftwagen,AUTO,3,,FALSE,FALSE

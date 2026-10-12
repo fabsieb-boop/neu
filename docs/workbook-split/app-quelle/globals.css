@@ -1,0 +1,1455 @@
+/* ==========================================================================
+   Controlling Cockpit – Design System
+   ========================================================================== */
+
+:root {
+  --bg:            #eef2f7;
+  --surface:       #ffffff;
+  --surface-2:     #f8fafc;
+  --border:        #e3e8f0;
+  --border-strong: #cbd5e1;
+
+  --ink:           #0f172a;
+  --ink-2:         #475569;
+  --ink-3:         #7b8798;
+
+  --nav-bg:        #101a2e;
+  --nav-bg-2:      #16233c;
+  --nav-ink:       #93a3bd;
+  --nav-ink-active:#ffffff;
+
+  --accent:        #2563eb;
+  --accent-soft:   #eff4ff;
+  --pos:           #047857;
+  --pos-soft:      #e8f6f0;
+  --neg:           #be123c;
+  --neg-soft:      #fdeef1;
+  --warn:          #b45309;
+  --warn-soft:     #fdf3e3;
+
+  /* Dunkler Ton der Hauptschaltflaeche und der Tabellenkoepfe.  Eine Seite
+     hat genau eine Hauptaktion; blau trugen vorher auch Verweise und
+     Markierungen, dadurch war sie zwischen ihnen nicht mehr zu finden. */
+  --dunkel:        #111827;
+  --dunkel-hover:  #1f2937;
+
+  /* Balken tragen die Farbe als Flaeche, nicht als Schrift.  Die Schrifttoene
+     oben sind dafuer zu dunkel – ein Fortschrittsbalken in #047857 sieht
+     schwarz aus. */
+  --pos-bar:       #22c55e;
+  --accent-bar:    #3b82f6;
+
+  --radius:        16px;
+  --radius-sm:     10px;
+  --shadow:        0 1px 2px rgba(15,23,42,.04), 0 8px 22px -14px rgba(15,23,42,.13);
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  /* Deutsche Namen derselben Farben.  35 Regeln im weiteren Verlauf dieser
+     Datei greifen darauf zu, ohne dass sie je definiert waren – ein var()
+     ohne Wert und ohne Ausweichwert macht die ganze Eigenschaft ungueltig.
+     Am boesesten bei den Rollen- und Regionsknoepfen: dort blieb der
+     Hintergrund durchsichtig, waehrend die Schrift auf Weiss stand.
+     Gesetzte Rechte waren damit weiss auf weiss – unsichtbar. */
+  --akzent:    var(--accent);
+  --rand:      var(--border);
+  --flaeche:   var(--surface-2);
+  --karte:     var(--surface);
+  --gedaempft: var(--ink-3);
+  --line:      var(--border);
+  --accent-line: var(--accent);
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { padding: 0; margin: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ---------- Layout ------------------------------------------------------ */
+
+.shell { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 280px; flex: 0 0 280px;
+  background: var(--nav-bg);
+  color: var(--nav-ink);
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh;
+}
+
+.brand {
+  display: flex; align-items: center; gap: 11px;
+  padding: 18px 18px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.brand-mark {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: #fff; font-weight: 700; font-size: 15px;
+  display: grid; place-items: center; letter-spacing: -.5px;
+}
+.brand-text strong { display: block; color: #fff; font-size: 13px; letter-spacing: .06em; }
+.brand-text span   { font-size: 11px; color: var(--nav-ink); }
+
+.nav {
+  flex: 1; overflow-y: auto; padding: 12px 10px 24px;
+  /* Firefox: schmale Leiste in den Farben der Seitenspalte */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.18) transparent;
+  overscroll-behavior: contain;   /* kein Mitscrollen der Seite am Ende */
+}
+/* WebKit: die Leiste liegt über dem Inhalt statt eine Spur freizuhalten,
+   damit die Menübreite beim Ein- und Ausblenden nicht springt. */
+.nav::-webkit-scrollbar { width: 10px; }
+.nav::-webkit-scrollbar-track { background: transparent; }
+.nav::-webkit-scrollbar-thumb {
+  background-color: rgba(255,255,255,.14);
+  border-radius: 999px;
+  border: 3px solid transparent;   /* erzeugt den schmalen Balken mit Abstand */
+  background-clip: content-box;
+}
+.nav::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,.28); }
+.nav::-webkit-scrollbar-thumb:active { background-color: rgba(255,255,255,.4); }
+/* Solange die Maus nicht in der Seitenspalte ist, bleibt die Leiste dezent. */
+.sidebar:not(:hover) .nav { scrollbar-color: rgba(255,255,255,.08) transparent; }
+.sidebar:not(:hover) .nav::-webkit-scrollbar-thumb {
+  background-color: rgba(255,255,255,.07);
+}
+
+/* Weicher Verlauf am oberen und unteren Rand: zeigt an, dass es
+   weitergeht, ohne dass eine harte Kante entsteht. */
+.nav {
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14px,
+                              #000 calc(100% - 18px), transparent 100%);
+}
+.nav-group {
+  font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: #5c6c88; padding: 16px 10px 6px; font-weight: 600;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: var(--radius-sm);
+  font-size: 13.5px; color: var(--nav-ink);
+  transition: background .12s, color .12s;
+}
+.nav-item:hover { background: rgba(255,255,255,.05); color: #dce4f0; }
+.nav-item.active { background: var(--accent); color: var(--nav-ink-active); font-weight: 500; }
+.nav-item .ico { width: 16px; text-align: center; opacity: .85; font-size: 13px; }
+
+.nav-foot {
+  padding: 12px 16px; border-top: 1px solid rgba(255,255,255,.07);
+  font-size: 11.5px; color: #5c6c88;
+}
+.nav-foot b { display: block; color: #c3cede; font-size: 12.5px; font-weight: 500; }
+
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+/* Der Seitenkopf ist eine Karte wie jede andere und scrollt mit.  Vorher war
+   er eine angeheftete Leiste ueber die volle Breite: 56 Pixel, die auf jeder
+   Seite und in jeder Bildschirmhoehe stehen blieben, obwohl in ihnen nur der
+   Titel stand, den man nach dem ersten Blick nicht mehr braucht. */
+.seitenkopf {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 22px 26px;
+  margin-bottom: 20px;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 20px 24px; flex-wrap: wrap;
+}
+.seitenkopf-text { min-width: 0; }
+.seitenkopf h1 {
+  margin: 2px 0 0; font-size: 27px; font-weight: 700;
+  letter-spacing: -.028em; line-height: 1.2;
+}
+.seitenkopf .angemeldet { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-2); }
+.seitenkopf .angemeldet b { color: var(--ink); font-weight: 650; }
+.kopf-aktionen {
+  display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap; justify-content: flex-end; margin-left: auto;
+}
+.kopf-aktionen form { display: flex; }
+
+/* Der Inhalt nutzt die volle Breite des Fensters.  Eine Obergrenze stand hier
+   einmal bei 2200px – auf einem breiten Schirm blieb dadurch rechts ein
+   handbreiter Streifen leer, waehrend die Tabellen gedraengt standen.
+   Fliesstext hat eigene, engere Grenzen (.page-intro, .card-head p), damit
+   er lesbar bleibt; Tabellen duerfen die Breite haben. */
+.content { padding: 22px 28px 56px; width: 100%; }
+
+/* ---------- Typo / bits ------------------------------------------------- */
+
+.page-intro { margin: 0 0 20px; max-width: 900px; color: var(--ink-2); font-size: 13.5px; }
+
+/* Die Rubrik trug bisher als graue Zeile ueber der Ueberschrift kaum etwas
+   bei.  Als kleine gefuellte Marke sagt sie auf einen Blick, in welchem
+   Abschnitt man liest – und gibt der Kopfzeile einen Anker. */
+.eyebrow {
+  display: inline-block;
+  font-size: 10px; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--accent); font-weight: 700;
+  background: var(--accent-soft); border: 1px solid #dbe6fe;
+  padding: 3px 9px; border-radius: 999px; margin-bottom: 7px;
+}
+
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 8px; border-radius: 20px; font-size: 11.5px; font-weight: 600;
+  background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.chip.pos  { background: var(--pos-soft);  color: var(--pos);  border-color: #bfe5d5; }
+.chip.neg  { background: var(--neg-soft);  color: var(--neg);  border-color: #f6ccd6; }
+.chip.warn { background: var(--warn-soft); color: var(--warn); border-color: #f0dcb8; }
+.chip.info { background: var(--accent-soft); color: var(--accent); border-color: #d3e0fd; }
+
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; white-space: nowrap; }
+.mono { font-family: var(--mono); font-size: 12.5px; }
+.pos { color: var(--pos); }
+.neg { color: var(--neg); }
+.muted { color: var(--ink-3); }
+
+/* ---------- Cards ------------------------------------------------------- */
+
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  margin-bottom: 20px; overflow: hidden;
+}
+.card-head {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+}
+.card-head h2 { margin: 1px 0 0; font-size: 16px; font-weight: 680; letter-spacing: -.017em; }
+.card-head p  { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-3); max-width: 720px; }
+.card-body { padding: 16px 20px; }
+.card-body.flush { padding: 0; }
+
+/* ---------- KPI --------------------------------------------------------- */
+
+.kpis { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(192px, 1fr)); margin-bottom: 20px; }
+/* Der Farbstreifen sass links ueber die ganze Hoehe und zog das Auge an den
+   Rand.  Als kurzer Strich ueber der Beschriftung markiert er dasselbe,
+   stoert aber die Zahl daneben nicht mehr. */
+.kpi {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 17px 18px 16px; box-shadow: var(--shadow);
+  position: relative; overflow: hidden;
+}
+/* Der Strich sass an der Kartenkante und wirkte wie ein abgeschnittener
+   Rahmen.  Als eigene Zeile ueber der Beschriftung gehoert er sichtbar zur
+   Kachel und traegt ihre Farbe. */
+.kpi::before { content:""; display: block; width: 26px; height: 3px;
+               border-radius: 999px; margin: 0 0 12px;
+               background: var(--border-strong); }
+.kpi.accent::before { background: var(--accent); }
+.kpi.good::before   { background: var(--pos); }
+.kpi.bad::before    { background: var(--neg); }
+.kpi .label { font-size: 10.5px; color: var(--ink-3); font-weight: 700;
+               letter-spacing: .07em; text-transform: uppercase; }
+.kpi .value { font-size: 27px; font-weight: 700; letter-spacing: -.03em; margin: 6px 0 4px; }
+/* Fliesstext, nicht Flex-Reihe: als Flex-Container wurde jedes Wort zu einem
+   eigenen Element in einer Zeile, die nicht umbrach – zusammen mit dem
+   overflow:hidden der Kachel schnitt das laengere Unterzeilen einfach ab. */
+.kpi .sub   { font-size: 12px; color: var(--ink-2); line-height: 1.5; }
+.kpi .sub .chip { vertical-align: -1px; }
+/* Zweite Aussage einer Unterzeile, z. B. der Vergleich gegen den Plan */
+.kpi .sub .zeile { display: block; margin-top: 5px; }
+
+/* ---------- Gestapelter Anteilsbalken -----------------------------------
+   Eine Zeile, mehrere Zustaende: die Breite jedes Abschnitts ist sein Anteil,
+   die Prozentzahl steht darin.  Nur Abschnitte ab etwa einem Achtel tragen
+   eine Beschriftung – darunter passt keine mehr hinein, ohne dass sie
+   ueberlaeuft. */
+.stapel { display: flex; width: 100%; height: 18px; border-radius: 999px;
+          overflow: hidden; background: #eef1f6; }
+.stapel i {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; font-style: normal; color: #fff;
+  min-width: 3px; letter-spacing: .02em; white-space: nowrap; overflow: hidden;
+}
+
+/* Ein Monat, der noch laeuft: die Spalte bleibt sichtbar, aber sie zaehlt
+   nicht mit – vor dem Monatsabschluss gibt es keine genaue Zahl. */
+.offen { font-size: 9px; font-weight: 700; letter-spacing: .06em;
+         color: var(--warn); background: var(--warn-soft);
+         border-radius: 999px; padding: 1px 5px; margin-left: 5px; }
+table.data th .offen { color: #f0c274; background: rgba(255,255,255,.10); }
+
+/* ---------- Abweichungsbalken -------------------------------------------
+   Zwei Rechnungen nebeneinander: der Balken laeuft von der Mitte nach rechts,
+   wenn die eigene Verfolgung mehr zeigt, und nach links, wenn SAP mehr zeigt.
+   Die Mittellinie ist die Null – ohne sie waere die Richtung nicht ablesbar. */
+.abw { position: relative; display: block; width: 100%; min-width: 90px;
+       height: 10px; background: #eef1f6; border-radius: 999px; }
+.abw::before { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px;
+               width: 1px; background: var(--border-strong); }
+.abw i { position: absolute; top: 0; bottom: 0; border-radius: 999px; }
+.abw i.pos { background: var(--pos); }
+.abw i.neg { background: var(--neg); }
+
+/* ---------- Zuklappbare Karten ------------------------------------------
+   Der Schalter wird von app/components/Klappbar.tsx eingehaengt, nicht in den
+   Seiten gesetzt.  Ohne JavaScript erscheint er gar nicht erst und alles
+   bleibt offen – das ist der Zustand, den es vorher gab. */
+.card-head .klapp {
+  margin-left: auto; align-self: flex-start; flex: none;
+  font: inherit; font-size: 11.5px; font-weight: 600;
+  color: var(--ink-2); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 4px 12px; cursor: pointer; white-space: nowrap;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.card-head .klapp:hover { background: var(--accent-soft); color: var(--accent); border-color: #d3e0fd; }
+.card-head .klapp:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card.card-zu .card-body { display: none; }
+.card.card-zu .card-head { border-bottom: none; }
+
+/* ---------- Tables ------------------------------------------------------ */
+
+.tablewrap { overflow-x: auto; }
+table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
+/* Dunkler Kopf: bei langen Zahlenkolonnen war die graue Kopfzeile beim
+   Scrollen kaum noch vom Inhalt zu unterscheiden. */
+/* Kein `position: sticky; top: 0` mehr.  Es brachte nichts – .tablewrap
+   scrollt nur waagerecht, also gab es nie einen senkrechten Scrollweg, an dem
+   die Kopfzeile haette kleben koennen.  Zusammen mit der rechten
+   Fixspalte entstand daraus aber eine doppelt festgestellte Eckzelle
+   (oben und rechts, mit zwei z-index): die flackerte beim seitlichen
+   Scrollen, weil der Browser sie in jedem Bild neu zusammensetzen musste. */
+table.data th {
+  text-align: left; font-weight: 700; font-size: 10.5px; letter-spacing: .06em;
+  text-transform: uppercase; color: #f1f5fb;
+  padding: 11px 12px; background: var(--dunkel);
+  border-bottom: none; white-space: nowrap;
+}
+table.data td { padding: 9px 12px; border-bottom: 1px solid #eef1f6; vertical-align: top; }
+table.data tbody tr:hover { background: #f7f9fd; }
+table.data tbody tr:last-child td { border-bottom: none; }
+table.data .r { text-align: right; }
+table.data td.r, table.data th.r { text-align: right; }
+table.data tr.total td {
+  font-weight: 660; background: var(--surface-2);
+  border-top: 2px solid var(--border-strong); border-bottom: none;
+}
+table.data tr.sub td { background: #fbfcfe; font-weight: 600; }
+table.data tr.head-row td { font-weight: 650; color: var(--ink); background: #f1f5fb; }
+table.data.compact td, table.data.compact th { padding: 6px 10px; }
+
+/* Rechts fixierte Summenspalte, damit der Jahreswert beim Querscrollen sichtbar bleibt */
+table.data th.fix-r, table.data td.fix-r {
+  position: sticky; right: 0; z-index: 2;
+  background: var(--surface);
+  box-shadow: -8px 0 10px -10px rgba(15,23,42,.45);
+}
+/* Die festgestellte Spalte hat einen eigenen Hintergrund, damit sie beim
+   seitlichen Scrollen deckt.  Im Kopf muss das derselbe dunkle Ton sein wie
+   in der uebrigen Kopfzeile – sonst steht helle Schrift auf hellem Grund und
+   die Spaltenueberschrift ist unsichtbar. */
+table.data th.fix-r { background: var(--dunkel); z-index: 3; }
+table.data tbody tr:hover td.fix-r { background: #fafbfe; }
+table.data tr.total td.fix-r { background: var(--surface-2); }
+table.data tr.head-row td.fix-r { background: #f1f5fb; }
+table.staffel tr.step td.fix-r { background: #eef4ff; }
+table.staffel tr.result td.fix-r { background: #0f172a; color: #fff; }
+table.data tbody tr:hover td.fix-r.keep { background: inherit; }
+
+/* Staffel (DB-Rechnung) */
+table.staffel td:first-child { min-width: 300px; max-width: 460px; }
+table.staffel th:first-child { min-width: 300px; }
+table.staffel tr.step td { background: #eef4ff; font-weight: 660; }
+table.staffel tr.step td:first-child { color: var(--accent); }
+table.staffel tr.result td { background: #0f172a; color: #fff; font-weight: 660; }
+table.staffel tr.result td .muted { color: #94a3b8; }
+/* Auf der dunklen Ergebniszeile traegt das kraeftige Rot nicht – dort steht
+   ein helles, das sich gegen Marineblau noch abhebt. */
+table.staffel tr.result td.neg, table.staffel tr.result td .neg { color: #fda4af; }
+table.staffel tr.result td.pos, table.staffel tr.result td .pos { color: #6ee7b7; }
+table.staffel .indent { padding-left: 26px; color: var(--ink-2); }
+table.staffel .formula { font-size: 11.5px; color: var(--ink-3); display: block; margin-top: 1px; }
+table.staffel tr.result .formula { color: #94a3b8; }
+
+/* ---------- Bars / charts ---------------------------------------------- */
+
+.barcell { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+/* display:inline-block ist hier nicht Kosmetik: als reines <span> war der
+   Balken ein Inline-Kasten, der weder Breite noch Hoehe annimmt – die Spalte
+   "Anteil" blieb in jeder Tabelle leer, ohne dass es jemandem auffiel. */
+.bartrack { display: inline-block; vertical-align: middle;
+            width: 90px; height: 8px; border-radius: 999px;
+            background: #e6ecf5; overflow: hidden; flex: 0 0 auto; }
+.bartrack i { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+.bartrack i.pos { background: var(--pos); }
+.bartrack i.neg { background: var(--neg); }
+
+.chart { width: 100%; height: auto; display: block; }
+.chart .grid { stroke: #e8ecf3; stroke-width: 1; }
+.chart .axis { fill: #8b97a8; font-size: 11px; font-family: var(--sans); }
+.chart .zero { stroke: #b9c3d1; stroke-width: 1; }
+
+/* Abstaende rund um die Bilder standen bisher als Inline-Stil in den Seiten –
+   mal 4px, mal nichts.  Dadurch klebte ein Diagramm an der Legende und das
+   naechste an der Kartenkante.  Der Rhythmus gehoert an eine Stelle. */
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px;
+          color: var(--ink-2); padding: 12px 18px 0; }
+.card-body > .chart { margin: 8px 0 2px; }
+.card-body > .chart + .chart { margin-top: 26px; }
+.card-body > .legend { padding: 0 0 12px; }
+.card-body > .chart + .legend { padding: 14px 0 0; }
+.legend + .card-body { padding-top: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+/* ---------- Grid helpers ------------------------------------------------ */
+
+/* Ohne align-items richten sich die Karten auf dieselbe Hoehe aus.  Mit
+   `start` stand die kuerzere Karte frei in der Luft und die Reihe wirkte
+   schief – am deutlichsten bei einem Ringdiagramm neben einer langen
+   Rangliste. */
+.grid-2 { display: grid; gap: 20px; grid-template-columns: 1fr 1fr; }
+.grid-3 { display: grid; gap: 20px; grid-template-columns: repeat(3, 1fr); }
+.grid-wide { display: grid; gap: 20px; grid-template-columns: 1.65fr 1fr; }
+/* In einem Raster sorgt die Luecke fuer den Abstand, nicht der Aussenrand. */
+.grid-2 > .card, .grid-3 > .card, .grid-wide > .card {
+  margin-bottom: 0; display: flex; flex-direction: column;
+}
+/* Gleich hohe Karten allein reichen nicht: neben einer Rangliste mit vierzehn
+   Zeilen stand ein Ringdiagramm oben in seiner Karte, darunter eine
+   handbreite leere Flaeche.  Der Rumpf nimmt jetzt die uebrige Hoehe, und ein
+   Bild, das allein darin steht, sitzt mittig statt oben. */
+.grid-2 > .card > .card-body,
+.grid-3 > .card > .card-body,
+.grid-wide > .card > .card-body { flex: 1; display: flex; flex-direction: column; }
+.grid-2 > .card > .card-body > .chart:only-child,
+.grid-3 > .card > .card-body > .chart:only-child,
+.grid-wide > .card > .card-body > .chart:only-child { margin-top: auto; margin-bottom: auto; }
+@media (max-width: 1180px) { .grid-2, .grid-3, .grid-wide { grid-template-columns: 1fr; } }
+
+/* ---------- Forms / controls ------------------------------------------- */
+
+.toolbar {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+  padding: 13px 18px; background: var(--surface-2); border-bottom: 1px solid var(--border);
+}
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 11px; font-weight: 600; color: var(--ink-3); letter-spacing: .04em; text-transform: uppercase; }
+.field input, .field select, .field textarea {
+  font: inherit; font-size: 13px; padding: 6.5px 10px;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: #fff; color: var(--ink); min-width: 140px;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: 2px solid var(--accent-soft); border-color: var(--accent);
+}
+.btn {
+  font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  padding: 7px 14px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--ink-2);
+}
+.btn:hover { background: #e6ecf6; color: var(--ink); }
+.btn.primary { background: var(--dunkel); border-color: var(--dunkel); color: #fff; }
+.btn.primary:hover { background: var(--dunkel-hover); color: #fff; }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--accent); }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); padding: 0 18px; background: var(--surface); }
+.tabs a {
+  padding: 10px 12px; font-size: 13px; font-weight: 550; color: var(--ink-2);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tabs a.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.pager { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 12px 18px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--ink-2); }
+
+.empty { padding: 34px 18px; text-align: center; color: var(--ink-3); font-size: 13px; }
+
+.note {
+  border-left: 3px solid var(--accent); background: var(--accent-soft);
+  padding: 11px 14px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 12.5px; color: #1e3a8a; margin-bottom: 16px;
+}
+.note.warn { border-color: var(--warn); background: var(--warn-soft); color: #7c2d12; }
+.note b { font-weight: 650; }
+
+.deflist { display: grid; gap: 0; }
+.deflist > div {
+  display: grid; grid-template-columns: 220px 1fr; gap: 16px;
+  padding: 10px 0; border-bottom: 1px solid #eef1f6; font-size: 13px;
+}
+.deflist > div:last-child { border-bottom: none; }
+.deflist dt, .deflist b { color: var(--ink-2); font-weight: 600; }
+
+/* ---------- Login ------------------------------------------------------- */
+
+.login-wrap {
+  min-height: 100vh; display: grid; place-items: center; background: var(--nav-bg);
+  padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));
+}
+.login-marke { width: 84px; height: 84px; display: block; margin-bottom: 8px; border-radius: 18px; }
+.login-card {
+  background: #fff; border-radius: 14px; padding: 30px 30px 26px; width: 100%; max-width: 380px;
+  box-shadow: 0 24px 60px -20px rgba(0,0,0,.5);
+}
+.login-card h1 { font-size: 19px; margin: 14px 0 4px; }
+.login-card p { margin: 0 0 20px; color: var(--ink-3); font-size: 13px; }
+.login-card .field { margin-bottom: 13px; }
+.login-card .field input { width: 100%; }
+.login-card .btn { width: 100%; padding: 9px; margin-top: 6px; }
+.login-err {
+  background: var(--neg-soft); color: var(--neg); border: 1px solid #f6ccd6;
+  padding: 8px 11px; border-radius: var(--radius-sm); font-size: 12.5px; margin-bottom: 12px;
+}
+
+
+/* ==========================================================================
+   Berichte: Bildschirm und Druck
+   ========================================================================== */
+
+.bericht { background: var(--surface); border: 1px solid var(--line, var(--border)); }
+
+.bericht-kopf {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 24px; padding: 26px 30px 20px; border-bottom: 2px solid var(--ink);
+}
+.bericht-kopf h1 { margin: 6px 0 0; font-size: 23px; font-weight: 660; letter-spacing: -.015em; }
+.bericht-kopf .firma { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); font-weight: 650; }
+.bericht-kopf .stand { text-align: right; font-size: 12.5px; color: var(--ink-2); line-height: 1.7; white-space: nowrap; }
+
+.bericht-teil { padding: 24px 30px; border-bottom: 1px solid var(--border); }
+.bericht-teil:last-child { border-bottom: none; }
+.bericht-teil > h2 {
+  font-size: 15px; margin: 0 0 4px; font-weight: 640;
+  display: flex; align-items: baseline; gap: 10px;
+}
+.bericht-teil > h2 .nr {
+  font-size: 11px; font-weight: 700; color: var(--accent);
+  border: 1px solid var(--accent-line, var(--border-strong)); background: var(--accent-soft);
+  border-radius: 4px; padding: 1px 7px; letter-spacing: .04em;
+}
+.bericht-teil > p { margin: 0 0 14px; font-size: 13px; color: var(--ink-2); max-width: 78ch; }
+
+.bericht-kennzahlen {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px; background: var(--border); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden; margin-bottom: 18px;
+}
+.bericht-kennzahlen > div { background: var(--surface); padding: 12px 14px; }
+.bericht-kennzahlen .k { font-size: 11px; color: var(--ink-3); font-weight: 600; letter-spacing: .02em; }
+.bericht-kennzahlen .w { font-size: 19px; font-weight: 650; letter-spacing: -.02em; margin-top: 3px; }
+.bericht-kennzahlen .h { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+
+.bericht-fuss { padding: 18px 30px 26px; font-size: 11.5px; color: var(--ink-3); line-height: 1.7; }
+.bericht-fuss b { color: var(--ink-2); }
+
+/* Wie die Werkzeugleiste unten ausgerichtet: die Felder bringen ihre
+   Beschriftung mit und sind dadurch hoeher als ein Knopf.  Bei zentrierter
+   Ausrichtung schwebten die Knoepfe auf halber Hoehe neben den
+   Auswahlfeldern. */
+.druckleiste {
+  display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;
+  padding: 13px 18px; background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  margin-bottom: 20px;
+}
+
+@media print {
+  @page { size: A4; margin: 14mm 12mm; }
+  body { background: #fff; font-size: 10.5pt; }
+  .sidebar, .druckleiste, .nav, .btn, .ausgabe, .toolbar,
+  .kt-blase, .kt-rahmen, .kt-schleier { display: none !important; }
+  .shell, .main { display: block; }
+
+  /* Der Seitenkopf bleibt – ohne ihn traegt der Ausdruck weder Titel noch
+     Geschaeftsjahr.  Nur die Bedienelemente daneben fallen weg. */
+  .seitenkopf {
+    display: block !important; position: static;
+    padding: 0 0 10px; margin: 0 0 14px;
+    border: none; border-bottom: 1.5pt solid #0f172a;
+    border-radius: 0; box-shadow: none; background: none;
+  }
+  .seitenkopf .eyebrow {
+    font-size: 8.5pt; letter-spacing: .08em; background: none;
+    border: none; padding: 0; margin: 0; color: #475569;
+  }
+  .seitenkopf h1 { font-size: 15pt; margin: 2px 0 0; }
+  .seitenkopf .angemeldet { font-size: 8.5pt; margin: 2px 0 0; }
+  .kopf-aktionen { display: none !important; }
+  /* Herkunft und Zeitpunkt gehoeren auf jedes Blatt. */
+  .seitenkopf::after {
+    content: "TVF ALTWERT · Controlling-Cockpit";
+    display: block; font-size: 8pt; color: #475569; margin-top: 3px;
+  }
+
+  /* Rechts angeheftete Spalten wuerden im Ausdruck ueber den Text laufen. */
+  table.data th.fix-r, table.data td.fix-r {
+    position: static !important; box-shadow: none !important;
+  }
+  .content { padding: 0; max-width: none; }
+  .bericht { border: none; box-shadow: none; }
+  .bericht-teil { break-inside: avoid; padding: 14px 0; }
+  .bericht-kopf { padding: 0 0 12px; }
+  .bericht-fuss { padding: 12px 0 0; }
+  table.data { font-size: 9pt; }
+  table.data thead { display: table-header-group; }
+  table.data tr { break-inside: avoid; }
+  table.data th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  tr.result td { background: #0f172a !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .tablewrap { overflow: visible; }
+  a { text-decoration: none; color: inherit; }
+}
+
+/* Zeile in einer Tabelle, die eine offene Datenlücke markiert */
+table.data tr.warn > td { background: var(--warn-soft); }
+table.data tr.warn > td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
+
+/* ---------------------------------------------------- Einstellungen */
+.logo-zeile { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.logo-feld {
+  width: 200px; height: 90px; display: grid; place-items: center;
+  border: 1px dashed var(--rand); border-radius: 10px; background: var(--flaeche);
+  padding: 8px; flex: none;
+}
+.logo-feld.klein { width: 132px; height: 60px; }
+.logo-feld img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.region-block {
+  border: 1px solid var(--rand); border-radius: 12px; padding: 14px 16px;
+  background: var(--flaeche);
+}
+.region-kopf { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.region-kopf h3 { margin: 0 0 2px; font-size: 15px; }
+.hilfe { display: block; font-size: 11.5px; color: var(--gedaempft); margin-top: 3px; }
+
+/* ---------------------------------------------------- Berichtskopf mit Logo */
+.bericht-marke { display: flex; gap: 16px; align-items: center; }
+.bericht-logo { max-height: 54px; max-width: 190px; object-fit: contain; flex: none; }
+.bericht-kopf .untertitel { font-size: 12.5px; color: var(--gedaempft); margin-top: 2px; }
+.bericht { border-top: 3px solid var(--bericht-akzent, var(--akzent, #334155)); }
+@media print {
+  .bericht-logo { max-height: 46px; }
+}
+
+/* ---------------------------------------------------- Aufklappbare Region */
+.region-details { border-top: 1px solid var(--rand); }
+.region-details > summary {
+  cursor: pointer; padding: 10px 16px; list-style: none;
+  display: flex; align-items: baseline; gap: 4px;
+}
+.region-details > summary::-webkit-details-marker { display: none; }
+.region-details > summary::before { content: '▸'; margin-right: 8px; color: var(--gedaempft); }
+.region-details[open] > summary::before { content: '▾'; }
+.region-details > summary:hover { background: var(--flaeche); }
+
+/* ---------------------------------------------------- Forecast-Erfassung */
+.filterleiste { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+.filterleiste .form-group { margin: 0; }
+
+table.raster th.haft, table.raster td.haft {
+  position: sticky; left: 0; z-index: 2; background: var(--karte);
+  min-width: 190px;
+}
+table.raster thead th.haft { z-index: 3; }
+table.raster th.istmonat { color: var(--gedaempft); font-weight: 500; }
+table.raster tr.auftragskopf > td {
+  background: var(--flaeche); border-top: 2px solid var(--rand);
+}
+table.raster tr.auftragskopf td.haft { background: var(--flaeche); }
+table.raster td.zelle { padding: 2px 4px; }
+table.raster td.zelle input {
+  width: 84px; text-align: right; padding: 4px 6px; font-size: 12.5px;
+  font-variant-numeric: tabular-nums; border: 1px solid transparent;
+  border-radius: 5px; background: transparent; color: inherit;
+}
+table.raster td.zelle input:hover:not(:disabled) { border-color: var(--rand); }
+table.raster td.zelle input:focus {
+  border-color: var(--akzent); background: var(--karte); outline: none;
+}
+table.raster td.zelle input.geaendert {
+  background: var(--warn-soft); border-color: var(--warn);
+}
+table.raster td.zelle input:disabled { color: var(--gedaempft); }
+table.raster .istwert {
+  display: inline-block; padding: 4px 6px; font-size: 12.5px;
+  font-variant-numeric: tabular-nums; color: var(--gedaempft);
+}
+table.raster td.zelle input.verteilen {
+  width: 92px; border: 1px dashed var(--rand); color: var(--gedaempft);
+}
+table.raster td.zelle input.verteilen:focus {
+  border-style: solid; border-color: var(--akzent); color: inherit;
+}
+
+/* ---------------------------------------------------- Filterleiste */
+.toolbar .field.feld-breit { flex: 1; min-width: 200px; max-width: 340px; }
+.toolbar .field.feld-breit input { width: 100%; }
+
+/* ---------------------------------------------------- Risikomatrix */
+.risiko-kpis { display: flex; gap: 26px; flex-wrap: wrap; margin-bottom: 16px; }
+.risiko-kpis .l { display: block; font-size: 11px; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--gedaempft); }
+.risiko-kpis .v { display: block; font-size: 20px; font-weight: 650; margin-top: 2px; }
+
+.matrixwrap { overflow-x: auto; }
+table.matrix { border-collapse: separate; border-spacing: 3px; width: 100%; min-width: 640px; }
+table.matrix th { font-size: 11.5px; font-weight: 600; color: var(--gedaempft); padding: 6px 8px; }
+table.matrix th.ecke { text-align: left; font-size: 11px; }
+table.matrix th.zeile { text-align: right; white-space: nowrap; }
+table.matrix .kurz { font-size: 10.5px; font-weight: 400; opacity: .75; }
+table.matrix td.feld {
+  height: 62px; border-radius: 8px; text-align: center; vertical-align: middle;
+  background: var(--flaeche); border: 1px solid var(--rand);
+}
+table.matrix td.feld.gering    { background: #ecfdf5; border-color: #a7f3d0; }
+table.matrix td.feld.mittel    { background: #fefce8; border-color: #fde68a; }
+table.matrix td.feld.hoch      { background: #fff7ed; border-color: #fdba74; }
+table.matrix td.feld.kritisch  { background: #fef2f2; border-color: #fca5a5; }
+table.matrix td.feld .anzahl   { font-size: 17px; font-weight: 700; }
+table.matrix td.feld .betrag   { font-size: 11px; color: var(--gedaempft); }
+table.matrix td.feld:not(.belegt) { opacity: .45; }
+
+.risikozeile { border-top: 1px solid var(--rand); }
+.risikokopf {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 10px 16px; background: none; border: 0; cursor: pointer; font: inherit; color: inherit;
+}
+.risikokopf:hover { background: var(--flaeche); }
+.risikokopf .pfeil { color: var(--gedaempft); width: 12px; }
+.risikokopf .bez { flex: 1; min-width: 180px; }
+.risikodetail { padding: 4px 16px 18px 38px; }
+.dreipunkt { display: flex; gap: 22px; flex-wrap: wrap; font-size: 12.5px;
+  color: var(--gedaempft); margin-bottom: 12px; }
+.vorschlaege { margin-top: 14px; }
+.vorschlaege .ueberschrift { font-size: 11.5px; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--gedaempft); margin-bottom: 8px; }
+.vorschlag { display: flex; gap: 14px; align-items: flex-start; justify-content: space-between;
+  padding: 9px 0; border-top: 1px dashed var(--rand); font-size: 13px; }
+.vorschlag .muted { font-size: 12.5px; margin-top: 2px; }
+.vorschlag .grundlage { font-size: 11.5px; color: var(--gedaempft); margin-top: 3px;
+  font-variant-numeric: tabular-nums; }
+.btn.klein { padding: 2px 8px; font-size: 11.5px; }
+
+/* Hier standen dunkle Felder fuer ein dunkles Thema.  Ein dunkles Thema gibt
+   es in dieser Anwendung nicht – die Regel griff trotzdem, sobald das
+   Betriebssystem auf dunkel stand: die Risikomatrix bekam schwarzgruene und
+   schwarzrote Felder, waehrend Seite und Schrift hell blieben.  Die Zahl im
+   Feld war damit nicht mehr zu lesen. */
+
+/* ---------------------------------------------------- Regionsfreigabe */
+.regionswahl { display: flex; flex-wrap: wrap; gap: 4px; }
+.regionschip {
+  font: inherit; font-size: 11px; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--rand); background: var(--flaeche);
+  color: var(--gedaempft); cursor: pointer;
+}
+.regionschip:hover:not(:disabled) { border-color: var(--akzent); }
+.regionschip.an { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+
+/* --------------------------------------------------------------------------
+   Rollen farbig.  Bisher sahen alle sechs Rollen gleich aus – ein gesetztes
+   ADMIN war von einem gesetzten NEUTRAL nicht zu unterscheiden.  Jede Rolle
+   traegt jetzt ihre eigene Farbe, und je maechtiger das Recht, desto
+   auffaelliger: Vollzugriff rot, Alles-Lesen bernstein, der Rest ruhig.
+   -------------------------------------------------------------------------- */
+.rollenchip.an[data-rolle="ADMIN"]           { background: var(--neg);  border-color: var(--neg); }
+.rollenchip.an[data-rolle="CHEF"]            { background: var(--warn); border-color: var(--warn); }
+.rollenchip.an[data-rolle="CONTROLLING"]     { background: var(--accent); border-color: var(--accent); }
+.rollenchip.an[data-rolle="PROJEKTLEITUNG"]  { background: var(--pos);  border-color: var(--pos); }
+.rollenchip.an[data-rolle="SACHBEARBEITUNG"] { background: #6d28d9; border-color: #6d28d9; }
+.rollenchip.an[data-rolle="NEUTRAL"]         { background: var(--ink-3); border-color: var(--ink-3); }
+
+/* Nicht gesetzt: die Farbe bleibt als Andeutung stehen, damit man sieht,
+   worum es geht, ohne dass es nach vergebenem Recht aussieht. */
+.rollenchip[data-rolle="ADMIN"]           { color: var(--neg); }
+.rollenchip[data-rolle="CHEF"]            { color: var(--warn); }
+.rollenchip[data-rolle="CONTROLLING"]     { color: var(--accent); }
+.rollenchip[data-rolle="PROJEKTLEITUNG"]  { color: var(--pos); }
+.rollenchip[data-rolle="SACHBEARBEITUNG"] { color: #6d28d9; }
+.rollenchip.an { color: #fff; }
+
+/* Die eigene Zeile hervorheben – wer sich selbst Rechte entzieht, soll es
+   vorher sehen. */
+table.data tbody tr.ichselbst > td { background: var(--accent-soft); }
+.ichselbst .selbstmarke {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--accent); margin-left: 6px;
+}
+/* Rollen- und Regionsspalte breit genug, dass die Kaestchen in zwei Zeilen
+   passen.  Vorher stapelten sich sechs Rollen untereinander und machten jede
+   Benutzerzeile ueber 200 Pixel hoch – bei 31 Benutzern ein Meter Scrollweg. */
+table.data td.rollenzelle   { min-width: 340px; }
+table.data td.regionenzelle { min-width: 300px; }
+table.data td.rollenzelle .regionschip,
+table.data td.regionenzelle .regionschip { white-space: nowrap; }
+
+.rechtelegende { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; font-size: 12px; }
+.rechtelegende .punkt { display: inline-block; width: 10px; height: 10px; border-radius: 999px; margin-right: 5px; vertical-align: -1px; }
+.regionschip.an.implizit { background: transparent; color: var(--gedaempft);
+  border-style: dashed; }
+.regionschip:disabled { opacity: .6; cursor: default; }
+table.data tbody tr.mehrjaehrig > td { background: var(--flaeche); }
+
+/* ====================================================================
+   Formulare
+   Bisher waren .form-group und .form-row nie definiert – die Seiten
+   Einstellungen und Passwort ändern liefen deshalb ohne Layout.
+   Alle Bedienelemente teilen sich eine feste Höhe, damit Eingabefeld,
+   Auswahlliste und Schaltfläche in einer Zeile exakt auf gleicher
+   Grundlinie stehen.
+   ==================================================================== */
+:root { --hoehe-bedienelement: 34px; }
+
+.form-row {
+  display: grid; gap: 14px 16px; margin-bottom: 14px;
+  grid-template-columns: 1fr;
+}
+.form-row--2 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.form-row--3 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.form-row--4 { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+
+.form-group { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.form-group > label {
+  font-size: 11px; font-weight: 600; color: var(--ink-3);
+  letter-spacing: .04em; text-transform: uppercase;
+}
+.form-group > input,
+.form-group > select,
+.form-group > textarea {
+  font: inherit; font-size: 13px; width: 100%;
+  padding: 0 10px; height: var(--hoehe-bedienelement);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: #fff; color: var(--ink);
+}
+.form-group > textarea { height: auto; padding: 8px 10px; line-height: 1.45; resize: vertical; }
+.form-group > input[type="color"] { padding: 2px; cursor: pointer; }
+.form-group > input:focus,
+.form-group > select:focus,
+.form-group > textarea:focus {
+  outline: 2px solid var(--accent-soft); border-color: var(--accent);
+}
+.form-group > input:disabled, .form-group > select:disabled { background: var(--surface-2); color: var(--ink-3); }
+.form-group > input[aria-invalid="true"] { border-color: var(--warn); }
+
+/* Spalte, die nur Schaltflächen trägt: unten ausrichten, damit sie mit
+   den Eingabefeldern derselben Zeile abschließt. */
+.form-group--actions {
+  flex-direction: row; align-items: flex-end; gap: 10px;
+  justify-content: flex-start; flex-wrap: wrap;
+}
+.form-row .form-group--actions { align-self: end; }
+
+.hilfe { display: block; font-size: 11.5px; color: var(--ink-3); line-height: 1.4; }
+
+/* ---------------------------------------------------------------------------
+   Bedienelemente: eine Groesse, eine Hoehe
+   ---------------------------------------------------------------------------
+   Die gemeinsame Hoehe galt bisher nur fuer Felder in .field und .toolbar.
+   Ueberall sonst blieb der Browserstandard stehen – am deutlichsten in der
+   Buchungsmaske, wo die Zeilen in Tabellenzellen erfasst werden: Eingaben
+   21 px, Auswahlfelder 19 px, der Knopf daneben 34 px.
+
+   Die Regel gilt deshalb jetzt fuer jedes Bedienelement, gleich wo es steht.
+   Ausgenommen sind nur die, die keine Zeile fuellen: Ankreuzfelder,
+   Auswahlknoepfe und die Dateiauswahl, die der Browser selbst zeichnet.
+--------------------------------------------------------------------------- */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]),
+select, button:not(.kachel), .btn, label.btn {
+  font: inherit; font-size: 13px;
+  height: var(--hoehe-bedienelement);
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: #fff; color: var(--ink);
+  vertical-align: middle;
+}
+button:not(.kachel), .btn, label.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 14px; font-weight: 550; cursor: pointer; white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------
+   Schaltflaechen: eine gefuellte Flaeche, kein Kasten
+   -------------------------------------------------------------------------
+   Die Sammelregel darueber gibt jedem Bedienelement denselben weissen Grund
+   mit kraeftigem Rand.  Bei einem Eingabefeld ist das richtig – dort sagt der
+   Rand, wo man schreiben darf.  Eine Schaltflaeche wirkte dadurch wie ein
+   leeres Feld.  Sie traegt jetzt eine eigene Flaeche und einen ruhigen Rand;
+   die eine Hauptaktion einer Seite ist dunkel und damit die einzige, die aus
+   der Reihe sticht.  Die Regel steht nach der Sammelregel, weil sie sonst
+   von ihr ueberschrieben wuerde.
+   ------------------------------------------------------------------------- */
+button:not(.kachel), .btn, label.btn {
+  background: var(--surface-2); border-color: var(--border);
+  color: var(--ink-2); font-weight: 600;
+}
+button:not(.kachel):hover:not(:disabled),
+.btn:hover, label.btn:hover { background: #e6ecf6; color: var(--ink); }
+
+button.primary, .btn.primary, label.btn.primary,
+button[type="submit"].primary {
+  background: var(--dunkel); border-color: var(--dunkel); color: #fff;
+}
+button.primary:hover:not(:disabled), .btn.primary:hover, label.btn.primary:hover {
+  background: var(--dunkel-hover); border-color: var(--dunkel-hover); color: #fff;
+}
+
+/* Ausgeben und Herunterladen: gruen umrandet, damit sich das Erzeugen einer
+   Datei von den uebrigen Schaltflaechen unterscheidet. */
+button.gruen, .btn.gruen {
+  background: var(--pos-soft); border-color: #bfe5d5; color: var(--pos);
+}
+button.gruen:hover:not(:disabled), .btn.gruen:hover {
+  background: #d7f0e4; border-color: #9fd8c2; color: var(--pos);
+}
+
+button.gefahr, .btn.gefahr {
+  background: var(--neg-soft); border-color: #f6ccd6; color: var(--neg);
+}
+button.gefahr:hover:not(:disabled), .btn.gefahr:hover {
+  background: #fbdce3; border-color: #efb6c4; color: var(--neg);
+}
+
+button:disabled, .btn:disabled { opacity: .55; cursor: default; }
+button.ghost, .btn.ghost { background: transparent; border-color: transparent; color: var(--accent); }
+button.ghost:hover:not(:disabled), .btn.ghost:hover { background: var(--accent-soft); color: var(--accent); }
+textarea {
+  font: inherit; font-size: 13px; padding: 8px 10px; box-sizing: border-box;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: #fff; color: var(--ink);
+}
+/* In dichten Tabellen fuellt das Feld die Zelle – sonst steht es verloren
+   in der Spalte und die Spaltenbreiten springen beim Tippen. */
+table.data td > input:not([type="checkbox"]):not([type="radio"]),
+table.data td > select { width: 100%; min-width: 0; }
+.btn-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.toggle-check {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: var(--hoehe-bedienelement); font-size: 13px; cursor: pointer;
+  user-select: none;
+}
+.toggle-check input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+.toggle-check input:disabled { cursor: default; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .form-group > input,
+  :root:not([data-theme="light"]) .form-group > select,
+  :root:not([data-theme="light"]) .form-group > textarea { background: var(--surface); }
+}
+
+/* ---------------------------------------------------- Berichtsbaukasten */
+.spaltenwahl { display: flex; flex-wrap: wrap; gap: 6px; }
+.spaltenchip {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  font-size: 12px; padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--border-strong); background: var(--surface);
+  user-select: none;
+}
+.spaltenchip:hover { border-color: var(--accent); }
+.spaltenchip.an { background: var(--accent); border-color: var(--accent); color: #fff; }
+.spaltenchip input { display: none; }
+.spaltenchip i { font-style: normal; opacity: .7; font-size: 11px; }
+.sqlanzeige {
+  font-size: 12px; line-height: 1.5; padding: 12px 14px; margin: 0;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); overflow-x: auto; white-space: pre-wrap;
+  font-variant-ligatures: none;
+}
+
+/* ---------------------------------------------------- QR-Code */
+.qrrahmen {
+  display: inline-block; padding: 14px; background: #fff;
+  border: 1px solid var(--border); border-radius: 12px;
+}
+.qrrahmen svg { display: block; width: 240px; height: 240px; }
+
+/* ---------------------------------------------------------------------------
+   GuV im SAP-Aufriss
+   Die Gliederung lebt von der Einrueckung, deshalb bleibt die erste Spalte
+   breit und ruhig; Gruppenueberschriften tragen keine Zahl und heben sich
+   nur durch Farbe ab, nicht durch eine eigene Flaeche.
+--------------------------------------------------------------------------- */
+table.data.sap td:first-child { min-width: 340px; }
+table.data.sap tr.gruppe td { color: var(--ink); background: var(--surface-2); }
+table.data.sap tr.gruppe td:first-child { letter-spacing: .01em; }
+table.data.sap tr.total td { border-top: 1px solid var(--border-strong); }
+
+/* ---------------------------------------------------------------------------
+   Aktionen einer Filterleiste
+   ---------------------------------------------------------------------------
+   Die Eingabefelder bringen ihre Beschriftung mit und sind dadurch hoeher als
+   ein Knopf.  Ohne Klammer rutschen die Knoepfe deshalb in eine eigene Zeile,
+   sobald die Leiste umbricht.  Diese Gruppe haelt sie zusammen und auf der
+   Grundlinie der Felder.
+--------------------------------------------------------------------------- */
+.toolbar-aktionen { display: flex; gap: 8px; align-items: center; flex-wrap: nowrap; }
+.toolbar-aktionen > .btn { height: var(--hoehe-bedienelement); display: inline-flex;
+  align-items: center; justify-content: center; padding-top: 0; padding-bottom: 0;
+  white-space: nowrap; }
+.toolbar > .btn { height: var(--hoehe-bedienelement); display: inline-flex;
+  align-items: center; justify-content: center; padding-top: 0; padding-bottom: 0;
+  white-space: nowrap; }
+.toolbar .field input, .toolbar .field select { height: var(--hoehe-bedienelement); }
+
+/* ---------------------------------------------------------------------------
+   Klicktour
+   ---------------------------------------------------------------------------
+   Der Scheinwerfer ist ein Rahmen mit sehr grossem Schlagschatten – dadurch
+   liegt der Schleier ueber der ganzen Seite und laesst genau ein Element frei,
+   ohne dass ein zweites Element darueber liegen muss.
+--------------------------------------------------------------------------- */
+.kt-rahmen {
+  position: fixed; z-index: 9998; pointer-events: none;
+  border: 2px solid var(--accent); border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, .58);
+  transition: top .2s ease, left .2s ease, width .2s ease, height .2s ease;
+}
+.kt-schleier {
+  position: fixed; inset: 0; z-index: 9998; pointer-events: none;
+  background: rgba(15, 23, 42, .58);
+}
+.kt-blase {
+  position: fixed; z-index: 9999; width: min(382px, calc(100vw - 28px));
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--border-strong); border-radius: var(--radius);
+  box-shadow: 0 18px 50px -12px rgba(15, 23, 42, .45);
+  padding: 14px 16px 12px;
+}
+.kt-kopf { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.kt-titel { font-weight: 650; font-size: 13.5px; }
+.kt-schliessen {
+  border: none; background: none; cursor: pointer; color: var(--ink-3);
+  font-size: 20px; line-height: 1; padding: 0 2px;
+}
+.kt-schliessen:hover { color: var(--ink); }
+.kt-ort {
+  font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 650; margin-top: 8px;
+}
+.kt-text { margin: 6px 0 0; font-size: 13px; line-height: 1.5; }
+.kt-warte { margin: 8px 0 0; font-size: 11.5px; color: var(--ink-3); font-style: italic; }
+.kt-fuss {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border);
+}
+.kt-zaehler { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.kt-knoepfe { display: flex; gap: 6px; }
+
+/* ---------------------------------------------------------------------------
+   Handbuch
+--------------------------------------------------------------------------- */
+.handbuch-inhalt {
+  display: grid; gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+}
+.handbuch-kachel {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px 14px; text-decoration: none; color: inherit;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.handbuch-kachel:hover { border-color: var(--accent); background: var(--accent-soft); }
+.handbuch-kachel .nr {
+  font-variant-numeric: tabular-nums; font-weight: 650; font-size: 12px;
+  color: var(--accent); padding-top: 1px;
+}
+.handbuch-kachel b { display: block; font-size: 13.5px; }
+.handbuch-kachel .muted { display: block; font-size: 12px; margin-top: 2px; line-height: 1.4; }
+
+.handbuch-fragen { margin: 0; display: flex; flex-direction: column; gap: 16px; }
+.handbuch-fragen dt { font-weight: 650; font-size: 13.5px; margin-bottom: 4px; }
+.handbuch-fragen dd {
+  margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink-2);
+  max-width: 76ch;
+}
+.handbuch-fragen dd a { color: var(--accent); }
+kbd {
+  font: inherit; font-size: 11.5px; padding: 1px 6px; border-radius: 4px;
+  border: 1px solid var(--border-strong); background: var(--surface-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------------
+   Ausgabeleiste
+--------------------------------------------------------------------------- */
+.ausgabe { display: inline-flex; gap: 6px; align-items: center; }
+.ausgabe .btn { height: var(--hoehe-bedienelement); display: inline-flex;
+  align-items: center; justify-content: center; padding: 0 10px;
+  font-size: 12px; white-space: nowrap; }
+
+/* ---------------------------------------------------------------------------
+   Navigation: zusammenklappbare Gruppen
+   ---------------------------------------------------------------------------
+   <summary> traegt die Gruppenbeschriftung und ist zugleich der Schalter.
+   Der Zustand kommt vom Server (offen ist die Gruppe der aktuellen Seite),
+   deshalb braucht die Leiste kein JavaScript.
+--------------------------------------------------------------------------- */
+.nav-gruppe { margin-top: 2px; }
+
+.nav-gruppe > summary.nav-group {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  cursor: pointer; list-style: none; user-select: none;
+  padding: 9px 10px 9px 22px; margin-top: 4px;
+  border-radius: var(--radius-sm); position: relative;
+}
+.nav-gruppe > summary.nav-group::-webkit-details-marker { display: none; }
+.nav-gruppe > summary.nav-group:hover { background: rgba(255, 255, 255, .05); color: #a9b8d0; }
+.nav-gruppe > summary.nav-group:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* Eigenes Dreieck, damit es in beiden Zustaenden gleich sitzt */
+.nav-gruppe > summary.nav-group::before {
+  content: ""; position: absolute; left: 8px; top: 50%;
+  width: 0; height: 0; margin-top: -3px;
+  border-left: 4px solid currentColor;
+  border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent;
+  opacity: .55; transition: transform .15s ease;
+  transform-origin: 2px 3px;
+}
+.nav-gruppe[open] > summary.nav-group::before { transform: rotate(90deg); }
+.nav-gruppe[open] > summary.nav-group { color: #93a3bd; }
+
+/* Zahl der Eintraege – zeigt, was hinter einer geschlossenen Gruppe steckt */
+.nav-zahl {
+  font-size: 10px; font-variant-numeric: tabular-nums; font-weight: 600;
+  color: #5c6c88; background: rgba(255, 255, 255, .06);
+  border-radius: 9px; padding: 1px 6px; letter-spacing: 0;
+}
+.nav-gruppe[open] > summary.nav-group .nav-zahl { opacity: 0; }
+
+.nav-gruppe > .nav-item { margin-left: 8px; }
+
+/* Fussbereich mit den persoenlichen Eintraegen */
+.nav-foot {
+  padding: 8px 10px 12px; border-top: 1px solid rgba(255, 255, 255, .07);
+  display: flex; flex-direction: column; gap: 1px;
+}
+.nav-foot .nav-item.klein { padding: 6px 10px; font-size: 12.5px; }
+.nav-person { padding: 8px 10px 0; font-size: 11.5px; color: #5c6c88; }
+.nav-person b { display: block; color: #c3cede; font-size: 12.5px; font-weight: 500; }
+
+/* Etwas enger, damit die groesste Gruppe auch auf einem 13-Zoll-Bildschirm
+   ohne Scrollen sichtbar bleibt. */
+.nav { padding: 8px 10px 4px; }
+.sidebar .nav-item { padding: 7px 10px; }
+.nav-gruppe > summary.nav-group { padding: 7px 10px 7px 22px; margin-top: 3px; }
+.nav-gruppe:first-of-type { margin-top: 6px; }
+
+/* Selbstpruefung: die Erklaerung gehoert unter den Namen, nicht daneben */
+table.data .formula { display: block; font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+table.data .formula.neg { color: var(--neg); }
+
+/* ---------------------------------------------------------------------------
+   Unternavigation einer Seitengruppe
+   ---------------------------------------------------------------------------
+   Sitzt unter der Kopfzeile und fuehrt zu den Unterseiten.  Kein Kasten,
+   keine Flaeche: eine Linie mit einer hervorgehobenen Marke reicht und
+   nimmt dem Inhalt darunter nichts weg.
+--------------------------------------------------------------------------- */
+.unterseiten { margin: -4px 0 18px; }
+.unterseiten-leiste {
+  display: flex; gap: 2px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border); padding-bottom: 0;
+}
+.unterseite {
+  padding: 8px 14px; font-size: 13.5px; color: var(--ink-2);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  white-space: nowrap; transition: color .12s ease, border-color .12s ease;
+}
+.unterseite:hover { color: var(--ink); background: var(--surface-2); }
+.unterseite.active {
+  color: var(--accent); border-bottom-color: var(--accent); font-weight: 550;
+}
+.unterseiten-hinweis {
+  margin: 10px 0 0; font-size: 12.5px; color: var(--ink-3); max-width: 90ch;
+}
+
+@media print { .unterseiten-leiste { display: none; } }
+
+/* ---------------------------------------------------------------------------
+   Dateiart beim Import waehlen
+   ---------------------------------------------------------------------------
+   Kacheln statt Auswahlliste: was die Datei ist, entscheidet ueber alles
+   Weitere, und diese Entscheidung soll man sehen und nicht aufklappen.
+   Die farbige Markierung sagt, was der Import bewirkt – rot, wenn er das
+   Ergebnis verschiebt.
+--------------------------------------------------------------------------- */
+.artwahl {
+  display: grid; gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
+}
+/* Eine Kachel ist ein Knopf, sieht aber keinem aehnlich: mehrzeilig, links
+   ausgerichtet, so hoch wie ihr Inhalt.  Die Klasse .kachel nimmt sie
+   deshalb von der Einheitshoehe der Bedienelemente aus – ohne das stand ihr
+   Text einzeilig in 34 Pixeln und lief ueber die Nachbarn. */
+.artkachel {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  height: auto; min-height: 0; white-space: normal;
+  padding: 12px 14px; text-align: left; cursor: pointer; font-weight: 400;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); color: inherit; font-size: 13px;
+  transition: border-color .12s, box-shadow .12s, background .12s;
+  overflow-wrap: anywhere;
+}
+.artkachel:hover:not(:disabled) { border-color: var(--accent); }
+.artkachel:disabled { opacity: .55; cursor: default; }
+.artkachel b { font-size: 13.5px; }
+.artkachel .muted { font-size: 11.5px; line-height: 1.4; }
+.artkachel .artziel { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+.artkachel.aktiv {
+  border-color: var(--accent); background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.artkachel.aktiv.wirkung-ergebnis { border-color: var(--neg); box-shadow: inset 0 0 0 1px var(--neg); }
+.artkachel.aktiv.wirkung-ergebnis .artziel { color: var(--neg); }
+
+@media print { .artwahl { display: none; } }
+
+/* ---------------------------------------------------------------------------
+   Aufriss je Mitarbeiter
+   ---------------------------------------------------------------------------
+   Ein <details> und kein Schalter im Browser: es funktioniert ohne
+   JavaScript, ueberlebt den Ausdruck und laesst sich verlinken.  Beim
+   Drucken wird alles aufgeklappt – ein zugeklappter Abschnitt auf Papier
+   ist eine leere Zeile.
+--------------------------------------------------------------------------- */
+.aufriss {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  margin-bottom: 8px; background: var(--surface);
+}
+.aufriss > summary {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 9px 12px; cursor: pointer; list-style: none;
+  border-radius: var(--radius);
+}
+.aufriss > summary::-webkit-details-marker { display: none; }
+.aufriss > summary::before {
+  content: '▸'; color: var(--ink-3); font-size: 11px; flex: 0 0 auto;
+  transition: transform .12s;
+}
+.aufriss[open] > summary::before { transform: rotate(90deg); }
+.aufriss > summary:hover { background: var(--surface-2); }
+.aufriss > summary .muted { font-size: 12px; margin-right: auto; }
+.aufriss[open] > summary { border-bottom: 1px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; }
+.aufriss .tablewrap { padding: 0; }
+.aufriss table.data { margin: 0; }
+
+@media print {
+  .aufriss > summary::before { display: none; }
+  .aufriss > div { display: block !important; }
+}
+
+/* ==========================================================================
+   Hinweise als Aufklapper
+
+   Die Erlaeuterungen zu Abstimmung und offenem Bestand standen als breite
+   Kaesten ueber den Kopfzahlen.  Jetzt steht dort eine Zeile mit der
+   Aussage, und der Text erscheint auf Klick.  Das Popover-Verhalten kommt
+   vom Browser – kein eigenes JavaScript, Escape und Klick daneben
+   schliessen von selbst.
+   ========================================================================== */
+.hinweisleiste { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+
+.hinweischip {
+  display: inline-flex; align-items: center; gap: 8px;
+  font: inherit; font-size: 12.5px; height: auto; padding: 7px 12px;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: var(--surface); color: var(--ink-2); cursor: pointer;
+  text-align: left;
+}
+.hinweischip:hover { border-color: var(--border-strong); background: var(--surface-2); }
+.hinweischip .punkt { width: 8px; height: 8px; border-radius: 999px; background: var(--accent); flex: 0 0 auto; }
+.hinweischip.warn .punkt { background: var(--warn); }
+.hinweischip.neg  .punkt { background: var(--neg); }
+.hinweischip.pos  .punkt { background: var(--pos); }
+
+/* Ein Befund, der Arbeit ausloest, ist kein Hinweis mehr – er wird zum
+   roten Knopf.  Nur wenn es tatsaechlich Faelle gibt; ohne Faelle wird der
+   Knopf gar nicht erst gezeichnet. */
+.hinweischip.neg {
+  background: var(--neg); border-color: var(--neg); color: #fff; font-weight: 600;
+}
+.hinweischip.neg:hover { background: #9f0f33; border-color: #9f0f33; }
+.hinweischip.neg .punkt { background: #fff; }
+.hinweischip.neg .mehr { color: rgba(255,255,255,.8); border-left-color: rgba(255,255,255,.35); }
+.hinweischip .mehr {
+  font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--ink-3); border-left: 1px solid var(--border); padding-left: 8px;
+}
+
+.hinweispopup {
+  width: min(640px, calc(100vw - 32px));
+  padding: 0; border: none; border-radius: var(--radius);
+  background: var(--surface); color: var(--ink);
+  box-shadow: 0 10px 40px -12px rgba(15, 23, 42, .35), 0 0 0 1px var(--border);
+}
+.hinweispopup::backdrop { background: rgba(15, 23, 42, .28); }
+.hinweispopup .kopf {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 13px 16px; border-bottom: 1px solid var(--border);
+  border-top: 3px solid var(--accent); border-radius: var(--radius) var(--radius) 0 0;
+}
+.hinweispopup.warn .kopf { border-top-color: var(--warn); }
+.hinweispopup.neg  .kopf { border-top-color: var(--neg); }
+.hinweispopup.pos  .kopf { border-top-color: var(--pos); }
+.hinweispopup .kopf .zu {
+  height: 26px; width: 26px; padding: 0; line-height: 1;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface); color: var(--ink-2); font-size: 17px; cursor: pointer;
+}
+.hinweispopup .text { padding: 14px 16px 16px; font-size: 13.5px; line-height: 1.62; }
+.hinweispopup .text p { margin: 0 0 10px; }
+.hinweispopup .text p:last-child { margin-bottom: 0; }
+
+/* Im Ausdruck gibt es kein Klicken – dort steht der Text vollstaendig da. */
+@media print {
+  .hinweischip { display: none !important; }
+  .hinweispopup {
+    display: block !important; position: static !important;
+    box-shadow: none; border: 1px solid #cbd5e1; margin: 0 0 10px; width: auto;
+  }
+  .hinweispopup .kopf .zu { display: none !important; }
+}
+
+/* ---------------------------------------------------------------------------
+   Schraffur: gerechnet wird dieser Monat nicht
+   ---------------------------------------------------------------------------
+   Ein Monat, der noch nicht freigegeben ist, darf nicht aussehen wie ein
+   Monat ohne Geschäft.  Deshalb bleibt er stehen und bekommt Streifen –
+   sichtbar, aber erkennbar nicht mitgezählt.  Die Streifen laufen hinter
+   dem Text, die Farbe kommt aus dem Thema, damit es hell wie dunkel trägt.
+--------------------------------------------------------------------------- */
+.schraffiert {
+  background-image: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--ink) 10%, transparent) 0 6px,
+    transparent 6px 12px);
+}
+.schraffiert > td,
+.schraffiert > th,
+td.schraffiert,
+th.schraffiert { color: var(--ink-3); }
+
+/* ==========================================================================
+   Seitenspalte zuklappen
+   ==========================================================================
+   Der Zustand steht als data-nav am <html>-Element, gesetzt von einem
+   Inline-Skript im Layout, bevor das erste Bild gezeichnet wird.  Zugeklappt
+   bleiben nur die Symbole; die Gruppenueberschriften fallen weg, deshalb
+   oeffnet NavKlappen.tsx dabei alle Gruppen – sonst waere aus der
+   Symbolspalte nur noch die Gruppe der aktuellen Seite erreichbar.
+   ========================================================================== */
+
+.sidebar .navklapp {
+  margin-left: auto; flex: 0 0 auto;
+  width: 28px; height: 28px; min-width: 0; padding: 0;
+  border-radius: 8px; border: 1px solid rgba(255, 255, 255, .12);
+  background: rgba(255, 255, 255, .06); color: #93a3bd;
+  font-size: 13px; line-height: 1; font-weight: 700;
+}
+.sidebar .navklapp:hover { background: rgba(255, 255, 255, .14); color: #fff; }
+.sidebar .navklapp:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.sidebar { transition: width .16s ease, flex-basis .16s ease; }
+
+html[data-nav="zu"] .sidebar { width: 64px; flex: 0 0 64px; }
+html[data-nav="zu"] .brand {
+  flex-direction: column; gap: 10px; padding: 14px 0 12px;
+}
+html[data-nav="zu"] .brand-text { display: none; }
+html[data-nav="zu"] .sidebar .navklapp { margin: 0; }
+html[data-nav="zu"] .nav-text,
+html[data-nav="zu"] .nav-zahl { display: none; }
+html[data-nav="zu"] .nav-gruppe > summary.nav-group { display: none; }
+html[data-nav="zu"] .nav { padding: 8px 8px 4px; }
+html[data-nav="zu"] .nav-gruppe {
+  border-top: 1px solid rgba(255, 255, 255, .07);
+  margin-top: 8px; padding-top: 8px;
+}
+html[data-nav="zu"] .nav-gruppe:first-of-type { border-top: none; margin-top: 4px; }
+html[data-nav="zu"] .sidebar .nav-item,
+html[data-nav="zu"] .nav-gruppe > .nav-item {
+  justify-content: center; padding: 9px 0; margin-left: 0; gap: 0;
+}
+html[data-nav="zu"] .sidebar .nav-item .ico { width: auto; font-size: 15px; }
+html[data-nav="zu"] .nav-foot { padding: 8px 8px 12px; }
+
+/* ==========================================================================
+   Marken bleiben rund
+   ==========================================================================
+   Die Sammelregel fuer Bedienelemente gibt jedem <button> die Einheitshoehe
+   von 34 Pixeln und den Radius eines Eingabefeldes.  Die kleinen Marken sind
+   aber Text mit Farbe, keine Felder: mit gleicher Gewichtung wie die
+   Sammelregel – und nach ihr notiert – behalten sie ihre runde Form.
+   ========================================================================== */
+
+button.regionschip, button.rollenchip {
+  height: auto; min-height: 0; border-radius: 999px;
+  padding: 3px 10px; font-size: 11px; font-weight: 600;
+  background: var(--surface-2); border-color: var(--border); color: var(--ink-3);
+}
+button.regionschip:hover:not(:disabled) { background: #e6ecf6; border-color: var(--accent); }
+button.regionschip.an {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+button.regionschip.an.implizit {
+  background: transparent; color: var(--ink-3);
+  border-style: dashed; border-color: var(--border-strong);
+}
+button.regionschip:disabled { opacity: .6; }
+
+button.hinweischip {
+  height: auto; min-height: 0; border-radius: 999px;
+  padding: 7px 13px; font-size: 12.5px; font-weight: 550;
+  background: var(--surface); border-color: var(--border); color: var(--ink-2);
+}
+button.hinweischip:hover:not(:disabled) {
+  background: var(--surface-2); border-color: var(--border-strong); color: var(--ink);
+}
+button.hinweischip.neg {
+  background: var(--neg); border-color: var(--neg); color: #fff; font-weight: 650;
+}
+button.hinweischip.neg:hover:not(:disabled) { background: #9f0f33; border-color: #9f0f33; color: #fff; }
+
+.btn.klein, button.klein { height: auto; min-height: 0; padding: 3px 10px; font-size: 11.5px; }
+.zuordnen { display: flex; flex-direction: column; gap: 4px; min-width: 180px; }
+.zuordnen input { min-height: 32px; padding: 4px 8px; }
+.zuordnen-fehler { color: #991b1b; font-size: 12px; }
+
+/* ==========================================================================
+   Balken
+   ==========================================================================
+   Die Fuellung traegt jetzt den kraeftigen Ton: die Schriftfarben --pos und
+   --neg sind fuer eine Flaeche zu dunkel – ein Balken in #047857 sieht auf
+   hellgrauer Spur schwarz aus.
+   ========================================================================== */
+
+.bartrack { height: 10px; background: #e8edf5; }
+.bartrack i { background: var(--accent-bar); }
+.bartrack i.pos { background: var(--pos-bar); }
+.stapel { height: 16px; background: #e8edf5; }
+
+/* ==========================================================================
+   Filterleiste einer Karte
+   ==========================================================================
+   Weiss statt getoent: die Leiste ist Teil der Karte und kein eigener
+   Kasten.  Die Felder tragen ihren Rand selbst, die Trennung nach unten
+   macht die Linie.
+   ========================================================================== */
+
+.toolbar { background: var(--surface); }
+.toolbar .field input, .toolbar .field select { border-radius: var(--radius-sm); }
+
+/* ==========================================================================
+   Blaettern
+   ========================================================================== */
+
+.pager .btn { height: 30px; padding: 0 12px; font-size: 12.5px; }
+.pager b { font-variant-numeric: tabular-nums; }
