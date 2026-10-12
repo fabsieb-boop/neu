@@ -34,3 +34,12 @@ Excel Online liest die **D-Tabellen nicht per Verknüpfung**. Nutze **TVF_ALLE_W
 - `Forecast Rechnung Abgleich.xlsx` – Abgleich Forecast ↔ Rechnungstellung
 
 Download: **TVF_Forecast_Tabellen.zip** (Details: `FORECAST-TABELLEN.md`).
+
+## Projektakten suchen
+
+Öffne **`Projektakte.xlsx`** (oder `Projektakten_Suche.xlsx`):
+
+1. Blatt **Alle_Projekte** → Filter in der Kopfzeile  
+2. Blatt **Auswahl** → Projekt-Nr. in die gelbe Zelle  
+
+Nur Suche: `TVF_Projektakten_Suche.zip` · Alles inkl. Einzelakten: `TVF_Projektakten.zip`

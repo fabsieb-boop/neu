@@ -1,16 +1,22 @@
-# Projektakten (eine Excel je Projekt)
+# Projektakten
 
-Erzeugt aus `D Projekte.xlsx`, `Kostenverfolgung.xlsx` und `db/database.sql` (SAP-Buchungen).
+## Zuerst öffnen: `Projektakten_Suche.xlsx`
 
-## Inhalt je Datei
-- **Uebersicht** – Stamm, DB1–DB4, Leistung, Kosten, KV vs SAP
-- **Forecast_Monat** – Ist je Monat + leere Forecast-Spalten (Umsatz/Kosten/Bestand)
-- **Kostenarten_SAP** – Kostenarten × Monat
-- **Rechnungen** – Erlöse/Rechnungsbelege
-- **Buchungen_SAP** – Belegjournal (Ausschnitt)
-- **Stunden** – Projektstunden
+Eine Datei – suchen, filtern, Projekt anziehen:
 
-## Anzahl
-168 Projekte + `00_Projektakten_Uebersicht.xlsx`
+| Blatt | Nutzen |
+|-------|--------|
+| **Suche** | Kurzanleitung |
+| **Alle_Projekte** | AutoFilter (Region, Status, Name, Suchtext) |
+| **Auswahl** | Projekt-Nr. in gelbe Zelle → Kennzahlen |
+| **Rechnungen** | Alle Rechnungen, Filter auf Auftrag |
+| **Forecast_Liste** | Forecast Plan/Ist je Auftrag |
+| **Stunden** | Projektstunden filterbar |
 
-ZIP: `TVF_Projektakten.zip` im übergeordneten Ordner.
+Die Einzeldateien `Projekt_….xlsx` bleiben für den Detail-Deep-Dive.
+
+```bash
+python3 scripts/build_projektakten_suche.py
+```
+
+Downloads: `TVF_Projektakten_Suche.zip` (nur Suche) oder `TVF_Projektakten.zip` (alles).

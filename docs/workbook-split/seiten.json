@@ -269,6 +269,17 @@
       "hinweis": "Abgleich Forecast-Umsatz gegen Rechnung/Ist-Umsatz (SAP)."
     },
     {
+      "reihenfolge": 38,
+      "seitenname": "TVF-Projektakten-Suche",
+      "titel": "Projektakten Suche",
+      "originalseite": "Projektakte",
+      "excel": "Projektakte.xlsx",
+      "blatt": "Alle_Projekte",
+      "gruppe": "Projekte",
+      "typ": "auswertung",
+      "hinweis": "AutoFilter + Auswahl-Blatt. Ersetzt die unfilterbare Einzelprojekt-Akte."
+    },
+    {
       "reihenfolge": 40,
       "seitenname": "TVF-Projekte",
       "titel": "Projekte und Unteraufträge",
@@ -284,10 +295,10 @@
       "titel": "Projektakte / Statusbericht",
       "originalseite": "Projektsuche / Projektakte / Statusbericht",
       "excel": "Projektakte.xlsx",
-      "blatt": "Projektakte",
+      "blatt": "Auswahl",
       "gruppe": "Projekte",
       "typ": "projekte",
-      "hinweis": "Projekt auf Steuerung wählen."
+      "hinweis": "Jetzt durchsuchbar: Blätter Alle_Projekte (Filter) und Auswahl (Dropdown)."
     },
     {
       "reihenfolge": 42,
