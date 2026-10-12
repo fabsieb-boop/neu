@@ -6,6 +6,8 @@ Die Mappe `TVF_Controlling_Cockpit_Import1.xlsx` ist in **48 Einzeldateien** zer
 
 **Neu aus app.zip / db.zip:** gerettete Zahlen (`zahlen/`, siehe `ZAHLEN.md`), App→SharePoint-Mapping (`app-sharepoint-map.json`), Design v2 (`dashboard-design.json`), 37 HTML-Unterseiten, vollständige `db/`.
 
+**Was du tun musst:** **[ANLEITUNG.md](ANLEITUNG.md)** (Mac, PowerShell oder Hand-Upload).
+
 
 | Pfad | Zweck |
 |---|---|

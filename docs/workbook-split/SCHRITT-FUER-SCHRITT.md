@@ -1,5 +1,7 @@
 # Schritt für Schritt: Cockpit nach SharePoint (Mac)
 
+> **Aktuelle Komplett-Anleitung (Zahlen + App-Seiten):** siehe **[ANLEITUNG.md](ANLEITUNG.md)** – dort Variante A (PowerShell) und B (per Hand).
+
 **Eure Site:** https://tvfaltwert.sharepoint.com/sites/03-Finance  
 **Startseite (bestehend):** [TVF-ALTWERT-GMBH-Dashboard](https://tvfaltwert.sharepoint.com/sites/03-Finance/SitePages/TVF-ALTWERT-GMBH-Dashboard.aspx)
 
