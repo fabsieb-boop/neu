@@ -1,19 +1,25 @@
-# Werte eingebacken (SharePoint)
+# Werte aus den D-Tabellen
 
-Excel Online zeigt bei Querverweisen oft `#WERT!` und rechnet Formeln nicht wie Desktop-Excel.
+Excel Online überträgt **keine** Formeln zwischen Dateien (`Stunden.xlsx` → `D KLR.xlsx` usw.) → `#WERT!` / leere Zellen.
 
-**Lösung:** `scripts/bake_all_sharepoint.py` schreibt die zuletzt berechneten Werte aus
-`TVF_Controlling_Cockpit_Import.xlsx` als feste Zahlen in Hub + `dateien/*.xlsx`.
+## Was wir tun
 
-## Neu hochladen
+`scripts/transfer_d_to_sheets.py` liest:
 
-1. `Cockpit-Hub-SharePoint.xlsx` → als `Cockpit.xlsx` ersetzen
-2. Alle Dateien aus `dateien/` (oder `TVF_Cockpit_Dateien.zip`) ersetzen – besonders `Stunden.xlsx`, `KLR.xlsx`, `Steuerung.xlsx`, `GuV.xlsx`, …
-3. SharePoint-Seite **veröffentlichen**
+- `D Finanzen.xlsx` → GuV, Forecast, Cockpit, Regionen
+- `D KLR.xlsx` → Stunden, KLR
+- `D Liquidität.xlsx` → Cash-Pool / Monatsroll
+
+und schreibt **feste Zahlen** in Hub + `dateien/`. Zusätzlich liegen die D-Blätter in denselben Dateien (eingebettet).
+
+## Download
+
+- **Alles ersetzen:** `TVF_ALLE_WERTE.zip`
+- **Nur Cockpit:** `TVF_Cockpit_Download.zip`
+
+## Upload
+
+1. ZIP entpacken  
+2. `Cockpit.xlsx` + gesamten Ordner `dateien/` nach `TVF-Controlling-Cockpit` **ersetzen**  
+3. Seite **veröffentlichen**  
 4. Hard-Reload: `Cmd + Shift + R`
-
-## Erneut backen
-
-```bash
-python3 scripts/bake_all_sharepoint.py
-```

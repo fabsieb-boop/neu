@@ -23,3 +23,8 @@ Auf SharePoint nach `TVF-Controlling-Cockpit/projektakten/` hochladen.
 ## Werte eingebacken
 
 Hub + `dateien/*.xlsx` enthalten **feste Zahlen** (kein Excel-Online-Neurechnen). Details: `WERTE-EINGEBACKEN.md`. Bei `#WERT!` Dateien neu hochladen und Hard-Reload.
+
+## Keine Werte / #WERT! ?
+
+Excel Online liest die **D-Tabellen nicht per Verknüpfung**. Nutze **TVF_ALLE_WERTE.zip** (Werte bereits aus D Finanzen/D KLR/D Liquidität übertragen), alles ersetzen, veröffentlichen, Hard-Reload. Siehe `WERTE-EINGEBACKEN.md`.
+
