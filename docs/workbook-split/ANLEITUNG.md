@@ -401,6 +401,70 @@ Damit ist Variante B fertig.
 
 ---
 
+## Wo die restlichen Seiten hin (wichtig)
+
+**Ort:** immer auf derselben Site  
+https://tvfaltwert.sharepoint.com/sites/03-Finance  
+
+**Ablage der Seiten:** links **Seiten** (Site Pages) – **nicht** in Dokumente und nicht als Datei in den Excel-Ordner.
+
+Die Excels liegen weiter in:  
+`Dokumente` → `TVF-Controlling-Cockpit` (flach) und `…/zahlen/`.
+
+### So legst du eine Unterseite an (für jede Seite wiederholen)
+
+1. Links auf **Seiten** klicken.  
+   **Sollst du sehen:** Liste der vorhandenen Site-Seiten.  
+   **Schiefgehen kann:** du bist in „Dokumente“ – dort gehören nur Excel/ZIP hin.
+
+2. Oben **+ Neu** → **Seite** (oder „Website-Seite“).  
+   **Sollst du sehen:** Seitenvorlage / leere Seite.  
+   **Schiefgehen kann:** „Neuer Ordner“ gewählt – das ist falsch.
+
+3. **Seitenname genau** so setzen wie die HTML-Datei **ohne** `.html` (Beispiel: Datei `TVF-GuV.html` → Seitenname `TVF-GuV`).  
+   Keine Leerzeichen, Bindestriche wie in der Liste.  
+   **Sollst du sehen:** URL später `…/SitePages/TVF-GuV.aspx`.  
+   **Schiefgehen kann:** anderer Name → Kacheln auf der Startseite landen auf 404.
+
+4. HTML aus lokal öffnen (ein Befehl, dann Enter):
+
+   `open ~/TVF-Cockpit/design-html/seiten/TVF-GuV.html`
+
+   (Dateiname jeweils anpassen.)  
+   **Sollst du sehen:** HTML im Browser/Editor.  
+   **Schiefgehen kann:** Ordner fehlt → ZIP prüfen.
+
+5. Inhalt kopieren → auf der neuen Seite in Webpart **Einbetten** / HTML einfügen (besser `STARTSEITE-SHAREPOINT`-Logik: bei Bedarf nur Body; Voll-HTML oft problematisch).  
+   **Sollst du sehen:** Kopfzeile + Text der Unterseite.  
+   **Schiefgehen kann:** Text-Webpart strippt Layout → Einbetten nutzen.
+
+6. Webpart **Datei-Viewer** hinzufügen → passende Excel aus `TVF-Controlling-Cockpit` wählen (siehe Tabelle unten). Bei Hub-Blatt (GuV, Forecast, Steuerung, FC Eingabe): Datei **`Cockpit.xlsx`**, Blatt im Excel wechseln.  
+   **Sollst du sehen:** Excel auf der Seite.  
+   **Schiefgehen kann:** falsche Datei / Datei noch nicht hochgeladen.
+
+7. **Seite veröffentlichen.**  
+   **Sollst du sehen:** kein „Entwurf“ mehr.  
+   **Schiefgehen kann:** nur gespeichert → für andere unsichtbar.
+
+### Zuerst diese 8 (Minimum)
+
+| Seitenname (Site Pages) | HTML lokal | Excel im Ordner |
+|---|---|---|
+| `TVF-Cockpit` | `seiten/TVF-Cockpit.html` | `Cockpit.xlsx` |
+| `TVF-Steuerung` | `seiten/TVF-Steuerung.html` | `Cockpit.xlsx` (Blatt Steuerung) |
+| `TVF-GuV` | `seiten/TVF-GuV.html` | `Cockpit.xlsx` (Blatt GuV) |
+| `TVF-Forecast` | `seiten/TVF-Forecast.html` | `Cockpit.xlsx` (Blatt Forecast) |
+| `TVF-FC-Eingabe` | `seiten/TVF-FC-Eingabe.html` | `Cockpit.xlsx` (Blatt FC Eingabe) |
+| `TVF-Regionen` | (Kacheln/Regionen) bzw. Region-West zuerst | `Regionen.xlsx` |
+| `TVF-Projekte` | `seiten/TVF-Projekte.html` | `Projekte.xlsx` |
+| `TVF-Zahlen` | `seiten/TVF-Zahlen.html` | `zahlen/TVF_Zahlen_Export.xlsx` |
+
+Danach nach Bedarf die übrigen aus `design-html/seiten/` (gleiche Regel: Seitenname = Dateiname ohne `.html`). Volle Zuordnung: `app-sharepoint-map.json`.
+
+**Automatisch alle Seiten:** Variante A → `.\New-TVFDashboardDesign.ps1` legt sie unter Site Pages an.
+
+---
+
 ## Du hast die HTML gerade eingefügt (Entwurf) – so geht’s weiter
 
 Wenn oben rechts **Entwurf** steht, „Änderungen gespeichert“ war und der Code mit `<!DOCTYPE html>` / `:root` / `.hero` sichtbar ist:
@@ -468,7 +532,7 @@ Am Ende muss gelten:
 | 48 Excels | `dateien/` |
 | Gerettete DB-Zahlen | `zahlen/` |
 | PowerShell-Deploy | `scripts/Connect-TVF.ps1`, `scripts/New-TVFDashboardDesign.ps1` |
-| HTML von Hand | `design-html/STARTSEITE.html`, `design-html/seiten/` |
+| HTML von Hand | `design-html/STARTSEITE.html`, `STARTSEITE-SHAREPOINT.html` (für Embed), `design-html/seiten/` |
 | App → Seite → Excel | `app-sharepoint-map.json` |
 
 ---
