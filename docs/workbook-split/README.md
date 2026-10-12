@@ -6,16 +6,17 @@ Die Mappe `TVF_Controlling_Cockpit_Import1.xlsx` ist in **48 Einzeldateien** zer
 
 **Neu aus app.zip / db.zip:** gerettete Zahlen (`zahlen/`, siehe `ZAHLEN.md`), App→SharePoint-Mapping (`app-sharepoint-map.json`), Design v2 (`dashboard-design.json`), 37 HTML-Unterseiten, vollständige `db/`.
 
-**Was du tun musst:** **[ANLEITUNG.md](ANLEITUNG.md)** (Mac, PowerShell oder Hand-Upload).
-
+**Was du tun musst (ausführlich, Punkt für Punkt):** nur **[ANLEITUNG.md](ANLEITUNG.md)**.
+`SCHRITT-FUER-SCHRITT.md` verweist dorthin – Ablauf nicht doppelt nachbauen.
 
 | Pfad | Zweck |
 |---|---|
+| `ANLEITUNG.md` | **Die** Mac-Anleitung (Variante A PowerShell, Variante B Hand) |
 | `dateien/` | 48 × `.xlsx` (ein Blatt pro Datei) |
 | `seiten.json` | Katalog aller SharePoint-Seiten (38) inkl. Startseite |
 | `auswertungs-und-eingabeseiten.md` | Übersicht Auswertung / Forecast-Eingabe / Projekte |
-| `SCHRITT-FUER-SCHRITT.md` | Anleitung: was du nacheinander machst |
-| `HAND-UPLOAD.md` | Manuell hochladen ohne PowerShell |
+| `SCHRITT-FUER-SCHRITT.md` | Verweis auf ANLEITUNG.md |
+| `HAND-UPLOAD.md` | Ergänzung Hand-Upload (Details in ANLEITUNG Variante B) |
 | `manifest.json` | Dateiliste, Tabellen, Abhängigkeitsgraph |
 | `scripts/split_workbook.py` | Trennung erneut erzeugen |
 | `scripts/New-TVFCockpitStartseite.ps1` | PnP: Upload + Startseite + alle Fachseiten |
