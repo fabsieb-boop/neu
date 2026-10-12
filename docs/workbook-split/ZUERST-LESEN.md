@@ -19,3 +19,7 @@ Vollständige DB-Dump: separates ZIP **TVF_DB_Paket.zip**
 
 Separates ZIP: **TVF_Projektakten.zip** – 168 Projektakten mit Forecast, Kosten, Rechnungen, SAP-Buchungen.
 Auf SharePoint nach `TVF-Controlling-Cockpit/projektakten/` hochladen.
+
+## Werte eingebacken
+
+Hub + `dateien/*.xlsx` enthalten **feste Zahlen** (kein Excel-Online-Neurechnen). Details: `WERTE-EINGEBACKEN.md`. Bei `#WERT!` Dateien neu hochladen und Hard-Reload.

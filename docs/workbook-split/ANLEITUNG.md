@@ -204,8 +204,9 @@ Wähle **eine** Variante:
     **Schiefgehen kann:** 404 – Skript nicht durchgelaufen (Schritt 24); Link-Name prüfen.
 
 28. **Im Excel-Viewer Blatt wechseln** (unten oder über Blattregister): GuV / Forecast / Steuerung.  
-    **Sollst du sehen:** Zahlen/Struktur, **kein** `#BLOCKIERT!` in den Kernzellen.  
-    **Schiefgehen kann:** `#BLOCKIERT!` → falsche alte `Cockpit.xlsx`; Hub aus dem Paket muss als `Cockpit.xlsx` liegen (Skript lädt `Cockpit-Hub-SharePoint.xlsx` als `Cockpit.xlsx`).
+    **Sollst du sehen:** Zahlen/Struktur, **kein** `#BLOCKIERT!` / `#WERT!` in den Kernzellen.  
+    **Schiefgehen kann:** `#BLOCKIERT!` → falsche alte `Cockpit.xlsx`; Hub aus dem Paket muss als `Cockpit.xlsx` liegen (Skript lädt `Cockpit-Hub-SharePoint.xlsx` als `Cockpit.xlsx`).  
+    **`#WERT!` überall** → alte Dateien mit Excel-Online-Verknüpfungen; gebackene Dateien aus `dateien/` bzw. `TVF_Cockpit_Dateien.zip` **ersetzen**, Seite veröffentlichen, Hard-Reload (`Cmd+Shift+R`). Siehe `WERTE-EINGEBACKEN.md`.
 
 29. **Ordner `zahlen` in Dokumenten öffnen**  
     Site → Dokumente → `TVF-Controlling-Cockpit` → `zahlen`.  
