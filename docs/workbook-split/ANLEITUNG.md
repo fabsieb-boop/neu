@@ -465,45 +465,65 @@ Danach nach Bedarf die übrigen aus `design-html/seiten/` (gleiche Regel: Seiten
 
 ---
 
-## Du hast die HTML gerade eingefügt (Entwurf) – so geht’s weiter
+## Startseite zeigt nur Quellcode – so wird sie sichtbar
 
-Wenn oben rechts **Entwurf** steht, „Änderungen gespeichert“ war und der Code mit `<!DOCTYPE html>` / `:root` / `.hero` sichtbar ist:
+Ursache: Volle HTML-Datei mit `<style>` / DOCTYPE landet als Text und wird nicht gerendert.
 
-1. **Oben rechts auf „Seite veröffentlichen“ klicken** (goldener/brauner Button).  
-   **Sollst du sehen:** Bestätigung, Kennzeichnung wechselt von Entwurf zu veröffentlicht; Seite ist für andere sichtbar.  
-   **Schiefgehen kann:** Dialog „Veröffentlichen?“ → bestätigen; ohne Klick bleibt die Seite nur Entwurf.
+**Lösung:** Datei **`design-html/STARTSEITE-INLINE.html`** (nur Inline-Styles) + Skript **`scripts/New-TVFStartseite.ps1`**.
 
-2. **Seite neu laden** (`Cmd + R`).  
-   **Sollst du sehen:** Layout mit blau-violettem Kopf „TVF ALTWERT“ und Kacheln – nicht nur Quellcode.  
-   **Schiefgehen kann:** du siehst weiter nur Code → du bist noch im Code-/Quell-Editor; Code-Ansicht schließen bzw. zurück zur Seitenvorschau.
+### PowerShell (empfohlen)
 
-3. **Wenn nur Code oder gar kein Layout erscheint:** SharePoint mag oft kein komplettes HTML-Dokument im normalen Text-Webpart.  
-   Dann lokal diese Datei nutzen (ohne DOCTYPE/html/head):
+1. PowerShell starten:
 
-   `open ~/TVF-Cockpit/design-html/STARTSEITE-SHAREPOINT.html`
+   `pwsh`
 
-   **Sollst du sehen:** Datei öffnet sich (Browser oder Editor).  
-   **Schiefgehen kann:** Datei fehlt → ZIP neu entpacken (aktuelles Paket).
+   **Sollst du sehen:** Prompt `PS …>`  
+   **Schiefgehen kann:** nicht installiert → zuerst Variante A Schritt PowerShell.
 
-4. **Inhalt von `STARTSEITE-SHAREPOINT.html` komplett kopieren** (`Cmd + A`, dann `Cmd + C`).  
-   **Sollst du sehen:** alles markiert inkl. `<div class="tvf-root">`.  
-   **Schiefgehen kann:** nur einen Teil markiert.
+2. In den scripts-Ordner:
 
-5. **Auf der SharePoint-Seite:** Bearbeiten → Webpart **Einbetten** (oder HTML/Embed, nicht nur „Text“) → alten DOCTYPE-Code ersetzen → einfügen → Speichern.  
-   **Sollst du sehen:** Vorschau mit Hero und Kacheln.  
-   **Schiefgehen kann:** Text-Webpart strippt Styles → unbedingt Einbetten/Embed; ggf. Site-Admin muss Script/Embed erlauben.
+   `cd ~/TVF-Cockpit/scripts`
 
-6. **Darunter Webpart „Datei-Viewer“ / „File viewer“** → Datei `Cockpit.xlsx` aus `Dokumente / TVF-Controlling-Cockpit` wählen.  
-   **Sollst du sehen:** Excel unter den Kacheln.  
-   **Schiefgehen kann:** Datei fehlt oder heißt nicht `Cockpit.xlsx` (Hub!).
+   **Sollst du sehen:** Pfad endet auf `scripts`.  
+   **Schiefgehen kann:** Ordner fehlt → aktuelles ZIP entpacken.
 
-7. **Erneut „Seite veröffentlichen“.**  
-   **Sollst du sehen:** kein Entwurf mehr.  
-   **Schiefgehen kann:** vergessen → Kollegen sehen alte Version.
+3. Anmelden:
 
-8. **Kacheln Cockpit, Steuerung, GuV, Forecast, Regionen, Projekte testen.**  
-   **Sollst du sehen:** Zielseiten öffnen (oder 404, falls Unterseite noch fehlt → Variante B ab Schritt 28).  
-   **Schiefgehen kann:** 404 → Unterseite noch anlegen/veröffentlichen.
+   `.\Connect-TVF.ps1`
+
+   **Sollst du sehen:** `Verbunden: …03-Finance`  
+   **Schiefgehen kann:** Entra → `.\Connect-TVF.ps1 -DeviceLogin`
+
+4. Startseite setzen:
+
+   `.\New-TVFStartseite.ps1 -RebuildHtml`
+
+   **Sollst du sehen:** „Fertig – Startseite veroeffentlicht“ und die Dashboard-URL.  
+   **Schiefgehen kann:** Session weg → Schritt 3, dann 4.
+
+5. Browser: Dashboard öffnen, hart neu laden (`Cmd + Shift + R`).  
+   **Sollst du sehen:** blauer Kopf „TVF ALTWERT“, KPI-Kacheln, Links – **keinen** CSS-Quelltext.  
+   **Schiefgehen kann:** alter Code-Webpart noch da → Bearbeiten, Webpart mit Quellcode **löschen**, veröffentlichen, Schritt 4 erneut.
+
+### Hand (ohne PowerShell)
+
+1. Lokal:
+
+   `open -a TextEdit ~/TVF-Cockpit/design-html/STARTSEITE-INLINE.html`
+
+   Inhalt beginnt mit `<div style=…`, **nicht** mit `<!DOCTYPE`.
+
+2. Dashboard → **Bearbeiten** → Webpart mit Quellcode **löschen**.
+
+3. **+** → Webpart **Text** (nicht „Code“, nicht Datei-Viewer auf die .html).
+
+4. Alles aus `STARTSEITE-INLINE.html` einfügen → Speichern.
+
+5. **+** → **Datei-Viewer** → `Cockpit.xlsx` → **Seite veröffentlichen**.
+
+6. Neu laden – Layout muss sichtbar sein.
+
+Details: `design-html/STARTSEITE-SO-EINFUEGEN.md`
 
 ---
 

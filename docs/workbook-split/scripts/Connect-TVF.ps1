@@ -33,5 +33,6 @@ else {
 
 $web = Get-PnPWeb
 Write-Host ("Verbunden: {0}" -f $web.Url)
-Write-Host "Als Nächstes: .\New-TVFDashboardDesign.ps1"
+Write-Host "Als Nächstes (sichtbare Startseite): .\New-TVFStartseite.ps1"
+Write-Host "Oder komplett:                     .\New-TVFDashboardDesign.ps1"
 Write-Host "(Anleitung: ../ANLEITUNG.md)"

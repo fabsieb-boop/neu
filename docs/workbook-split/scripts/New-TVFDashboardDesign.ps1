@@ -25,10 +25,12 @@ param(
     [string]$DesignJson = (Join-Path (Split-Path -Parent $PSScriptRoot) "dashboard-design.json"),
     [string]$LocalDateien = (Join-Path (Split-Path -Parent $PSScriptRoot) "dateien"),
     [string]$LocalZahlen = (Join-Path (Split-Path -Parent $PSScriptRoot) "zahlen"),
+    [string]$LocalDesignHtml = (Join-Path (Split-Path -Parent $PSScriptRoot) "design-html"),
     [string]$HubFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "Cockpit-Hub-SharePoint.xlsx"),
     [switch]$Connect,
     [switch]$DeviceLogin,
     [switch]$SkipExcelUpload,
+    [switch]$SkipHtmlUpload,
     [switch]$OnlyStartseite
 )
 
@@ -155,6 +157,23 @@ function Get-NavItemsFromDesign {
     return $items
 }
 
+function Get-EmbedHtmlForPage {
+    param([string]$DesignHtmlRoot, [string]$Seitenname, [switch]$Start)
+    if ($Start) {
+        $p = Join-Path $DesignHtmlRoot "STARTSEITE-SHAREPOINT.html"
+    }
+    else {
+        $p = Join-Path $DesignHtmlRoot (Join-Path "seiten" ($Seitenname + "-SHAREPOINT.html"))
+        if (-not (Test-Path -LiteralPath $p)) {
+            $p = Join-Path $DesignHtmlRoot (Join-Path "seiten" ($Seitenname + ".html"))
+        }
+    }
+    if (Test-Path -LiteralPath $p) {
+        return (Get-Content -LiteralPath $p -Raw -Encoding UTF8)
+    }
+    return $null
+}
+
 function Publish-ExcelPage {
     param(
         $Seite,
@@ -162,7 +181,8 @@ function Publish-ExcelPage {
         $SiteHost,
         $FolderRel,
         $NavItems,
-        $HomeUrl
+        $HomeUrl,
+        $DesignHtmlRoot
     )
     $name = [string]$Seite.seitenname
     $title = [string]$Seite.titel
@@ -172,38 +192,43 @@ function Publish-ExcelPage {
 
     $excelName = [string]$Seite.excel
     $layout = [string]$Seite.layout
-    $sub = if ($Seite.beschreibung) { [string]$Seite.beschreibung } else { "Seite aus dem Controlling-Cockpit (App → SharePoint)." }
-    $hero = Get-HeroHtml -Title $title -Sub $sub -HomeUrl $HomeUrl
-    $nav = Get-NavHtml -WebUrl $WebUrl -Items $NavItems -Active ($title -replace ' /.*','')
-
-    $hint = ""
-    if ($Seite.hubBlatt) {
-        $hint = "<p style='font-family:Segoe UI,Arial,sans-serif;font-size:13px;color:#5F6B7A;'>Hub-Datei <strong>$excelName</strong> – Blatt <strong>$($Seite.hubBlatt)</strong> im Excel unten waehlen.</p>"
-    }
-    elseif ($Seite.region) {
-        $hint = "<p style='font-family:Segoe UI,Arial,sans-serif;font-size:13px;color:#5F6B7A;'>Region <strong>$($Seite.region)</strong> – Zeile in Regionen.xlsx bzw. Filter in Steuerung setzen.</p>"
-    }
-    if ($Seite.appRoute) {
-        $hint += "<p style='font-family:Segoe UI,Arial,sans-serif;font-size:12px;color:#5F6B7A;'>App-Route: <code>$($Seite.appRoute)</code></p>"
-    }
 
     $excelUrl = $null
-    $fileLink = ""
     if ($excelName -and $layout -ne "html" -and $layout -ne "start") {
         $rel = $FolderRel
         if ($excelName -eq "TVF_Zahlen_Export.xlsx") {
             $rel = $FolderRel + "/zahlen"
         }
         $excelUrl = Get-FileUrl $SiteHost $rel $excelName
-        $fileLink = "<p style=`"font-family:Segoe UI,Arial,sans-serif;font-size:13px;`">Datei: <a href=`"$excelUrl`" data-interception=`"off`">$excelName</a></p>"
     }
 
-    $body = @"
+    $embed = Get-EmbedHtmlForPage -DesignHtmlRoot $DesignHtmlRoot -Seitenname $name
+    if ($embed) {
+        Write-Host ("    HTML: {0}-SHAREPOINT.html" -f $name)
+        $body = $embed
+    }
+    else {
+        $sub = if ($Seite.beschreibung) { [string]$Seite.beschreibung } else { "Seite aus dem Controlling-Cockpit (App → SharePoint)." }
+        $hero = Get-HeroHtml -Title $title -Sub $sub -HomeUrl $HomeUrl
+        $nav = Get-NavHtml -WebUrl $WebUrl -Items $NavItems -Active ($title -replace ' /.*','')
+        $hint = ""
+        if ($Seite.hubBlatt) {
+            $hint = "<p style='font-family:Segoe UI,Arial,sans-serif;font-size:13px;color:#5F6B7A;'>Hub-Datei <strong>$excelName</strong> – Blatt <strong>$($Seite.hubBlatt)</strong> im Excel unten waehlen.</p>"
+        }
+        elseif ($Seite.region) {
+            $hint = "<p style='font-family:Segoe UI,Arial,sans-serif;font-size:13px;color:#5F6B7A;'>Region <strong>$($Seite.region)</strong>.</p>"
+        }
+        $fileLink = ""
+        if ($excelUrl) {
+            $fileLink = "<p style=`"font-family:Segoe UI,Arial,sans-serif;font-size:13px;`">Datei: <a href=`"$excelUrl`" data-interception=`"off`">$excelName</a></p>"
+        }
+        $body = @"
 $hero
 $nav
 $hint
 $fileLink
 "@
+    }
 
     Add-PnPPageSection -Page $name -SectionTemplate OneColumn -Order 1 -ErrorAction SilentlyContinue
     Add-PnPPageTextPart -Page $name -Section 1 -Column 1 -Text $body -ErrorAction SilentlyContinue
@@ -238,9 +263,26 @@ $folderRel = $list.RootFolder.ServerRelativeUrl.TrimEnd("/") + "/" + $FolderName
 try { Get-PnPFolder -Url $folderRel -ErrorAction Stop | Out-Null }
 catch { Add-PnPFolder -Name $FolderName -Folder $LibraryName | Out-Null }
 
+# Struktur wie auf SharePoint: Excels flach + zahlen / design-html / scripts
+foreach ($sub in @("zahlen", "design-html", "scripts", "design-html/seiten")) {
+    $subRel = $folderRel + "/" + $sub
+    try { Get-PnPFolder -Url $subRel -ErrorAction Stop | Out-Null }
+    catch {
+        $parent = $folderRel
+        $name = $sub
+        if ($sub -like "*/*") {
+            $parent = $folderRel + "/" + ($sub.Split("/")[0])
+            $name = $sub.Split("/")[1]
+            try { Get-PnPFolder -Url $parent -ErrorAction Stop | Out-Null }
+            catch { Add-PnPFolder -Name ($sub.Split("/")[0]) -Folder $folderRel | Out-Null }
+        }
+        Add-PnPFolder -Name $name -Folder $parent | Out-Null
+    }
+}
 $zahlenRel = $folderRel + "/zahlen"
-try { Get-PnPFolder -Url $zahlenRel -ErrorAction Stop | Out-Null }
-catch { Add-PnPFolder -Name "zahlen" -Folder $folderRel | Out-Null }
+$designRel = $folderRel + "/design-html"
+$designSeitenRel = $designRel + "/seiten"
+$scriptsRel = $folderRel + "/scripts"
 
 $web = Get-PnPWeb
 $webUrl = $web.Url
@@ -255,7 +297,7 @@ if (-not $SkipExcelUpload) {
     }
     if (Test-Path -LiteralPath $LocalDateien) {
         $files = Get-ChildItem -LiteralPath $LocalDateien -Filter "*.xlsx" -File
-        Write-Host ("Lade {0} Excel-Dateien …" -f $files.Count)
+        Write-Host ("Lade {0} Excel-Dateien (flach) …" -f $files.Count)
         foreach ($f in $files) {
             if ($f.Name -eq "Cockpit.xlsx" -and (Test-Path $HubFile)) { continue }
             Write-Host ("  {0}" -f $f.Name)
@@ -269,6 +311,31 @@ if (-not $SkipExcelUpload) {
             Write-Host ("  zahlen/{0}" -f $f.Name)
             Add-PnPFile -Path $f.FullName -Folder $zahlenRel | Out-Null
         }
+    }
+}
+
+if (-not $SkipHtmlUpload -and (Test-Path -LiteralPath $LocalDesignHtml)) {
+    Write-Host "Lade design-html …"
+    Get-ChildItem -LiteralPath $LocalDesignHtml -File | ForEach-Object {
+        Write-Host ("  design-html/{0}" -f $_.Name)
+        Add-PnPFile -Path $_.FullName -Folder $designRel | Out-Null
+    }
+    $localSeiten = Join-Path $LocalDesignHtml "seiten"
+    if (Test-Path -LiteralPath $localSeiten) {
+        Get-ChildItem -LiteralPath $localSeiten -File -Filter "*.html" | ForEach-Object {
+            Write-Host ("  design-html/seiten/{0}" -f $_.Name)
+            Add-PnPFile -Path $_.FullName -Folder $designSeitenRel | Out-Null
+        }
+    }
+}
+
+# scripts (ps1/py) mit hochladen
+$localScripts = $PSScriptRoot
+if (-not $SkipHtmlUpload -and (Test-Path -LiteralPath $localScripts)) {
+    Write-Host "Lade scripts …"
+    Get-ChildItem -LiteralPath $localScripts -File | Where-Object { $_.Extension -in ".ps1", ".py", ".md", ".ts", ".sh" } | ForEach-Object {
+        Write-Host ("  scripts/{0}" -f $_.Name)
+        Add-PnPFile -Path $_.FullName -Folder $scriptsRel | Out-Null
     }
 }
 
@@ -328,36 +395,30 @@ if ($design.navigation.gruppen) {
     }
 }
 
-$startBody = @"
-<div style="background:linear-gradient(120deg,#1F4E79 0%,#5B2C6F 100%);color:#fff;padding:32px 24px;font-family:Segoe UI,Arial,sans-serif;">
-  <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.85;">TVF ALTWERT GmbH · 03-Finance</div>
-  <div style="font-size:32px;font-weight:700;margin-top:8px;">TVF ALTWERT</div>
-  <div style="font-size:20px;font-weight:600;margin-top:4px;opacity:.95;">Controlling Cockpit 2026</div>
-  <div style="font-size:15px;margin-top:10px;max-width:760px;opacity:.95;">
-    Navigation und Seiten aus der Web-App (app.zip). Zahlen aus der Datenbank (db.zip) gerettet:
-    <strong>$buch</strong> Buchungen · <strong>$proj</strong> Projekte · <strong>$ka</strong> Kostenarten.
-  </div>
+# Startseite: bevorzugt INLINE-HTML (rendert im Text-Webpart, kein Quellcode)
+$inlinePath = Join-Path $LocalDesignHtml "STARTSEITE-INLINE.html"
+if (-not (Test-Path -LiteralPath $inlinePath)) {
+    Write-Host "Baue STARTSEITE-INLINE.html …"
+    & python3 (Join-Path $PSScriptRoot "build_startseite_inline.py")
+}
+if (Test-Path -LiteralPath $inlinePath) {
+    $startBody = Get-Content -LiteralPath $inlinePath -Raw -Encoding UTF8
+    Write-Host "  Startseite aus STARTSEITE-INLINE.html (Inline-Styles)"
+}
+else {
+    $startBody = @"
+<div style="font-family:Segoe UI,Arial,sans-serif;">
+<div style="background:linear-gradient(120deg,#1F4E79 0%,#5B2C6F 100%);color:#fff;padding:32px 24px;">
+  <div style="font-size:32px;font-weight:700;">TVF ALTWERT</div>
+  <div style="font-size:15px;margin-top:10px;">Controlling Cockpit · $buch Buchungen · $proj Projekte</div>
 </div>
 $navHtml
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:12px 0 20px 0;font-family:Segoe UI,Arial,sans-serif;">
-  <div style="background:#fff;border-left:4px solid #1F4E79;padding:12px 14px;"><div style="font-size:11px;color:#5F6B7A;">BUCHUNGEN</div><div style="font-size:20px;font-weight:700;color:#1F4E79;">$buch</div></div>
-  <div style="background:#fff;border-left:4px solid #1F4E79;padding:12px 14px;"><div style="font-size:11px;color:#5F6B7A;">PROJEKTE</div><div style="font-size:20px;font-weight:700;color:#1F4E79;">$proj</div></div>
-  <div style="background:#fff;border-left:4px solid #1F4E79;padding:12px 14px;"><div style="font-size:11px;color:#5F6B7A;">KOSTENARTEN</div><div style="font-size:20px;font-weight:700;color:#1F4E79;">$ka</div></div>
-  <div style="background:#fff;border-left:4px solid #5B2C6F;padding:12px 14px;"><div style="font-size:11px;color:#5F6B7A;">GESCHÄFTSJAHR</div><div style="font-size:20px;font-weight:700;color:#5B2C6F;">2026</div></div>
-</div>
-<h2 style="font-family:Segoe UI,Arial,sans-serif;font-size:18px;color:#1F4E79;margin:8px 0;">Direktzugriff</h2>
 $tileHtml
-<div style="font-family:Segoe UI,Arial,sans-serif;font-size:13px;color:#5F6B7A;margin-bottom:12px;">
-  <strong>Regionen:</strong>
-  <a href="$(Get-PageUrl $webUrl 'TVF-Region-West')">West</a> ·
-  <a href="$(Get-PageUrl $webUrl 'TVF-Region-Sued-West')">Süd-West</a> ·
-  <a href="$(Get-PageUrl $webUrl 'TVF-Region-Ost')">Ost</a> ·
-  <a href="$(Get-PageUrl $webUrl 'TVF-Region-Berlin')">Berlin</a> ·
-  <a href="$(Get-PageUrl $webUrl 'TVF-Region-Verwaltung')">Verwaltung</a>
+<p style="font-size:13px;">Excel: <a href="$cockpitUrl" data-interception="off">Cockpit.xlsx</a> · <a href="$zahlenUrl" data-interception="off">Zahlen</a></p>
 </div>
-$gruppenHtml
-<p style="font-family:Segoe UI,Arial,sans-serif;font-size:13px;">Excel-Hub: <a href="$cockpitUrl" data-interception="off">Cockpit.xlsx</a> · Gerettete Zahlen: <a href="$zahlenUrl" data-interception="off">TVF_Zahlen_Export.xlsx</a></p>
 "@
+    Write-Host "  Startseite Fallback (Inline)"
+}
 
 Add-PnPPageSection -Page $homeName -SectionTemplate OneColumn -Order 1 -ErrorAction SilentlyContinue
 Add-PnPPageTextPart -Page $homeName -Section 1 -Column 1 -Text $startBody -ErrorAction SilentlyContinue
@@ -373,7 +434,7 @@ Write-Host ""
 Write-Host "=== Unterseiten ==="
 foreach ($seite in $allPages) {
     if ($seite.seitenname -eq $homeName) { continue }
-    Publish-ExcelPage -Seite $seite -WebUrl $webUrl -SiteHost $siteHost -FolderRel $folderRel -NavItems $navMain -HomeUrl $homeUrl
+    Publish-ExcelPage -Seite $seite -WebUrl $webUrl -SiteHost $siteHost -FolderRel $folderRel -NavItems $navMain -HomeUrl $homeUrl -DesignHtmlRoot $LocalDesignHtml
 }
 
 Write-Host ""
