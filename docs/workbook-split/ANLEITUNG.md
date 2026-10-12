@@ -401,6 +401,48 @@ Damit ist Variante B fertig.
 
 ---
 
+## Du hast die HTML gerade eingefügt (Entwurf) – so geht’s weiter
+
+Wenn oben rechts **Entwurf** steht, „Änderungen gespeichert“ war und der Code mit `<!DOCTYPE html>` / `:root` / `.hero` sichtbar ist:
+
+1. **Oben rechts auf „Seite veröffentlichen“ klicken** (goldener/brauner Button).  
+   **Sollst du sehen:** Bestätigung, Kennzeichnung wechselt von Entwurf zu veröffentlicht; Seite ist für andere sichtbar.  
+   **Schiefgehen kann:** Dialog „Veröffentlichen?“ → bestätigen; ohne Klick bleibt die Seite nur Entwurf.
+
+2. **Seite neu laden** (`Cmd + R`).  
+   **Sollst du sehen:** Layout mit blau-violettem Kopf „TVF ALTWERT“ und Kacheln – nicht nur Quellcode.  
+   **Schiefgehen kann:** du siehst weiter nur Code → du bist noch im Code-/Quell-Editor; Code-Ansicht schließen bzw. zurück zur Seitenvorschau.
+
+3. **Wenn nur Code oder gar kein Layout erscheint:** SharePoint mag oft kein komplettes HTML-Dokument im normalen Text-Webpart.  
+   Dann lokal diese Datei nutzen (ohne DOCTYPE/html/head):
+
+   `open ~/TVF-Cockpit/design-html/STARTSEITE-SHAREPOINT.html`
+
+   **Sollst du sehen:** Datei öffnet sich (Browser oder Editor).  
+   **Schiefgehen kann:** Datei fehlt → ZIP neu entpacken (aktuelles Paket).
+
+4. **Inhalt von `STARTSEITE-SHAREPOINT.html` komplett kopieren** (`Cmd + A`, dann `Cmd + C`).  
+   **Sollst du sehen:** alles markiert inkl. `<div class="tvf-root">`.  
+   **Schiefgehen kann:** nur einen Teil markiert.
+
+5. **Auf der SharePoint-Seite:** Bearbeiten → Webpart **Einbetten** (oder HTML/Embed, nicht nur „Text“) → alten DOCTYPE-Code ersetzen → einfügen → Speichern.  
+   **Sollst du sehen:** Vorschau mit Hero und Kacheln.  
+   **Schiefgehen kann:** Text-Webpart strippt Styles → unbedingt Einbetten/Embed; ggf. Site-Admin muss Script/Embed erlauben.
+
+6. **Darunter Webpart „Datei-Viewer“ / „File viewer“** → Datei `Cockpit.xlsx` aus `Dokumente / TVF-Controlling-Cockpit` wählen.  
+   **Sollst du sehen:** Excel unter den Kacheln.  
+   **Schiefgehen kann:** Datei fehlt oder heißt nicht `Cockpit.xlsx` (Hub!).
+
+7. **Erneut „Seite veröffentlichen“.**  
+   **Sollst du sehen:** kein Entwurf mehr.  
+   **Schiefgehen kann:** vergessen → Kollegen sehen alte Version.
+
+8. **Kacheln Cockpit, Steuerung, GuV, Forecast, Regionen, Projekte testen.**  
+   **Sollst du sehen:** Zielseiten öffnen (oder 404, falls Unterseite noch fehlt → Variante B ab Schritt 28).  
+   **Schiefgehen kann:** 404 → Unterseite noch anlegen/veröffentlichen.
+
+---
+
 ## Checkliste (A und B)
 
 Am Ende muss gelten:
