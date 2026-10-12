@@ -13,3 +13,9 @@
 5. Startseite: nur **design-html/STARTSEITE-INLINE.html** (nicht die volle HTML mit style)
 
 Vollständige DB-Dump: separates ZIP **TVF_DB_Paket.zip**
+
+
+## Projektakten (eine Excel je Projekt)
+
+Separates ZIP: **TVF_Projektakten.zip** – 168 Projektakten mit Forecast, Kosten, Rechnungen, SAP-Buchungen.
+Auf SharePoint nach `TVF-Controlling-Cockpit/projektakten/` hochladen.
