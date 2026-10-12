@@ -247,6 +247,28 @@
       "typ": "auswertung"
     },
     {
+      "reihenfolge": 36,
+      "seitenname": "TVF-Forecast-je-Auftrag",
+      "titel": "Forecast je Auftrag",
+      "originalseite": "Forecast je Auftrag",
+      "excel": "Forecast je Auftrag.xlsx",
+      "blatt": "Forecast je Auftrag",
+      "gruppe": "Projekte",
+      "typ": "auswertung",
+      "hinweis": "Plan/Ist/Restplan/Erwartet je Auftrag aus v_forecast_auftrag."
+    },
+    {
+      "reihenfolge": 37,
+      "seitenname": "TVF-Forecast-Rechnung-Abgleich",
+      "titel": "Forecast ↔ Rechnungstellung",
+      "originalseite": "Forecast Rechnung Abgleich",
+      "excel": "Forecast Rechnung Abgleich.xlsx",
+      "blatt": "Abgleich je Auftrag",
+      "gruppe": "Projekte",
+      "typ": "auswertung",
+      "hinweis": "Abgleich Forecast-Umsatz gegen Rechnung/Ist-Umsatz (SAP)."
+    },
+    {
       "reihenfolge": 40,
       "seitenname": "TVF-Projekte",
       "titel": "Projekte und Unteraufträge",

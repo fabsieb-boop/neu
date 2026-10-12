@@ -28,3 +28,9 @@ Hub + `dateien/*.xlsx` enthalten **feste Zahlen** (kein Excel-Online-Neurechnen)
 
 Excel Online liest die **D-Tabellen nicht per Verknüpfung**. Nutze **TVF_ALLE_WERTE.zip** (Werte bereits aus D Finanzen/D KLR/D Liquidität übertragen), alles ersetzen, veröffentlichen, Hard-Reload. Siehe `WERTE-EINGEBACKEN.md`.
 
+## Forecast-Tabellen
+
+- `Forecast je Auftrag.xlsx` – Plan/Ist/Restplan je Auftrag
+- `Forecast Rechnung Abgleich.xlsx` – Abgleich Forecast ↔ Rechnungstellung
+
+Download: **TVF_Forecast_Tabellen.zip** (Details: `FORECAST-TABELLEN.md`).
