@@ -43,3 +43,7 @@ Download: **TVF_Forecast_Tabellen.zip** (Details: `FORECAST-TABELLEN.md`).
 2. Blatt **Auswahl** → Projekt-Nr. in die gelbe Zelle  
 
 Nur Suche: `TVF_Projektakten_Suche.zip` · Alles inkl. Einzelakten: `TVF_Projektakten.zip`
+
+## Formular → Excel
+
+Anleitung: **FORMULAR-EXCEL.md** – Microsoft Forms + Power Automate schreibt Zeilen in `FC Eingabe.xlsx` (Tabelle `TVF_80`).
