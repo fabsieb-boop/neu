@@ -1,0 +1,17 @@
+﻿Nr;Datum;Art;Beleg;Partner;Betrag;Weg;Text
+Z-001;2026-03-24;Eingang;AR-26001;K-1001;406980.0;Bank;Wohnquartier Abschlag 1
+Z-002;2026-05-22;Eingang;AR-26002;K-1001;474810.0;Bank;Wohnquartier Abschlag 2
+Z-003;2026-05-02;Eingang;AR-26005;K-1003;201249.0;Bank;Kita Abschlag 1
+Z-004;2026-07-11;Eingang;AR-26007;K-1002;248710.0;Bank;Rathaus Abschlag 1
+Z-005;2026-07-21;Eingang;AR-26009;K-1004;542640.0;Bank;Halle Abschlag 1
+Z-006;2026-02-10;Eingang;AR-26011;K-1005;94962.0;Bank;EFH Abschlag 3
+Z-007;2026-05-06;Eingang;AR-26012;K-1005;142443.0;Bank;EFH Schluss
+Z-008;2026-09-04;Eingang;AR-26003;K-1001;429570.0;Bank;Wohnquartier Abschlag 3
+Z-009;2026-08-12;Ausgang;ER-5401;L-2001;4094.79;Bank;Estrich
+Z-010;2026-09-04;Ausgang;ER-5512;L-2001;14532.28;Bank;Transportbeton
+Z-011;2026-08-28;Ausgang;ER-5518;L-2002;14043.56;Bank;Stahl inkl. Skonto
+Z-012;2026-09-10;Ausgang;ER-5555;L-2004;23086.0;Bank;HLS Rathaus
+Z-013;2026-08-31;Ausgang;;Personal;68420.0;Bank;Löhne August
+Z-014;2026-08-15;Ausgang;;Finanzamt;18640.0;Bank;USt-Vorauszahlung Juli
+Z-015;2026-09-30;Ausgang;;Personal;69110.0;Bank;Löhne September
+Z-016;2026-09-12;Ausgang;;Sozialkasse;12480.0;Bank;Soka-Bau / BG Bau

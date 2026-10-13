@@ -1,0 +1,16 @@
+﻿Nr;Datum;Projekt;Mitarbeiter;Stunden;Gewerk;Tätigkeit;Verrechenbar
+ST-1001;2026-09-01;P-2026-001;MA-03;10.0;Rohbau;Polier Wohnquartier;JA
+ST-1002;2026-09-01;P-2026-001;MA-04;9.5;Rohbau;Mauerwerk Block C;JA
+ST-1003;2026-09-01;P-2026-001;MA-05;9.5;Rohbau;Mauerwerk Block C;JA
+ST-1004;2026-09-01;P-2026-002;MA-07;8.0;Bauleitung;Terminplan Kita;JA
+ST-1005;2026-09-02;P-2026-003;MA-04;9.0;Sanierung;Fassade Süd;JA
+ST-1006;2026-09-02;P-2026-004;MA-03;6.0;Rohbau;Bodenplatte Abschnitt 2;JA
+ST-1007;2026-09-02;P-2026-004;MA-06;9.5;Tiefbau;Kanalanschluss;JA
+ST-1008;2026-09-03;P-2026-001;MA-05;10.0;Rohbau;Decke OG1;JA
+ST-1009;2026-09-03;P-2026-002;MA-05;8.5;Rohbau;Innenwände;JA
+ST-1010;2026-09-04;P-2026-006;MA-06;4.0;Vorbereitung;Einmessen Achse;JA
+ST-1011;2026-09-04;;MA-02;8.0;Verwaltung;OPOS / Mahnwesen;NEIN
+ST-1012;2026-09-05;P-2026-001;MA-08;8.0;Rohbau;Mörtel / Hilfsarbeiten;JA
+ST-1013;2026-08-28;P-2026-003;MA-03;9.0;Sanierung;Gerüstabnahme;JA
+ST-1014;2026-08-28;P-2026-004;MA-04;10.0;Rohbau;Bewehrung Bodenplatte;JA
+ST-1015;2026-08-29;P-2026-002;MA-07;9.0;Bauleitung;SIGeKO Begehung;JA

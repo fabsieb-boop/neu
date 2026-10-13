@@ -1,0 +1,8 @@
+﻿Nr;Datum;Projekt;Lieferant;ER-Nr;Bezeichnung;ME;Menge;EP netto;Kategorie;Status
+MAT-01;2026-08-12;P-2026-001;L-2001;ER-5512;Transportbeton C25/30;m³;86;142.0;Beton;verbucht
+MAT-02;2026-08-14;P-2026-001;L-2002;ER-5518;Betonstahl B500B;t;12.4;980.0;Stahl;verbucht
+MAT-03;2026-08-20;P-2026-002;L-2001;ER-5531;Transportbeton C20/25;m³;34;138.0;Beton;verbucht
+MAT-04;2026-09-02;P-2026-004;L-2002;ER-5602;Stahlträger HEB 300;t;18.6;1420.0;Stahl;offen
+MAT-05;2026-09-04;P-2026-003;L-2007;;Gerüstmiete September;Monat;1;4800.0;Gerüst;offen
+MAT-06;2026-07-22;P-2026-005;L-2001;ER-5401;Estrichmaterial;m²;186;18.5;Ausbau;verbucht
+MAT-07;2026-09-08;P-2026-001;L-2006;;Aushubabfuhr;t;42;28.0;Entsorgung;offen
