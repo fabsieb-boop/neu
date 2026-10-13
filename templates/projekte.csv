@@ -1,0 +1,7 @@
+﻿Nr;Name;Kunde;Art;Vertrag;Status;Start;Ende Plan;Ende Ist;Auftrag netto;Budget Material;Budget NU;Budget Lohn;Budget Gerät;Budget GK;Einbehalt %;Bauleiter;Polier;Ort;Notiz
+P-2026-001;Wohnquartier Am Park;K-1001;Hochbau;VOB/B;in Bau;2026-01-13;2026-11-30;;2400000;720000;380000;510000;95000;145000;0.05;MA-07;MA-03;München;6 Mehrfamilienhäuser, 48 WE
+P-2026-002;Kita Sonnenweg;K-1003;Hochbau;VOB/B;in Bau;2026-03-02;2026-10-15;;890000;250000;145000;210000;38000;52000;0.05;MA-07;MA-03;Freising;Neubau 4-gruppige Kita
+P-2026-003;Sanierung Rathaus;K-1002;Sanierung;VOB/B;in Bau;2026-02-16;2026-12-18;;1100000;210000;320000;245000;42000;68000;0.05;MA-07;MA-04;Freising;Denkmalschutz, Nachträge wahrscheinlich
+P-2026-004;Gewerbehalle Nord;K-1004;Industrie;BGB;in Bau;2026-04-06;2027-02-26;;3200000;980000;540000;610000;145000;190000;0.05;MA-07;MA-03;Dachau;Stahlhalle 4.200 m² + Büro
+P-2026-005;EFH Familie Huber;K-1005;Wohnungsbau;BGB;abgeschlossen;2025-09-08;2026-04-30;2026-04-22;420000;145000;38000;98000;18000;24000;0.05;MA-07;MA-04;Erding;Schlussrechnung gestellt
+P-2026-006;Straßenbau B13 Abschnitt;K-1006;Tiefbau;VOB/B;geplant;2026-09-01;2027-06-30;;1800000;620000;210000;430000;165000;98000;0.05;MA-07;MA-06;Freising Land;Zuschlag 12.08.2026, Baubeginn Sept.

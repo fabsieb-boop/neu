@@ -1,0 +1,14 @@
+﻿Nr;Datum;Projekt;Kunde;Typ;Abschlag-Nr;Netto;Einbehalt %;USt %;Fällig;Bezahlt am;Status;Text
+AR-26001;2026-02-28;P-2026-001;K-1001;Abschlag;1;360000;0.05;0.19;2026-03-30;2026-03-24;bezahlt;1. Abschlag Rohbau
+AR-26002;2026-04-30;P-2026-001;K-1001;Abschlag;2;420000;0.05;0.19;2026-05-30;2026-05-22;bezahlt;2. Abschlag Geschosse
+AR-26003;2026-07-31;P-2026-001;K-1001;Abschlag;3;380000;0.05;0.19;2026-08-30;2026-09-04;bezahlt;3. Abschlag inkl. Nachtrag N-002
+AR-26004;2026-09-30;P-2026-001;K-1001;Abschlag;4;310000;0.05;0.19;2026-10-30;;offen;4. Abschlag Dachbeginn
+AR-26005;2026-04-15;P-2026-002;K-1003;Abschlag;1;178000;0.05;0.19;2026-05-06;2026-05-02;bezahlt;1. Abschlag Kita
+AR-26006;2026-07-20;P-2026-002;K-1003;Abschlag;2;210000;0.05;0.19;2026-08-10;;gemahnt;2. Abschlag Rohbau
+AR-26007;2026-05-31;P-2026-003;K-1002;Abschlag;1;220000;0.05;0.19;2026-07-15;2026-07-11;bezahlt;1. Abschlag Rathaus
+AR-26008;2026-08-31;P-2026-003;K-1002;Abschlag;2;185000;0.05;0.19;2026-10-15;;offen;2. Abschlag Fassade
+AR-26009;2026-06-30;P-2026-004;K-1004;Abschlag;1;480000;0.05;0.19;2026-07-30;2026-07-21;bezahlt;1. Abschlag Erdbau/Bodenplatte
+AR-26010;2026-09-15;P-2026-004;K-1004;Abschlag;2;520000;0.05;0.19;2026-10-15;;offen;2. Abschlag Stahl
+AR-26011;2026-01-31;P-2026-005;K-1005;Abschlag;3;84000;0.05;0.19;2026-02-14;2026-02-10;bezahlt;3. Abschlag EFH
+AR-26012;2026-04-24;P-2026-005;K-1005;Schluss;4;126000;0.05;0.19;2026-05-08;2026-05-06;bezahlt;Schlussrechnung EFH, Einbehalt 5 %
+AR-26013;2026-10-05;P-2026-006;K-1006;Anzahlung;1;180000;0.0;0.19;2026-12-04;;offen;1. Abschlag nach Baubeginn

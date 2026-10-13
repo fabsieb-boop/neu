@@ -1,0 +1,9 @@
+﻿Nr;Name;Funktion;Kolonne;Soll-h/Monat;Verrechnung;Kosten/h;Eintritt;Status;Notiz
+MA-01;Andreas Bergmann;Geschäftsführung;GF;0;85.0;42.0;2012-03-01;Aktiv;Geschäftsführer
+MA-02;Claudia Meier;Kaufmännisch;BuHa;0;62.0;34.0;2018-06-01;Aktiv;Buchhaltung / Controlling
+MA-03;Markus Wolf;Polier;Bauleitung;160;58.0;41.5;2015-04-01;Aktiv;Polier Hochbau
+MA-04;Jonas Keller;Vorarbeiter;Rohbau;168;48.0;36.2;2019-08-15;Aktiv;Rohbau
+MA-05;Emre Yildiz;Facharbeiter;Rohbau;168;42.0;32.4;2021-02-01;Aktiv;Maurer
+MA-06;Stefan Vogel;Facharbeiter;Tiefbau;168;44.0;33.1;2017-09-01;Aktiv;Tiefbauer
+MA-07;Anna Schuster;Bauleitung;BL;160;64.0;45.0;2020-01-07;Aktiv;Bauleiterin
+MA-08;Lukas Berger;Azubi;Rohbau;140;18.0;14.5;2024-09-01;Aktiv;Auszubildender 2. LJ

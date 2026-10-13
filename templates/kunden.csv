@@ -1,0 +1,7 @@
+﻿Nr;Name;Typ;Ansprechpartner;Straße;PLZ;Ort;Telefon;E-Mail;Zahlungsziel;Skonto;ABC;Status;Notiz
+K-1001;Wohnbau Alpenland AG;Firma;Lisa Hartmann;Prinzregentenstr. 22;80538;München;089 1200 440;l.hartmann@wohnbau-alpenland.de;30;0.02;A;Aktiv;Großkunde Wohnungsbau
+K-1002;Stadt Freising;Kommune;Amt Hochbau;Obere Hauptstr. 2;85354;Freising;08161 17-0;hochbau@freising.de;45;0.0;A;Aktiv;Öffentlicher Auftraggeber VOB/A
+K-1003;Kita Träger Freising e.V.;Verein;Sabine Kohl;Sonnenweg 4;85354;Freising;08161 88910;verwaltung@kita-freising.de;21;0.02;B;Aktiv;Sozialer Träger
+K-1004;Nordpark Gewerbe GmbH;Firma;Thomas Reiter;Am Nordpark 9;85221;Dachau;08131 55620;t.reiter@nordpark-gewerbe.de;30;0.02;A;Aktiv;Industrie / Halle
+K-1005;Familie Huber;Privat;Martin Huber;Lindenweg 7;85435;Erding;08122 9912;martin.huber@web.de;14;0.0;C;Aktiv;EFH Privatkunde
+K-1006;Staatliches Bauamt Freising;Behörde;Vergabestelle;Landshuter Str. 31;85356;Freising;08161 403-0;vergabe@stba-fs.bayern.de;60;0.0;A;Aktiv;Straßen- und Tiefbau

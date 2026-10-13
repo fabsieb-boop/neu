@@ -1,0 +1,8 @@
+﻿Nr;Name;Art;Ansprechpartner;IBAN;Skonto Tage;Skonto %;Zahlungsziel;E-Mail;Status;Notiz
+L-2001;BayernZement GmbH;Material;Einkauf;DE14 7015 0000 0000 3321 09;14;0.02;30;zement@bayernzement.de;Aktiv;Beton / Zement
+L-2002;Holz & Stahl Süd AG;Material;Vertrieb Süd;DE22 7605 0101 0000 8841 33;10;0.03;30;auftrag@holzstahl-sued.de;Aktiv;Bewehrung / Stahl
+L-2003;Elektro Fuchs GmbH;Nachunternehmer;Werner Fuchs;DE77 7001 0080 0012 4455 01;10;0.02;21;office@elektro-fuchs.de;Aktiv;Elektroinstallation
+L-2004;Haustechnik Lang KG;Nachunternehmer;Petra Lang;DE55 7602 0070 0019 3300 18;14;0.02;21;info@ht-lang.de;Aktiv;HLS / Sanitär
+L-2005;Mietpark Geräte GmbH;Gerät;Disposition;DE33 7015 0000 0099 1200 44;7;0.0;14;dispo@mietpark-geraete.de;Aktiv;Bagger / Kran / Gerüst
+L-2006;Spedition Huber;Dienstleistung;Fuhrpark;DE10 7005 0000 0044 2210 87;7;0.0;14;disposition@spedition-huber.de;Aktiv;Aushub / Entsorgung
+L-2007;Gerüstbau Huber;Nachunternehmer;Josef Huber;DE41 7016 0000 0008 7712 55;10;0.02;21;buero@geruestbau-huber.de;Aktiv;Fassade / Gerüst
