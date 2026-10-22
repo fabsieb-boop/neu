@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
+import time
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -33,6 +35,22 @@ def guv_matrix(con: sqlite3.Connection) -> list[dict]:
             values = [werte.get((pos["zeile"], m + 1), 0.0) for m in range(9)]
         matrix[pos["zeile"]] = values
         out.append({"zeile": pos["zeile"], "nr": pos["nr"], "name": pos["position"], "sum": bool(pos["formel"]), "values": values})
+    # region agent log
+    with open("/opt/cursor/logs/debug.log", "a", encoding="utf-8") as debug:
+        debug.write(json.dumps({
+            "hypothesisId": "D",
+            "location": "server/model.py:guv_matrix-exit",
+            "message": "Recomputed monthly GuV formula rows",
+            "data": {
+                "rowCount": len(out),
+                "formulaRows": [
+                    {"row": row["zeile"], "name": row["name"], "values": row["values"]}
+                    for row in out if row["sum"]
+                ],
+            },
+            "timestamp": int(time.time() * 1000),
+        }, ensure_ascii=False) + "\n")
+    # endregion
     return out
 
 
@@ -119,6 +137,56 @@ def build() -> dict:
         row["bewertungPlan"] = p["bewertung"]
         row["bewertungOffen"] = bewertet
         row["ebitda"] = row["ebitdaGuV"] if row["ist"] else p["operativ"] + p["overhead"] + bewertet
+
+    guv_totals = {row["name"]: sum(row["values"]) for row in guv}
+    waterfall_parts = {
+        "Umsatz": guv_totals["Summe Umsatzerlöse"],
+        "bis Rohertrag": guv_totals["Rohertrag"] - guv_totals["Summe Umsatzerlöse"],
+        "Personal": guv_totals["Personalaufwand"],
+        "Sachkosten": guv_totals["Sachkosten"],
+        "Neutral": guv_totals["Neutrales Ergebnis"],
+        "Abschreibungen": guv_totals["Abschreibungen"],
+        "Finanzen": guv_totals["Finanzergebnis"],
+    }
+    # region agent log
+    with open("/opt/cursor/logs/debug.log", "a", encoding="utf-8") as debug:
+        debug.write(json.dumps({
+            "hypothesisId": "A",
+            "location": "server/model.py:build-waterfall",
+            "message": "Frontend waterfall terminal compared with GuV targets",
+            "data": {
+                "parts": waterfall_parts,
+                "terminal": sum(waterfall_parts.values()),
+                "ebitda": guv_totals["EBITDA"],
+                "resultBeforeTax": guv_totals["Ergebnis vor Steuern"],
+                "overviewActualEbitda": sum(row["ebitda"] for row in kenn if row["ist"]),
+            },
+            "timestamp": int(time.time() * 1000),
+        }, ensure_ascii=False) + "\n")
+    # endregion
+    # region agent log
+    with open("/opt/cursor/logs/debug.log", "a", encoding="utf-8") as debug:
+        debug.write(json.dumps({
+            "hypothesisId": "B",
+            "location": "server/model.py:build-identities",
+            "message": "GuV subtotal identities and waterfall residual",
+            "data": {
+                "otherOperatingIncome": guv_totals["Andere sonstige betriebliche Ertraege"],
+                "operatingEbitdaResidual": guv_totals["EBITDA (Operatives Ergebnis)"] - (
+                    guv_totals["Rohertrag"] + guv_totals["Andere sonstige betriebliche Ertraege"]
+                    + guv_totals["Personalaufwand"] + guv_totals["Sachkosten"]
+                ),
+                "ebitdaResidual": guv_totals["EBITDA"] - (
+                    guv_totals["EBITDA (Operatives Ergebnis)"] + guv_totals["Neutrales Ergebnis"]
+                ),
+                "resultBeforeTaxResidual": guv_totals["Ergebnis vor Steuern"] - (
+                    guv_totals["EBITDA"] + guv_totals["Abschreibungen"] + guv_totals["Finanzergebnis"]
+                ),
+                "waterfallMinusResultBeforeTax": sum(waterfall_parts.values()) - guv_totals["Ergebnis vor Steuern"],
+            },
+            "timestamp": int(time.time() * 1000),
+        }, ensure_ascii=False) + "\n")
+    # endregion
 
     forecast = []
     for m in range(1, 13):

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from "recharts";
 import { useDash } from "@/data";
 import { eur, Panel, PageHeader, axis } from "@/components/dash";
@@ -22,6 +23,21 @@ export function GuV() {
     return { name, base: Math.min(start, run), val: Math.abs(v), neg: v < 0 };
   });
   wf.push({ name: "Ergebnis", base: Math.min(0, run), val: Math.abs(run), neg: run < 0 });
+
+  // #region agent log
+  useEffect(() => {
+    void fetch("/api/debug/guv-render", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        parts: Object.fromEntries(steps),
+        terminal: run,
+        ebitda: tot("EBITDA"),
+        resultBeforeTax: tot("Ergebnis vor Steuern"),
+      }),
+    }).catch(() => undefined);
+  }, [dash.guv]);
+  // #endregion
 
   return (
     <div>

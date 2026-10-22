@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
+import time
 import zipfile
 from datetime import date, timedelta
 from pathlib import Path
@@ -315,6 +317,34 @@ def main() -> None:
         )
 
     guv = read_sheet(xlsx, "GuV_Positionen")
+    # region agent log
+    formula_cells = [
+        (r, month, formula(guv, r, col), value(guv, r, col))
+        for r in range(5, 91)
+        for month, col in enumerate(range(3, 12), start=1)
+        if formula(guv, r, col)
+    ]
+    with open("/opt/cursor/logs/debug.log", "a", encoding="utf-8") as debug:
+        debug.write(json.dumps({
+            "hypothesisId": "D",
+            "location": "scripts/import_excel.py:GuV-source",
+            "message": "Excel GuV formula/cache inventory",
+            "data": {
+                "formulaCells": len(formula_cells),
+                "formulaCellsWithCachedValue": sum(cached is not None for _, _, _, cached in formula_cells),
+                "keyRows": [
+                    {
+                        "row": r,
+                        "name": text(guv, r, 2),
+                        "formulas": [formula(guv, r, c) for c in range(3, 12)],
+                        "cachedValues": [value(guv, r, c) for c in range(3, 12)],
+                    }
+                    for r in (28, 61, 73, 74, 77, 89, 90)
+                ],
+            },
+            "timestamp": int(time.time() * 1000),
+        }, ensure_ascii=False) + "\n")
+    # endregion
     for r in range(5, 91):
         f = formula(guv, r, 3)
         con.execute(
@@ -334,6 +364,43 @@ def main() -> None:
             if value(guv, r, col) is None:
                 continue
             con.execute("INSERT INTO guv_wert VALUES (?,?,?)", (r, month, num(guv, r, col)))
+
+    # region agent log
+    source_leaf = {
+        (r, month): num(guv, r, col)
+        for r in range(5, 91)
+        for month, col in enumerate(range(3, 12), start=1)
+        if not formula(guv, r, col) and value(guv, r, col) is not None
+    }
+    db_leaf = {(r, month): wert for r, month, wert in con.execute("SELECT zeile, monat, wert FROM guv_wert")}
+    formula_structure_mismatches = [
+        r for r, stored in con.execute("SELECT zeile, formel FROM guv_position WHERE formel <> ''")
+        if stored != sum_rows(formula(guv, r, 3) or "")
+    ]
+    duplicate_formula_refs = [
+        r for r, stored in con.execute("SELECT zeile, formel FROM guv_position WHERE formel <> ''")
+        if len(stored.split("+")) != len(set(stored.split("+")))
+    ]
+    with open("/opt/cursor/logs/debug.log", "a", encoding="utf-8") as debug:
+        debug.write(json.dumps({
+            "hypothesisId": "C",
+            "location": "scripts/import_excel.py:GuV-database",
+            "message": "Excel leaf values and formula structure after SQLite import",
+            "data": {
+                "sourceLeafCells": len(source_leaf),
+                "databaseLeafCells": len(db_leaf),
+                "leafMismatches": [
+                    {"row": key[0], "month": key[1], "excel": expected, "sqlite": db_leaf.get(key)}
+                    for key, expected in source_leaf.items()
+                    if db_leaf.get(key) != expected
+                ][:20],
+                "unexpectedDatabaseLeaves": len(set(db_leaf) - set(source_leaf)),
+                "formulaStructureMismatches": formula_structure_mismatches,
+                "duplicateFormulaReferences": duplicate_formula_refs,
+            },
+            "timestamp": int(time.time() * 1000),
+        }, ensure_ascii=False) + "\n")
+    # endregion
 
     kosten_v = read_sheet(xlsx, "Kostenverfolgung")
     for r in sorted(k for k in kosten_v if k >= 5):
