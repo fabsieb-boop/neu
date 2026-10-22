@@ -1,7 +1,11 @@
 import { createContext, useContext, type ReactNode } from "react";
 import type { Dash, JournalRow } from "@/types";
 
-export type Store = { dash: Dash; journal: JournalRow[] };
+export type Store = {
+  dash: Dash;
+  journal: JournalRow[];
+  updateDash: (dash: Dash) => void;
+};
 
 const Ctx = createContext<Store | null>(null);
 

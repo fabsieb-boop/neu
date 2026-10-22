@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, FileSpreadsheet, Briefcase, Map, TrendingUp, Wallet, BarChart3, FileSearch, ScanSearch, Receipt, Database, Settings, Table2 } from "lucide-react";
+import { LayoutDashboard, FileSpreadsheet, Briefcase, Map, TrendingUp, Wallet, BarChart3, FileSearch, ScanSearch, Receipt, Database, Settings, Table2, PenLine } from "lucide-react";
 import logo from "@/assets/tvf-logo.png";
 import { useDash } from "@/data";
 
@@ -12,6 +12,7 @@ const groups = [
       { to: "/ebitda", label: "EBITDA", icon: BarChart3 },
       { to: "/forecast", label: "Forecast", icon: TrendingUp },
       { to: "/forecast-regionen", label: "Forecast je Region", icon: Map },
+      { to: "/forecast-eingabe", label: "Forecast-Eingabe", icon: PenLine },
       { to: "/forecast-plan", label: "Forecast-Plan", icon: Table2 },
     ],
   },

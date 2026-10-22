@@ -6,6 +6,7 @@ import { Ebitda } from "@/pages/ebitda";
 import { Forecast } from "@/pages/forecast";
 import { ForecastRegionen } from "@/pages/forecast-regionen";
 import { ForecastPlan } from "@/pages/forecast-plan";
+import { ForecastEingabe } from "@/pages/forecast-eingabe";
 import { Auftraege } from "@/pages/auftraege";
 import { Auftrag } from "@/pages/auftrag";
 import { Regionen } from "@/pages/regionen";
@@ -28,6 +29,7 @@ export function App() {
           <Route path="/forecast" element={<Forecast />} />
           <Route path="/forecast-regionen" element={<ForecastRegionen />} />
           <Route path="/forecast-plan" element={<ForecastPlan />} />
+          <Route path="/forecast-eingabe" element={<ForecastEingabe />} />
           <Route path="/auftraege" element={<Auftraege />} />
           <Route path="/auftrag" element={<Auftrag />} />
           <Route path="/regionen" element={<Regionen />} />

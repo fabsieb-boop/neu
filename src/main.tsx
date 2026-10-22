@@ -21,7 +21,7 @@ function Root() {
   if (fehler) return <p className="grid min-h-screen place-items-center text-sm text-negative">{fehler}</p>;
   if (!dash || !journal) return <p className="grid min-h-screen place-items-center text-sm text-muted-foreground">Zahlen werden geladen …</p>;
   return (
-    <DataProvider value={{ dash, journal }}>
+    <DataProvider value={{ dash, journal, updateDash: setDash }}>
       <BrowserRouter>
         <App />
       </BrowserRouter>

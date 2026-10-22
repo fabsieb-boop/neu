@@ -2,22 +2,107 @@
 
 from __future__ import annotations
 
+import math
+import os
 import sqlite3
 from datetime import date, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DB = ROOT / "data" / "tvf.sqlite"
+DB = Path(os.environ.get("TVF_DB", ROOT / "data" / "tvf.sqlite"))
 MONATE = [
     "Januar", "Februar", "März", "April", "Mai", "Juni",
     "Juli", "August", "September", "Oktober", "November", "Dezember",
 ]
 
 
+class ForecastInputError(ValueError):
+    pass
+
+
 def connect() -> sqlite3.Connection:
     con = sqlite3.connect(DB)
     con.row_factory = sqlite3.Row
     return con
+
+
+def add_forecast_plan(projekt_nr: str, groesse: str, werte: list[dict]) -> list[dict]:
+    projekt_nr = projekt_nr.strip() if isinstance(projekt_nr, str) else ""
+    if not projekt_nr:
+        raise ForecastInputError("Bitte einen aktiven Auftrag wählen.")
+    if groesse not in {"umsatz", "kosten", "ba"}:
+        raise ForecastInputError("Die Forecast-Art ist ungültig.")
+    if not isinstance(werte, list) or not werte or len(werte) > 12:
+        raise ForecastInputError("Bitte mindestens einen Monatswert eingeben.")
+
+    prepared: list[tuple[int, float]] = []
+    monate: set[int] = set()
+    for item in werte:
+        if not isinstance(item, dict):
+            raise ForecastInputError("Ein Monatswert ist ungültig.")
+        monat = item.get("monat")
+        wert = item.get("wert")
+        if isinstance(monat, bool) or not isinstance(monat, int) or monat < 1 or monat > 12:
+            raise ForecastInputError("Der Monat ist ungültig.")
+        if monat in monate:
+            raise ForecastInputError("Ein Monat darf nur einmal gespeichert werden.")
+        if isinstance(wert, bool) or not isinstance(wert, (int, float)) or not math.isfinite(wert) or wert == 0:
+            raise ForecastInputError("Der Betrag ist ungültig.")
+        monate.add(monat)
+        prepared.append((monat, float(wert)))
+
+    con = connect()
+    try:
+        parameter = con.execute("SELECT jahr FROM parameter").fetchone()
+        projekt = con.execute(
+            """
+            SELECT projekt_nr, name, region
+            FROM projekt
+            WHERE projekt_nr = ? AND status = 'AKTIV'
+            """,
+            (projekt_nr,),
+        ).fetchone()
+        if parameter is None or projekt is None:
+            raise ForecastInputError("Der aktive Auftrag wurde nicht gefunden.")
+
+        saved = []
+        for monat, angezeigt in prepared:
+            gespeichert = -angezeigt if groesse == "umsatz" else angezeigt
+            con.execute(
+                """
+                INSERT INTO forecast_plan
+                  (jahr, region, auftrag, auftragname, groesse, art, monat, wert)
+                VALUES (?, ?, ?, ?, ?, 'plan', ?, ?)
+                """,
+                (
+                    parameter["jahr"],
+                    projekt["region"],
+                    projekt["projekt_nr"],
+                    projekt["name"],
+                    groesse,
+                    monat,
+                    gespeichert,
+                ),
+            )
+            saved.append(
+                {
+                    "jahr": parameter["jahr"],
+                    "region": projekt["region"],
+                    "nr": projekt["projekt_nr"],
+                    "name": projekt["name"],
+                    "groesse": groesse,
+                    "art": "plan",
+                    "monat": monat,
+                    "wert": gespeichert,
+                }
+            )
+        con.commit()
+        return saved
+    except Exception:
+        con.rollback()
+        raise
+    finally:
+        con.close()
 
 
 def guv_matrix(con: sqlite3.Connection) -> list[dict]:
