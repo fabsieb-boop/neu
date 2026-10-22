@@ -18,7 +18,7 @@ GuV-Summen, Kennzahlen, EBITDA-Anzeige, Forecast, Regionen, Auftragsauswertung u
 
 ```sh
 python3 scripts/import_excel.py
-python3 scripts/verify.py
+npm run verify
 python3 server/api.py
 npm install
 npm run dev

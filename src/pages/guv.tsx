@@ -2,27 +2,13 @@ import { useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from "recharts";
 import { useDash } from "@/data";
 import { eur, Panel, PageHeader, axis } from "@/components/dash";
+import { buildGuvWaterfall } from "@/lib/guv-waterfall";
 
 export function GuV() {
   const { dash } = useDash();
   const mon = dash.monate.slice(0, 9).map((m) => m.slice(0, 3));
   const tot = (n: string) => dash.guv.find((g) => g.name === n)?.values.reduce((a, b) => a + b, 0) ?? 0;
-  const steps = [
-    ["Umsatz", tot("Summe Umsatzerlöse")],
-    ["bis Rohertrag", tot("Rohertrag") - tot("Summe Umsatzerlöse")],
-    ["Personal", tot("Personalaufwand")],
-    ["Sachkosten", tot("Sachkosten")],
-    ["Neutral", tot("Neutrales Ergebnis")],
-    ["Abschreib.", tot("Abschreibungen")],
-    ["Finanzen", tot("Finanzergebnis")],
-  ] as const;
-  let run = 0;
-  const wf: { name: string; base: number; val: number; neg: boolean }[] = steps.map(([name, v]) => {
-    const start = run;
-    run += v;
-    return { name, base: Math.min(start, run), val: Math.abs(v), neg: v < 0 };
-  });
-  wf.push({ name: "Ergebnis", base: Math.min(0, run), val: Math.abs(run), neg: run < 0 });
+  const { steps, run, wf } = buildGuvWaterfall(dash.guv);
 
   // #region agent log
   useEffect(() => {
@@ -43,7 +29,7 @@ export function GuV() {
     <div>
       <PageHeader title="Gewinn- und Verlustrechnung" subtitle={`Januar bis ${dash.letzterIstName}`} />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-        <Panel title="Vom Umsatz zum Ergebnis" subtitle={`Wasserfall Jan–${mon.at(-1)}`}>
+        <Panel title="Vom Umsatz zum EBITDA" subtitle={`Wasserfall Jan–${mon.at(-1)}`}>
           <div className="h-80">
             <ResponsiveContainer>
               <BarChart data={wf}>

@@ -7,7 +7,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "import": "python3 scripts/import_excel.py",
-    "verify": "python3 scripts/verify.py",
+    "verify": "node --test tests/guv-waterfall.test.mjs && python3 scripts/verify.py",
+    "test": "npm run verify",
     "api": "python3 server/api.py"
   },
   "dependencies": {
