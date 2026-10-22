@@ -34,7 +34,7 @@ export type Order = {
   abgrenzung: number;
 };
 export type ForecastOrder = { nr: string; name: string; region: string; status: string; monate: number[] };
-export type Region = { region: string; akte: number[]; forecast: (number | null)[] };
+export type Region = { region: string; akte: number[]; forecast: (number | null)[]; umsatz: number[] };
 export type AuftragDetail = {
   umsatz: number;
   bestand: number;
@@ -62,6 +62,30 @@ export type JournalRow = {
   kostenart: string;
   text: string;
   wert: number;
+  stufe: number;
+  guvGruppe: string;
+  belegkreis: string;
+  kostentraeger: string;
+  ergebnisrelevant: boolean;
+  leistung: number;
+  kvar: number;
+  kfix: number;
+  umlage: number;
+  beitrag: number;
+};
+export type User = {
+  id: number;
+  email: string;
+  vorname: string;
+  nachname: string;
+  rollen: string[];
+  regionen: string[];
+  aktiv: boolean;
+  passwortOffen: boolean;
+  letzterLogin: string | null;
+  istAdmin: boolean;
+  regional: boolean;
+  setup: boolean;
 };
 export type Dash = {
   jahr: number;
@@ -71,6 +95,16 @@ export type Dash = {
   auftragsnummer: string;
   monate: string[];
   months: Month[];
+  regionalMonths: {
+    m: number;
+    name: string;
+    ist: boolean;
+    umsatz: number;
+    bestand: number;
+    sonstige: number;
+    leistung: number;
+    ergebnis: number;
+  }[];
   forecast: {
     m: number;
     name: string;
@@ -110,4 +144,5 @@ export type Dash = {
   forecastPlan: { region: string; nr: string; name: string; groesse: string; art: string; monat: number; wert: number }[];
   liquidity: { start: number; dso: number; dpo: number; weeks: { datum: string; jahr: number; monat: number; ein: number; aus: number; netto: number; bestand: number }[] };
   auftragDetail: Record<string, AuftragDetail>;
+  scope: { regional: boolean; regions: string[] };
 };

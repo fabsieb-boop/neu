@@ -88,7 +88,7 @@ export function ForecastEingabe() {
 
   return (
     <div>
-      <PageHeader title="Forecast-Eingabe" subtitle="Planwerte je Auftrag und Monat erfassen – ohne Freigabe" />
+      <PageHeader title="Forecast-Eingabe" subtitle="Planwerte je Auftrag und Monat direkt erfassen" />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         <Panel title="Forecast je Projekt eingeben" subtitle={`${projects.length} aktive Aufträge`}>
           <form onSubmit={submit} className="space-y-6">

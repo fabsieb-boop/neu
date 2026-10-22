@@ -58,12 +58,14 @@ def formula_rows(formula_text: str, expected_column: str) -> list[int]:
 def main() -> None:
     con = sqlite3.connect(DB)
     tables = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
-    erwartet = {
+    quellen = {
         "auftrag_liste", "buchung", "ebitda_plan", "forecast_plan", "guv_position", "guv_wert",
         "kontostand", "kosten_meldung", "kostenart", "legende", "liq_bestand", "liq_monat",
         "liq_parameter", "parameter", "projekt", "region_liste", "verlust",
     }
-    if set(tables) != erwartet:
+    system = {"benutzer", "bericht_vorlage", "ja_stand", "import_protokoll"}
+    intern = {"sqlite_sequence"}
+    if set(tables) != quellen | system | intern:
         raise SystemExit(f"Tabellen weichen ab: {tables}")
 
     with zipfile.ZipFile(XLSX) as archive:
