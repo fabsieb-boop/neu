@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from "recharts";
 import { useDash } from "@/data";
 import { eur, Panel, PageHeader, axis } from "@/components/dash";
@@ -7,23 +6,7 @@ import { buildGuvWaterfall } from "@/lib/guv-waterfall";
 export function GuV() {
   const { dash } = useDash();
   const mon = dash.monate.slice(0, 9).map((m) => m.slice(0, 3));
-  const tot = (n: string) => dash.guv.find((g) => g.name === n)?.values.reduce((a, b) => a + b, 0) ?? 0;
-  const { steps, run, wf } = buildGuvWaterfall(dash.guv);
-
-  // #region agent log
-  useEffect(() => {
-    void fetch("/api/debug/guv-render", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        parts: Object.fromEntries(steps),
-        terminal: run,
-        ebitda: tot("EBITDA"),
-        resultBeforeTax: tot("Ergebnis vor Steuern"),
-      }),
-    }).catch(() => undefined);
-  }, [dash.guv]);
-  // #endregion
+  const { wf } = buildGuvWaterfall(dash.guv);
 
   return (
     <div>
