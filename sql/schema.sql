@@ -174,6 +174,51 @@ CREATE TABLE legende (
   formel TEXT NOT NULL
 );
 
+-- Systembereich. Fachbeträge bleiben in den Tabellen oberhalb; diese vier
+-- Tabellen speichern ausschließlich Zugänge, Berichtsvorlagen und Systemstände.
+CREATE TABLE benutzer (
+  benutzer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL COLLATE NOCASE UNIQUE,
+  passwort_hash TEXT NOT NULL,
+  vorname TEXT NOT NULL DEFAULT '',
+  nachname TEXT NOT NULL DEFAULT '',
+  rollen TEXT NOT NULL DEFAULT '["NEUTRAL"]',
+  regionen TEXT NOT NULL DEFAULT '[]',
+  aktiv INTEGER NOT NULL DEFAULT 1,
+  passwort_aendern INTEGER NOT NULL DEFAULT 1,
+  letzter_login TEXT
+);
+
+CREATE TABLE bericht_vorlage (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  benutzer_id INTEGER,
+  name TEXT NOT NULL,
+  quelle TEXT NOT NULL,
+  aufbau TEXT NOT NULL DEFAULT '{}',
+  geaendert_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (benutzer_id, name),
+  FOREIGN KEY (benutzer_id) REFERENCES benutzer (benutzer_id)
+);
+
+CREATE TABLE ja_stand (
+  schluessel TEXT PRIMARY KEY,
+  status TEXT NOT NULL DEFAULT 'offen',
+  datum TEXT,
+  dateiname TEXT,
+  dokument BLOB,
+  geaendert_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE import_protokoll (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  erstellt_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  dateiname TEXT NOT NULL,
+  schritt TEXT NOT NULL,
+  status TEXT NOT NULL,
+  zeilen INTEGER NOT NULL DEFAULT 0,
+  detail TEXT NOT NULL DEFAULT ''
+);
+
 -- Dieselbe Zuordnung wie die Formeln in Auftrag_Journal, Spalten M–AC.
 CREATE VIEW v_journal AS
 SELECT

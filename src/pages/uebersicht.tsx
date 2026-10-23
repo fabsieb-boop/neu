@@ -137,3 +137,70 @@ export function Uebersicht() {
     </div>
   );
 }
+
+export function RegionaleUebersicht() {
+  const { dash, user } = useDash();
+  const rows = dash.regionalMonths;
+  const ist = rows.filter((row) => row.ist);
+  const leistung = ist.reduce((sum, row) => sum + row.leistung, 0);
+  const ergebnis = ist.reduce((sum, row) => sum + row.ergebnis, 0);
+  const forecast = dash.forecast
+    .filter((row) => !row.ist)
+    .reduce((sum, row) => sum + row.angezeigt, 0);
+  const series = rows.map((row) => ({ ...row, kurz: short(row.name) }));
+
+  return (
+    <div>
+      <PageHeader title="Meine Übersicht" subtitle={`Regionen: ${user.regionen.join(", ")}`} />
+      <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Kpi label="Leistung Ist" value={leistung} hint={`Januar–${dash.letzterIstName}`} />
+          <Kpi label="Ergebnis Akte Ist" value={ergebnis} hint="nur zugeordnete Regionen" signed />
+          <Kpi label="Forecast danach" value={forecast} hint="Umsatz + Bestand − Kosten" signed />
+          <Kpi label="Aufträge" value={dash.orders.length} hint={`${dash.scope.regions.length} Regionen`} plain />
+        </section>
+        <Panel title="Leistung und Ergebnis je Monat" subtitle="ausschließlich zugeordnete Regionen">
+          <div className="h-80">
+            <ResponsiveContainer>
+              <ComposedChart data={series} margin={{ left: 8, right: 8, top: 8 }}>
+                <CartesianGrid vertical={false} stroke="var(--border)" />
+                <XAxis dataKey="kurz" tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={(value) => eur(value, true)} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} axisLine={false} tickLine={false} width={70} />
+                <Tooltip content={<ChartTip />} cursor={{ fill: "var(--muted)" }} />
+                <ReferenceLine y={0} stroke="var(--border)" />
+                <Bar dataKey="leistung" name="Leistung" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
+                <Line dataKey="ergebnis" name="Ergebnis Akte" stroke="var(--chart-2)" strokeWidth={2.5} dot={{ r: 3 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </Panel>
+        <Panel title="Monatsübersicht" subtitle="aus den regional gefilterten Buchungen">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
+                  <th className="pb-3 font-medium">Monat</th>
+                  <th className="pb-3 text-right font-medium">Umsatz</th>
+                  <th className="pb-3 text-right font-medium">Bestand</th>
+                  <th className="pb-3 text-right font-medium">Leistung</th>
+                  <th className="pb-3 text-right font-medium">Ergebnis Akte</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.m} className="border-t border-border">
+                    <td className="py-2.5 font-medium">{row.name}</td>
+                    <td className="text-right">{eur(row.umsatz)}</td>
+                    <td className="text-right">{eur(row.bestand)}</td>
+                    <td className="text-right font-semibold">{eur(row.leistung)}</td>
+                    <td className={`text-right font-semibold ${row.ergebnis < 0 ? "text-negative" : "text-positive"}`}>{eur(row.ergebnis)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      </main>
+    </div>
+  );
+}

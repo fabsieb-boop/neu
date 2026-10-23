@@ -88,7 +88,7 @@ export function ForecastEingabe() {
 
   return (
     <div>
-      <PageHeader title="Forecast-Eingabe" subtitle="Planwerte je Auftrag und Monat erfassen – ohne Freigabe" />
+      <PageHeader title="Forecast-Eingabe" subtitle="Planwerte je Auftrag und Monat direkt erfassen" />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         <Panel title="Forecast je Projekt eingeben" subtitle={`${projects.length} aktive Aufträge`}>
           <form onSubmit={submit} className="space-y-6">
@@ -140,11 +140,12 @@ export function ForecastEingabe() {
                       </p>
                       <input
                         aria-label={`Betrag ${monat}`}
+                        disabled={!plan}
                         inputMode="decimal"
-                        placeholder="0"
+                        placeholder={plan ? "0" : "Ist"}
                         value={werte[index]}
                         onChange={(event) => setWerte((current) => current.map((value, i) => i === index ? event.target.value : value))}
-                        className="w-full bg-transparent text-right text-sm font-medium outline-none"
+                        className="w-full bg-transparent text-right text-sm font-medium outline-none disabled:cursor-not-allowed disabled:text-muted-foreground"
                       />
                     </div>
                   );

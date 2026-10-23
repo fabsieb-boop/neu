@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import argparse
+import posixpath
 import sqlite3
 import zipfile
 from datetime import date, timedelta
@@ -14,28 +16,30 @@ XLSX = ROOT / "data" / "tvf-dashboard-download.xlsx"
 DB = ROOT / "data" / "tvf.sqlite"
 SCHEMA = ROOT / "sql" / "schema.sql"
 NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+DOCUMENT_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+PACKAGE_REL_NS = {"r": "http://schemas.openxmlformats.org/package/2006/relationships"}
 EXCEL_EPOCH = date(1899, 12, 30)
 
-# workbook.xml sheet order
-SHEETS = {
-    "GuV_Positionen": "xl/worksheets/sheet4.xml",
-    "Auftraege": "xl/worksheets/sheet8.xml",
-    "Kostenverfolgung": "xl/worksheets/sheet10.xml",
-    "Parameter": "xl/worksheets/sheet12.xml",
-    "Legende": "xl/worksheets/sheet13.xml",
-    "Auftrag_Journal": "xl/worksheets/sheet14.xml",
-    "Projektstamm": "xl/worksheets/sheet15.xml",
-    "Kostenarten": "xl/worksheets/sheet16.xml",
-    "Forecast_Plan": "xl/worksheets/sheet17.xml",
-    "EBITDA_Plan": "xl/worksheets/sheet18.xml",
-    "Verlust": "xl/worksheets/sheet19.xml",
-    "Liq_Monat": "xl/worksheets/sheet20.xml",
-    "Liq_Parameter": "xl/worksheets/sheet21.xml",
-    "Liq_Bestand": "xl/worksheets/sheet22.xml",
-    "Kontostand": "xl/worksheets/sheet23.xml",
-    "Regionen": "xl/worksheets/sheet7.xml",
-    "Auftrag": "xl/worksheets/sheet9.xml",
-}
+SHEETS = (
+    "GuV_Positionen",
+    "Auftraege",
+    "Kostenverfolgung",
+    "Parameter",
+    "Legende",
+    "Auftrag_Journal",
+    "Projektstamm",
+    "Kostenarten",
+    "Forecast_Plan",
+    "EBITDA_Plan",
+    "Verlust",
+    "Liq_Monat",
+    "Liq_Parameter",
+    "Liq_Bestand",
+    "Kontostand",
+    "Regionen",
+    "Auftrag",
+)
+SYSTEM_TABLES = ("benutzer", "bericht_vorlage", "ja_stand", "import_protokoll")
 
 
 def col_row(ref: str) -> tuple[int, int]:
@@ -47,7 +51,7 @@ def col_row(ref: str) -> tuple[int, int]:
     return n, row
 
 
-def cell_value(cell: ET.Element):
+def cell_value(cell: ET.Element, shared_strings: list[str] | None = None):
     kind = cell.attrib.get("t")
     if kind == "inlineStr":
         return "".join(cell.find("m:is", NS).itertext()) if cell.find("m:is", NS) is not None else ""
@@ -57,6 +61,11 @@ def cell_value(cell: ET.Element):
     raw = node.text
     if kind == "b":
         return raw == "1"
+    if kind == "s":
+        try:
+            return (shared_strings or [])[int(raw)]
+        except (IndexError, ValueError) as error:
+            raise ValueError("Ungültiger Verweis auf eine Excel-Zeichenkette.") from error
     return float(raw) if any(c in raw for c in ".eE") else int(raw) if raw.lstrip("-").isdigit() else raw
 
 
@@ -65,15 +74,50 @@ def cell_formula(cell: ET.Element) -> str | None:
     return node.text if node is not None and node.text else None
 
 
+def workbook_sheet_paths(xlsx: zipfile.ZipFile) -> dict[str, str]:
+    workbook = ET.fromstring(xlsx.read("xl/workbook.xml"))
+    relationships = ET.fromstring(xlsx.read("xl/_rels/workbook.xml.rels"))
+    targets = {
+        node.attrib["Id"]: node.attrib["Target"]
+        for node in relationships.findall("r:Relationship", PACKAGE_REL_NS)
+    }
+    paths: dict[str, str] = {}
+    for sheet in workbook.findall(".//m:sheets/m:sheet", NS):
+        relation = sheet.attrib.get(f"{{{DOCUMENT_REL_NS}}}id", "")
+        target = targets.get(relation)
+        if not target:
+            raise KeyError(f"Beziehung für Excel-Blatt {sheet.attrib.get('name', '')} fehlt.")
+        path = target.lstrip("/") if target.startswith("/") else posixpath.normpath(posixpath.join("xl", target))
+        if path not in xlsx.namelist():
+            raise KeyError(f"Excel-Blattdatei {path} fehlt.")
+        paths[sheet.attrib["name"]] = path
+    return paths
+
+
+def workbook_sheet_names(xlsx: zipfile.ZipFile) -> list[str]:
+    return list(workbook_sheet_paths(xlsx))
+
+
+def _shared_strings(xlsx: zipfile.ZipFile) -> list[str]:
+    if "xl/sharedStrings.xml" not in xlsx.namelist():
+        return []
+    root = ET.fromstring(xlsx.read("xl/sharedStrings.xml"))
+    return ["".join(node.itertext()) for node in root.findall("m:si", NS)]
+
+
 def read_sheet(xlsx: zipfile.ZipFile, name: str) -> dict[int, dict[int, tuple[object, str | None]]]:
-    root = ET.fromstring(xlsx.read(SHEETS[name]))
+    paths = workbook_sheet_paths(xlsx)
+    if name not in paths:
+        raise KeyError(f"Excel-Blatt {name} fehlt.")
+    root = ET.fromstring(xlsx.read(paths[name]))
+    shared_strings = _shared_strings(xlsx)
     rows: dict[int, dict[int, tuple[object, str | None]]] = {}
     for cell in root.findall(".//m:c", NS):
         ref = cell.attrib.get("r")
         if not ref:
             continue
         ci, ri = col_row(ref)
-        rows.setdefault(ri, {})[ci] = (cell_value(cell), cell_formula(cell))
+        rows.setdefault(ri, {})[ci] = (cell_value(cell, shared_strings), cell_formula(cell))
     return rows
 
 
@@ -146,12 +190,61 @@ def sum_rows(formula_text: str) -> str:
     return "+".join(rows)
 
 
-def main() -> None:
-    if DB.exists():
-        DB.unlink()
-    con = sqlite3.connect(DB)
+def _saved_system_rows(db_path: Path) -> dict[str, tuple[list[str], list[tuple]]]:
+    if not db_path.exists():
+        return {}
+    saved: dict[str, tuple[list[str], list[tuple]]] = {}
+    with sqlite3.connect(db_path) as connection:
+        for table in SYSTEM_TABLES:
+            exists = connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+                (table,),
+            ).fetchone()
+            if not exists:
+                continue
+            columns = [
+                row[1]
+                for row in connection.execute(f'PRAGMA table_info("{table}")')
+            ]
+            rows = [
+                tuple(row)
+                for row in connection.execute(f'SELECT * FROM "{table}"')
+            ]
+            saved[table] = (columns, rows)
+    return saved
+
+
+def _restore_system_rows(
+    connection: sqlite3.Connection,
+    saved: dict[str, tuple[list[str], list[tuple]]],
+) -> None:
+    for table in SYSTEM_TABLES:
+        if table not in saved:
+            continue
+        columns, rows = saved[table]
+        if not rows:
+            continue
+        names = ", ".join(f'"{column}"' for column in columns)
+        marks = ", ".join("?" for _ in columns)
+        connection.executemany(
+            f'INSERT INTO "{table}" ({names}) VALUES ({marks})',
+            rows,
+        )
+
+
+def import_workbook(xlsx_path: Path = XLSX, db_path: Path = DB) -> dict[str, int]:
+    """Importiert eine Mappe in eine neue SQLite-Datei.
+
+    Die frei wählbaren Pfade werden vom Importmanager für einen isolierten
+    Testlauf genutzt; der normale Aufruf verwendet weiterhin die Repo-Dateien.
+    """
+    system_rows = _saved_system_rows(db_path)
+    if db_path.exists():
+        db_path.unlink()
+    con = sqlite3.connect(db_path)
     con.executescript(SCHEMA.read_text())
-    xlsx = zipfile.ZipFile(XLSX)
+    _restore_system_rows(con, system_rows)
+    xlsx = zipfile.ZipFile(xlsx_path)
 
     parameter = read_sheet(xlsx, "Parameter")
     auftrag = read_sheet(xlsx, "Auftrag")
@@ -372,6 +465,7 @@ def main() -> None:
         con.execute("INSERT INTO legende VALUES (?,?,?)", (r, punkt, text(legende, r, 2)))
 
     con.commit()
+    xlsx.close()
     counts = {
         name: con.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0]
         for name in (
@@ -394,10 +488,16 @@ def main() -> None:
             "legende",
         )
     }
-    print(DB)
+    print(db_path)
     for name, count in counts.items():
         print(f"{name}: {count}")
+    con.close()
+    return counts
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--xlsx", type=Path, default=XLSX)
+    parser.add_argument("--db", type=Path, default=DB)
+    args = parser.parse_args()
+    import_workbook(args.xlsx, args.db)
