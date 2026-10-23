@@ -93,6 +93,19 @@ class ForecastInputTest(unittest.TestCase):
             after = connection.execute("SELECT COUNT(*) FROM forecast_plan").fetchone()[0]
         self.assertEqual(after, before)
 
+    def test_rejects_forecast_values_in_closed_actual_months(self) -> None:
+        project = self.active_project()
+        with self.connection() as connection:
+            last_actual = connection.execute(
+                "SELECT letzter_ist_monat FROM parameter"
+            ).fetchone()[0]
+        with self.assertRaisesRegex(model.ForecastInputError, "letzten Ist-Monat"):
+            model.add_forecast_plan(
+                project["projekt_nr"],
+                "kosten",
+                [{"monat": last_actual, "wert": 100.0}],
+            )
+
     def test_accepts_only_active_known_orders_and_forecast_fields(self) -> None:
         with self.connection() as connection:
             inactive = connection.execute(
@@ -246,6 +259,26 @@ class IsolatedImportTest(unittest.TestCase):
                 {"benutzer", "bericht_vorlage", "ja_stand", "import_protokoll"}
                 <= tables
             )
+            with sqlite3.connect(imported) as connection:
+                connection.execute(
+                    """
+                    INSERT INTO import_protokoll
+                      (dateiname, schritt, status, zeilen, detail)
+                    VALUES (?, 'analyse', 'ERFOLGREICH', 0, '')
+                    """,
+                    (workbook.name,),
+                )
+            import_workbook(workbook, imported)
+            with sqlite3.connect(imported) as connection:
+                preserved = connection.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM import_protokoll
+                    WHERE dateiname = ? AND schritt = 'analyse'
+                    """,
+                    (workbook.name,),
+                ).fetchone()[0]
+            self.assertEqual(preserved, 1)
         self.assertEqual(
             hashlib.sha256(workbook.read_bytes()).hexdigest(), before_workbook
         )

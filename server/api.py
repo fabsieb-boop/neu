@@ -246,10 +246,16 @@ class Handler(BaseHTTPRequestHandler):
         morsel = cookie.get(COOKIE)
         return _session_user(morsel.value) if morsel else None
 
-    def _require_user(self) -> dict | None:
+    def _require_user(self, *, allow_password_change: bool = False) -> dict | None:
         user = self._current_user()
         if user is None:
             self._json({"error": "Bitte anmelden."}, status=401)
+        elif user["passwortOffen"] and not allow_password_change:
+            self._json(
+                {"error": "Bitte zuerst das Startpasswort ändern."},
+                status=403,
+            )
+            return None
         return user
 
     def _require_admin(self) -> dict | None:
@@ -382,7 +388,9 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 return
 
-            user = self._require_user()
+            user = self._require_user(
+                allow_password_change=path == "/api/auth/password"
+            )
             if user is None:
                 return
             if path == "/api/auth/password":

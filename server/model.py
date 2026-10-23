@@ -403,7 +403,9 @@ def add_forecast_plan(
 
     con = connect()
     try:
-        parameter = con.execute("SELECT jahr FROM parameter").fetchone()
+        parameter = con.execute(
+            "SELECT jahr, letzter_ist_monat FROM parameter"
+        ).fetchone()
         projekt = con.execute(
             """
             SELECT projekt_nr, name, region
@@ -414,6 +416,10 @@ def add_forecast_plan(
         ).fetchone()
         if parameter is None or projekt is None:
             raise ForecastInputError("Der aktive Auftrag wurde nicht gefunden.")
+        if any(monat <= parameter["letzter_ist_monat"] for monat, _ in prepared):
+            raise ForecastInputError(
+                "Forecast-Werte sind nur für Monate nach dem letzten Ist-Monat zulässig."
+            )
         if allowed_regions is not None and projekt["region"] not in allowed_regions:
             raise ForecastInputError("Der Auftrag gehört nicht zu Ihrer Region.")
 

@@ -140,11 +140,12 @@ export function ForecastEingabe() {
                       </p>
                       <input
                         aria-label={`Betrag ${monat}`}
+                        disabled={!plan}
                         inputMode="decimal"
-                        placeholder="0"
+                        placeholder={plan ? "0" : "Ist"}
                         value={werte[index]}
                         onChange={(event) => setWerte((current) => current.map((value, i) => i === index ? event.target.value : value))}
-                        className="w-full bg-transparent text-right text-sm font-medium outline-none"
+                        className="w-full bg-transparent text-right text-sm font-medium outline-none disabled:cursor-not-allowed disabled:text-muted-foreground"
                       />
                     </div>
                   );
