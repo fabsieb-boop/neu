@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { Download, FileUp, Mail as MailIcon, Search, Upload, UserPlus } from "lucide-react";
 import { Berichte } from "@/pages/berichte";
 import { useDash } from "@/data";
-import { DataTable, eur, Kpi, money, num, PageHeader, Panel } from "@/components/dash";
+import { DataTable, eur, Kpi, num, PageHeader, Panel } from "@/components/dash";
 import type { User } from "@/types";
 
 export function System() {

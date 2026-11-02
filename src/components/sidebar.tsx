@@ -42,6 +42,7 @@ function useGroups(): Group[] {
           { to: "/guv", label: "GuV", icon: FileSpreadsheet },
           { to: "/ebitda", label: "EBITDA", icon: BarChart3 },
           { to: "/management-bericht", label: "Management-Bericht", icon: FileText },
+          ...(user.istAdmin ? [{ to: "/system/berichte", label: "Berichtsgenerator", icon: FileText }] : []),
         ] : []),
       ],
     },
@@ -85,7 +86,6 @@ function useGroups(): Group[] {
         { to: "/system/import", label: "Import", icon: Upload },
         { to: "/system/benutzer", label: "Benutzer", icon: Users },
         { to: "/system/mail", label: "Mailversand", icon: Mail },
-        { to: "/system/berichte", label: "Berichtsgenerator", icon: FileText },
         { to: "/system/klr", label: "KLR und Deckungsbeiträge", icon: Calculator },
         { to: "/system/gegenkontrolle", label: "Gegenkontrolle", icon: ShieldCheck },
       ],
@@ -109,7 +109,7 @@ export function Sidebar() {
           <p className="text-xs opacity-60">Controlling</p>
         </div>
       </div>
-      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-2">
+      <nav className="min-h-0 flex-1 space-y-6 overflow-y-auto px-3 py-2">
         {groups.map((g) => (
           <div key={g.label}>
             <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] opacity-50">{g.label}</p>

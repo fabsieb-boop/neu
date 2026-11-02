@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Download, Printer } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useDash } from "@/data";
 import { axis, DataTable, eur, Kpi, num, PageHeader, Panel, short } from "@/components/dash";
 import type { Dash } from "@/types";
@@ -36,6 +37,15 @@ function downloadCsv(name: string, rows: Row[], columns = rows.length ? Object.k
 }
 
 const reportButton = "inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold hover:bg-muted";
+
+const MONTH_NAMES = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+
+function monatLabel(value: string) {
+  const [year, month] = value.split("-");
+  return `${MONTH_NAMES[Number(month) - 1] ?? month} ${year}`;
+}
+
+type FixedType = "forecast" | "liquiditaet" | "rentabilitaet" | "kontoauszug";
 
 export function ManagementBericht() {
   const { dash } = useDash();
@@ -160,22 +170,34 @@ export function Berichte() {
 
 function FixedReports() {
   const { dash } = useDash();
-  const [type, setType] = useState<"forecast" | "liquiditaet" | "rentabilitaet">("forecast");
-  const exports = fixedRows(dash, type);
+  const latestBank = dash.bank.monate.at(-1)?.monat ?? "";
+  const [type, setType] = useState<FixedType>(latestBank ? "kontoauszug" : "forecast");
+  const [bankMonth, setBankMonth] = useState(latestBank);
+  const exports = fixedRows(dash, type, bankMonth);
   return (
     <>
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4 shadow-card print:hidden">
         <label className="text-xs font-medium text-muted-foreground">
           Bericht
-          <select value={type} onChange={(event) => setType(event.target.value as typeof type)} className="mt-1 block min-w-60 rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground">
+          <select value={type} onChange={(event) => setType(event.target.value as FixedType)} className="mt-1 block min-w-60 rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground">
+            <option value="kontoauszug">Kontoauszug</option>
             <option value="forecast">Forecast-Bericht</option>
             <option value="liquiditaet">Liquiditätsbericht</option>
             <option value="rentabilitaet">Rentabilitätsbericht</option>
           </select>
         </label>
-        <button className={reportButton} onClick={() => downloadCsv(`TVF_${type}_${dash.jahr}.csv`, exports)}><Download className="h-4 w-4" />Excel-Daten</button>
+        {type === "kontoauszug" && dash.bank.monate.length > 0 && (
+          <label className="text-xs font-medium text-muted-foreground">
+            Monat
+            <select value={bankMonth} onChange={(event) => setBankMonth(event.target.value)} className="mt-1 block min-w-48 rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground">
+              {[...dash.bank.monate].reverse().map((row) => <option key={row.monat} value={row.monat}>{monatLabel(row.monat)}</option>)}
+            </select>
+          </label>
+        )}
+        <button className={reportButton} onClick={() => downloadCsv(`TVF_${type}_${bankMonth || dash.jahr}.csv`, exports)}><Download className="h-4 w-4" />Excel-Daten</button>
         <button className={reportButton} onClick={() => window.print()}><Printer className="h-4 w-4" />Drucken / PDF</button>
       </div>
+      {type === "kontoauszug" && <StatementReport month={bankMonth} />}
       {type === "forecast" && <ForecastReport />}
       {type === "liquiditaet" && <LiquidityReport />}
       {type === "rentabilitaet" && <ProfitabilityReport />}
@@ -183,7 +205,20 @@ function FixedReports() {
   );
 }
 
-function fixedRows(dash: Dash, type: "forecast" | "liquiditaet" | "rentabilitaet"): Row[] {
+function fixedRows(dash: Dash, type: FixedType, bankMonth: string): Row[] {
+  if (type === "kontoauszug") return dash.bank.bewegungen
+    .filter((row) => !bankMonth || row.datum.startsWith(bankMonth))
+    .map((row) => ({
+      Buchungstag: row.datum.split("-").reverse().join("."),
+      Valuta: row.valuta ? row.valuta.split("-").reverse().join(".") : "",
+      Gegenpartei: row.gegenpartei,
+      Verwendungszweck: row.zweck,
+      Buchungstext: row.text,
+      Betrag: num(row.betrag, 2),
+      Währung: row.waehrung,
+      IBAN: row.iban,
+      Konto: row.konto,
+    }));
   if (type === "forecast") return dash.forecastOrders.map((order) => ({
     Auftrag: order.nr,
     Name: order.name,
@@ -207,6 +242,56 @@ function fixedRows(dash: Dash, type: "forecast" | "liquiditaet" | "rentabilitaet
     "Ergebnis Akte": order.akte,
     Abgrenzung: order.abgrenzung,
   }));
+}
+
+function StatementReport({ month }: { month: string }) {
+  const { dash } = useDash();
+  const summary = dash.bank.monate.find((row) => row.monat === month);
+  const rows = dash.bank.bewegungen
+    .filter((row) => month && row.datum.startsWith(month))
+    .sort((a, b) => a.datum.localeCompare(b.datum) || a.betrag - b.betrag);
+  if (dash.bank.anzahl === 0 || !summary) {
+    return (
+      <Panel title="Kontoauszug" subtitle="noch keine Bankdatei">
+        <p className="text-sm text-muted-foreground">Nach dem Import unter System → Import erscheint hier jeder Monat der Datei. Der Oktober-Auszug steht dann als Oktober 2026, mit Punkt als Tausender und Komma als Cent.</p>
+        <Link className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" to="/system/import">Zum Import</Link>
+      </Panel>
+    );
+  }
+  const saldo = summary.ein - summary.aus;
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">Die Buchungen stammen aus dem importierten Kontoauszug und stehen direkt nach dem Import bereit. GuV, Forecast und der 26-Wochen-Plan verwenden weiter den Ist-Stand der Excel-Datenbasis.</p>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <AmountStat label="Eingang" value={summary.ein} hint={monatLabel(summary.monat)} />
+        <AmountStat label="Ausgang" value={-summary.aus} hint={monatLabel(summary.monat)} />
+        <AmountStat label="Saldo" value={saldo} hint={`${summary.anzahl.toLocaleString("de-DE")} Buchungen`} />
+        <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Buchungen</p>
+          <p className="mt-3 font-display text-2xl font-semibold tracking-tight">{summary.anzahl.toLocaleString("de-DE")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{rows.length < summary.anzahl ? `${rows.length.toLocaleString("de-DE")} in der Tabelle` : "im gewählten Monat"}</p>
+        </div>
+      </section>
+      <Panel title={`Buchungen ${monatLabel(summary.monat)}`} subtitle="Punkt für die Tausender, Komma für die Cent">
+        <DataTable rows={rows} cols={[
+          { key: "d", label: "Buchungstag", render: (row) => row.datum.split("-").reverse().join(".") },
+          { key: "g", label: "Gegenpartei", render: (row) => row.gegenpartei || "–" },
+          { key: "t", label: "Text", render: (row) => <span className="inline-block max-w-xs truncate" title={row.zweck || row.text}>{row.zweck || row.text}</span> },
+          { key: "b", label: "Betrag", right: true, render: (row) => <span className={row.betrag < 0 ? "text-negative" : ""}>{num(row.betrag, 2)} €</span> },
+        ]} />
+      </Panel>
+    </div>
+  );
+}
+
+function AmountStat({ label, value, hint }: { label: string; value: number; hint: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={`mt-3 font-display text-2xl font-semibold tracking-tight ${value < 0 ? "text-negative" : ""}`}>{num(value, 2)} €</p>
+      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+    </div>
+  );
 }
 
 function ForecastReport() {
@@ -254,6 +339,7 @@ function LiquidityReport() {
   const lowest = weeks.reduce((candidate, week) => week.bestand < candidate.bestand ? week : candidate, weeks[0]);
   return (
     <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">Dieser Bericht ist der 26-Wochen-Plan aus der Excel-Datenbasis. Importierte Kontoauszüge, einschließlich Oktober, stehen im Bericht Kontoauszug.</p>
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Startbestand" value={dash.liquidity.start} hint={dash.stichtag} signed icon />
         <Kpi label="Tiefster Bestand" value={lowest?.bestand ?? 0} hint={lowest?.datum ?? "keine Reihe"} signed />
@@ -555,6 +641,11 @@ function reportSources(dash: Dash, journal: ReturnType<typeof useDash>["journal"
       label: "Liquidität je Kalenderwoche",
       description: "Ein- und Auszahlungen sowie fortgeschriebener Bestand.",
       rows: dash.liquidity.weeks.map((row) => ({ datum: row.datum, jahr: row.jahr, monat: row.monat, einzahlungen: row.ein, auszahlungen: row.aus, netto: row.netto, bestand: row.bestand })),
+    },
+    kontoauszug: {
+      label: "Kontoauszug",
+      description: "Importierte Bankbuchungen. Oktober 2026 steht mit Buchungstag ab 01.10.2026.",
+      rows: dash.bank.bewegungen.map((row) => ({ buchungstag: row.datum, valuta: row.valuta ?? "", monat: row.datum.slice(0, 7), gegenpartei: row.gegenpartei, verwendungszweck: row.zweck, buchungstext: row.text, betrag: row.betrag, waehrung: row.waehrung, iban: row.iban, konto: row.konto })),
     },
     buchungen: {
       label: "Einzelbuchungen",
