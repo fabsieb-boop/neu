@@ -272,11 +272,13 @@ class KontoauszugTest(unittest.TestCase):
         self.assertGreater(len(reference), 60)
         csv = (
             "DATUM;ZAHLUNGSPARTNER;VERWENDUNGSZWECK;BETRAG (EUR);ZAHLUNGSRICHTUNG;BUCHUNGSTEXT\n"
-            f"46296;Caterpillar Financial Services;SEPA-UBERWEISUNG, PmtInfld: 10;-53032,13;Abbuchung;{reference}\n"
-            "46296;Caterpillar Financial Services;30028663/01-10-2026;5332,28;Abbuchung;Leasingraten\n"
+            f"46296;Caterpillar Financial Services;SEPA-UBERWEISUNG, PmtInfld: 10;-53.032,13 €;Abbuchung;{reference}\n"
+            "46296;Caterpillar Financial Services;30028663/01-10-2026;5.332,28 €;Abbuchung;Leasingraten\n"
+            "46296;Caterpillar Financial Services;falsches Format;53,032.13;Abbuchung;Leasingraten\n"
         )
         statement = parse_statement(csv.encode(), "Kontoauszug_Oktober_2026_Buchungen.csv")
         first, second = statement.movements
+        self.assertEqual(statement.skipped, 1)
         self.assertEqual(first.buchungsdatum, "2026-10-01")
         self.assertEqual(first.betrag, -53032.13)
         self.assertEqual(second.betrag, -5332.28)

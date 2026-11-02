@@ -2,8 +2,13 @@ import type { ReactNode } from "react";
 import { ArrowDownRight, ArrowUpRight, Landmark } from "lucide-react";
 import { useDash } from "@/data";
 
-export const num = (v: number, d = 0) =>
-  v.toFixed(d).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+export const num = (v: number, d = 0) => {
+  const negative = v < 0;
+  const [whole, frac = ""] = Math.abs(v).toFixed(d).split(".");
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const body = d > 0 ? `${grouped},${frac}` : grouped;
+  return negative ? `-${body}` : body;
+};
 
 export const eur = (v: number, compact = false) => {
   if (compact) {
@@ -16,7 +21,7 @@ export const eur = (v: number, compact = false) => {
 
 export const short = (n: string) => n.slice(0, 3);
 export const axis = { fill: "var(--muted-foreground)", fontSize: 12 };
-export const money = (v: number) => <span className={v < 0 ? "text-negative" : ""}>{eur(v)}</span>;
+export const money = (v: number) => <span className={v < 0 ? "text-negative" : ""}>{num(v, 2)} €</span>;
 
 export function Kpi({ label, value, hint, signed, icon, plain }: { label: string; value: number; hint: string; signed?: boolean; icon?: boolean; plain?: boolean }) {
   const neg = value < 0;

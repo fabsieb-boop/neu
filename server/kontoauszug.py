@@ -196,13 +196,14 @@ def _parse_amount(value: object) -> float | None:
     text = text.strip("+-SHs").rstrip("SHs")
     if not text:
         return None
-    if "," in text and "." in text:
-        if text.rfind(",") > text.rfind("."):
-            text = text.replace(".", "").replace(",", ".")
-        else:
-            text = text.replace(",", "")
-    elif "," in text:
-        text = text.replace(",", ".")
+    # Punkt ist der Tausender, Komma die Dezimalstelle: 53.032,13 → 53032.13.
+    # Ein Komma vor dem Punkt (53,032.13) ist kein deutscher Betrag.
+    if "," in text:
+        if "." in text and text.rfind(".") > text.rfind(","):
+            return None
+        text = text.replace(".", "").replace(",", ".")
+    elif text.count(".") > 1 or re.fullmatch(r"\d{1,3}(\.\d{3})+", text):
+        text = text.replace(".", "")
     try:
         return sign * float(text)
     except ValueError:
