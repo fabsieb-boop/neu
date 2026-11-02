@@ -212,6 +212,61 @@ class KontoauszugTest(unittest.TestCase):
         self.assertEqual(overview["monate"][0]["monat"], "2026-10")
         self.assertEqual(overview["summe"], 158588.00)
 
+    def test_long_fields_fit_varchar_limits(self) -> None:
+        text = "BUCHUNG " + ("Y" * 400)
+        purpose = "ZW" + ("X" * 500)
+        party = "Partner " + ("Z" * 300)
+        iban = "DE12 5001 0517 0648 4898 90 EXTRA-TEXT-NICHT-TEIL-DER-IBAN"
+        account = "DE89 3704 0044 0532 0130 00"
+        csv = (
+            "Buchungstag;Buchungstext;Verwendungszweck;Beguenstigter/Zahlungspflichtiger;"
+            "Kontonummer/IBAN;Auftragskonto;Betrag;Waehrung\n"
+            f"06.10.2026;{text};{purpose};{party};{iban};{account};10,00;US-Dollar\n"
+            "07.10.2026;Lastschrift;Miete;Vermieter GmbH;DE44500105175407324931;"
+            f"{account};-5,00;GUTSCHRIFT\n"
+        )
+        statement = parse_statement(csv.encode(), "lang.csv")
+        long_row, short_row = statement.movements
+        self.assertEqual(long_row.waehrung, "USD")
+        self.assertEqual(short_row.waehrung, "EUR")
+        self.assertLessEqual(len(long_row.waehrung), 3)
+        self.assertEqual(len(long_row.buchungstext), 60)
+        self.assertLessEqual(len(long_row.gegenpartei), 255)
+        self.assertEqual(long_row.gegen_iban, "DE12500105170648489890")
+        self.assertEqual(long_row.eigenkonto, "DE89370400440532013000")
+        self.assertLessEqual(len(long_row.gegen_iban), 40)
+        self.assertLessEqual(len(long_row.eigenkonto), 40)
+        self.assertIn("Y" * 20, long_row.verwendungszweck)
+        self.assertTrue(long_row.buchungstext.startswith("BUCHUNG"))
+
+        result = model.bank_statement_import("lang.csv", csv.encode(), write=True)
+        self.assertEqual(result["importiert"], 2)
+        model.log_import("Umsatzanzeige_2026-10.csv", "testlauf", "ERFOLGREICH", 2, "CSV")
+        shown = model.import_log()[0]
+        self.assertEqual(shown["schritt"], "testlauf")
+        self.assertEqual(shown["status"], "ERFOLGREICH")
+        with sqlite3.connect(self.database) as connection:
+            step, status = connection.execute(
+                "SELECT schritt, status FROM import_protokoll ORDER BY id DESC LIMIT 1"
+            ).fetchone()
+            stored = connection.execute(
+                """
+                SELECT waehrung, length(buchungstext), length(gegenpartei),
+                       length(gegen_iban), length(eigenkonto)
+                FROM bankbewegung
+                ORDER BY betrag DESC
+                """
+            ).fetchone()
+        self.assertLessEqual(len(step), 6)
+        self.assertLessEqual(len(status), 6)
+        self.assertEqual(step, "test")
+        self.assertEqual(status, "fertig")
+        self.assertEqual(stored[0], "USD")
+        self.assertLessEqual(stored[1], 60)
+        self.assertLessEqual(stored[2], 255)
+        self.assertLessEqual(stored[3], 40)
+        self.assertLessEqual(stored[4], 40)
+
     def test_api_started_as_script_can_import_workbook_module(self) -> None:
         proc = subprocess.run(
             [

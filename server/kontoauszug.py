@@ -109,11 +109,68 @@ def _norm(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", text)
 
 
-def _clean_text(value: object, limit: int = 500) -> str:
+# Kurze Kennzeichen dürfen character varying(6) nicht sprengen: die Währung
+# ist ein ISO-Code mit 3 Zeichen. Der Buchungstext folgt der DATEV-Länge 60,
+# der Name der Spalte mit 255, IBAN und Konto der Spalte mit 40. Was am
+# Buchungstext abgeschnitten wird, bleibt im Verwendungszweck (Text ohne Limit).
+BOOKING_TEXT_LIMIT = 60
+TEXT_LIMIT = 255
+ACCOUNT_LIMIT = 40
+PURPOSE_LIMIT = 4000
+_CURRENCY_ALIASES = {
+    "EUR": "EUR",
+    "EURO": "EUR",
+    "USD": "USD",
+    "USDOLLAR": "USD",
+    "DOLLAR": "USD",
+    "CHF": "CHF",
+    "SFR": "CHF",
+    "FRANKEN": "CHF",
+    "GBP": "GBP",
+    "PFUND": "GBP",
+}
+
+
+def _clean_text(value: object, limit: int = PURPOSE_LIMIT) -> str:
     text = "" if value is None else str(value).strip()
     if text.startswith('="') and text.endswith('"') and len(text) >= 3:
         text = text[2:-1]
     return re.sub(r"\s+", " ", text)[:limit]
+
+
+def _currency(value: object) -> str:
+    """Immer genau drei Buchstaben, sonst EUR. Längere Zellen bleiben draußen."""
+    raw = _clean_text(value, 40).upper()
+    compact = re.sub(r"[^A-Z]", "", raw)
+    if compact in _CURRENCY_ALIASES:
+        return _CURRENCY_ALIASES[compact]
+    if len(compact) == 3:
+        return compact
+    bracket = re.search(r"\(([A-Z]{3})\)", raw)
+    if bracket and bracket.group(1) in _CURRENCY_ALIASES:
+        return _CURRENCY_ALIASES[bracket.group(1)]
+    return "EUR"
+
+
+# Feste IBAN-Längen. Hängt die Bank noch Text an die Kontonummer, bleibt der Rest draußen.
+_IBAN_LENGTH = {
+    "DE": 22, "AT": 20, "CH": 21, "LI": 21, "NL": 18, "BE": 16,
+    "FR": 27, "IT": 27, "ES": 24, "PL": 28, "LU": 20,
+}
+
+
+def _account(value: object) -> str:
+    text = _clean_text(value, 160).upper().replace(" ", "")
+    if not text:
+        return ""
+    match = re.search(r"[A-Z]{2}\d{2}[A-Z0-9]{10,30}", text)
+    if match:
+        candidate = match.group(0)
+        expected = _IBAN_LENGTH.get(candidate[:2])
+        if expected and len(candidate) >= expected:
+            return candidate[:expected]
+        return candidate[:ACCOUNT_LIMIT]
+    return re.sub(r"[^A-Z0-9/-]", "", text)[:ACCOUNT_LIMIT]
 
 
 def _parse_amount(value: object) -> float | None:
@@ -212,10 +269,24 @@ def _signed_amount(amount: float | None, soll: float | None, haben: float | None
 def _assign(rows: list[dict], source_format: str, account: str, skipped: int, closing: float | None, closing_date: str | None) -> Statement:
     counts: dict[str, int] = {}
     movements: list[Movement] = []
+    own_account = _account(account)
     for row in rows:
+        full_text = _clean_text(row.get("buchungstext"))
+        purpose = _clean_text(row.get("verwendungszweck"))
+        if len(full_text) > BOOKING_TEXT_LIMIT and full_text not in purpose:
+            purpose = _clean_text(f"{purpose} {full_text}".strip())
+        row = {
+            **row,
+            "waehrung": _currency(row.get("waehrung")),
+            "buchungstext": full_text[:BOOKING_TEXT_LIMIT],
+            "verwendungszweck": purpose,
+            "gegenpartei": _clean_text(row.get("gegenpartei"), TEXT_LIMIT),
+            "gegen_iban": _account(row.get("gegen_iban")),
+            "eigenkonto": _account(row.get("eigenkonto")) or own_account,
+        }
         base = "\u001f".join(
             [
-                row["eigenkonto"] or account,
+                row["eigenkonto"] or own_account,
                 row["buchungsdatum"],
                 row.get("valuta") or "",
                 f"{row['betrag']:.2f}",
@@ -239,7 +310,7 @@ def _assign(rows: list[dict], source_format: str, account: str, skipped: int, cl
                 verwendungszweck=row["verwendungszweck"],
                 gegenpartei=row["gegenpartei"],
                 gegen_iban=row["gegen_iban"],
-                eigenkonto=row["eigenkonto"] or account,
+                eigenkonto=row["eigenkonto"] or own_account,
             )
         )
     if not movements:
@@ -247,7 +318,8 @@ def _assign(rows: list[dict], source_format: str, account: str, skipped: int, cl
             "Im Kontoauszug steht keine Buchung. Erwartet werden Buchungstag und Betrag, "
             "bei DATEV auch Soll und Haben."
         )
-    return Statement(source_format, account, movements, skipped, closing, closing_date)
+    shown_account = own_account or movements[0].eigenkonto
+    return Statement(source_format, shown_account, movements, skipped, closing, closing_date)
 
 
 def _map_headers(header: list[str]) -> dict[str, int]:
@@ -349,15 +421,15 @@ def _records_from_table(table: list[list[object]]) -> tuple[list[dict], int, str
         if amount == 0:
             skipped += 1
             continue
-        own = _clean_text(cell("konto"), 64)
-        if own and not account:
-            account = own
+        own = cell("konto")
+        if _clean_text(own) and not account:
+            account = _clean_text(own)
         text = _clean_text(cell("text"))
         purpose = _clean_text(cell("zweck"))
         if not purpose:
             purpose = text
             text = ""
-        currency = _clean_text(cell("waehrung"), 8).upper() or "EUR"
+        currency = _currency(cell("waehrung"))
         records.append(
             {
                 "buchungsdatum": booked,
@@ -366,8 +438,8 @@ def _records_from_table(table: list[list[object]]) -> tuple[list[dict], int, str
                 "waehrung": currency,
                 "buchungstext": text,
                 "verwendungszweck": purpose,
-                "gegenpartei": _clean_text(cell("partner")),
-                "gegen_iban": _clean_text(cell("iban"), 40).replace(" ", ""),
+                "gegenpartei": _clean_text(cell("partner"), TEXT_LIMIT),
+                "gegen_iban": cell("iban"),
                 "eigenkonto": own,
             }
         )
@@ -566,10 +638,8 @@ def _from_camt(content: bytes) -> Statement:
                             iban = candidate
                     if _local(node.tag) == "Ustrd":
                         purpose_parts.append(_text(node))
-            currency = "EUR"
             amount_node = _first(entry, "Amt")
-            if amount_node is not None and amount_node.attrib.get("Ccy"):
-                currency = amount_node.attrib["Ccy"].upper()
+            currency = _currency(amount_node.attrib.get("Ccy") if amount_node is not None else "")
             records.append(
                 {
                     "buchungsdatum": booked,
@@ -578,7 +648,7 @@ def _from_camt(content: bytes) -> Statement:
                     "waehrung": currency,
                     "buchungstext": _clean_text(_text(_first(entry, "AddtlNtryInf"))),
                     "verwendungszweck": _clean_text(" ".join(purpose_parts)),
-                    "gegenpartei": _clean_text(party),
+                    "gegenpartei": party,
                     "gegen_iban": iban,
                     "eigenkonto": own,
                 }
@@ -615,11 +685,15 @@ def _from_mt940(text: str) -> Statement:
     account = next((value.strip() for tag, value in tags if tag == "25"), "")
     closing: float | None = None
     closing_date: str | None = None
+    currency = "EUR"
     for tag, value in tags:
-        if tag not in {"62F", "62M"}:
+        if tag not in {"60F", "60M", "62F", "62M"}:
             continue
         match = MT_BALANCE.match(value.replace(" ", ""))
         if not match:
+            continue
+        currency = _currency(match.group("ccy"))
+        if tag not in {"62F", "62M"}:
             continue
         amount = _parse_amount(match.group("amount"))
         if amount is None:
@@ -633,7 +707,7 @@ def _from_mt940(text: str) -> Statement:
         if tag == "61":
             if pending:
                 records.append(pending)
-            pending = _mt61(value, account)
+            pending = _mt61(value, account, currency)
             continue
         if tag == "86" and pending is not None:
             text_value, purpose, party = _mt86(value)
@@ -646,7 +720,7 @@ def _from_mt940(text: str) -> Statement:
     return _assign(records, "MT940", account, 0, closing, closing_date)
 
 
-def _mt61(value: str, account: str) -> dict | None:
+def _mt61(value: str, account: str, currency: str) -> dict | None:
     match = MT61.match(value.replace(" ", ""))
     if not match:
         return None
@@ -672,7 +746,7 @@ def _mt61(value: str, account: str) -> dict | None:
         "buchungsdatum": booked.isoformat(),
         "valuta": valuta.isoformat(),
         "betrag": amount,
-        "waehrung": "EUR",
+        "waehrung": currency,
         "buchungstext": "",
         "verwendungszweck": "",
         "gegenpartei": "",

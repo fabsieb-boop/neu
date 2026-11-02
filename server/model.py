@@ -1185,6 +1185,18 @@ def bank_statement_import(filename: str, content: bytes, *, write: bool) -> dict
     }
 
 
+# Protokoll-Kennzeichen passen in character varying(6). Die Anzeige
+# setzt sie wieder in die bisherigen Wörter um.
+_STEP_DB = {"analyse": "sicht", "testlauf": "test", "import": "import"}
+_STATUS_DB = {"ERFOLGREICH": "fertig", "OK": "fertig"}
+_STEP_LABEL = {"sicht": "analyse", "test": "testlauf", "import": "import"}
+_STATUS_LABEL = {"fertig": "ERFOLGREICH"}
+
+
+def _protocol_code(value: str, mapping: dict[str, str]) -> str:
+    return mapping.get(value, value)[:6]
+
+
 def log_import(
     filename: str, step: str, status: str, rows: int = 0, detail: str = ""
 ) -> None:
@@ -1196,7 +1208,13 @@ def log_import(
               (dateiname, schritt, status, zeilen, detail)
             VALUES (?, ?, ?, ?, ?)
             """,
-            (Path(filename).name[:240], step[:30], status[:30], int(rows), detail[:1000]),
+            (
+                Path(filename).name[:240],
+                _protocol_code(step, _STEP_DB),
+                _protocol_code(status, _STATUS_DB),
+                int(rows),
+                detail[:1000],
+            ),
         )
 
 
@@ -1208,8 +1226,8 @@ def import_log() -> list[dict]:
                 "id": row["id"],
                 "erstelltAt": row["erstellt_at"],
                 "dateiname": row["dateiname"],
-                "schritt": row["schritt"],
-                "status": row["status"],
+                "schritt": _STEP_LABEL.get(row["schritt"], row["schritt"]),
+                "status": _STATUS_LABEL.get(row["status"], row["status"]),
                 "zeilen": row["zeilen"],
                 "detail": row["detail"],
             }
