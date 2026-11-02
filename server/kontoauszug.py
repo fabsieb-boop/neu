@@ -18,13 +18,14 @@ from xml.etree import ElementTree as ET
 NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
 EXCEL_EPOCH = date(1899, 12, 30)
 DATE_HEADERS = {"buchungstag", "buchungsdatum", "datum"}
-VALUTA_HEADERS = {"valutadatum", "valuta", "wertstellung", "wertstellungsdatum"}
+VALUTA_HEADERS = {"valutadatum", "valuta", "wertstellung", "wertstellungsdatum", "auszugsdatum"}
 AMOUNT_HEADERS = {"betrag", "betrageur", "umsatz", "umsatzbetrag", "amount"}
 SOLL_HEADERS = {"soll", "sollbetrag", "sollbetrageur"}
 HABEN_HEADERS = {"haben", "habenbetrag", "habenbetrageur"}
 SH_HEADERS = {"sollhaben", "sollhabenkz", "shkz", "sh", "zahlungsrichtung", "richtung"}
 TEXT_HEADERS = {"buchungstext", "umsatzart", "vorgang", "text", "buchungsart"}
 PURPOSE_HEADERS = {"verwendungszweck", "zweck", "buchungsinformation"}
+DETAIL_HEADERS = {"weiterebuchungsdetails", "buchungsdetails"}
 OWN_HEADERS = {"auftragskonto", "eigenkonto"}
 CURRENCY_HEADERS = {"waehrung", "currency"}
 MT61 = re.compile(
@@ -363,6 +364,8 @@ def _map_headers(header: list[str]) -> dict[str, int]:
             roles["text"] = index
         elif name in PURPOSE_HEADERS:
             roles["zweck"] = index
+        elif name in DETAIL_HEADERS:
+            roles["detail"] = index
         elif name in OWN_HEADERS:
             roles["konto"] = index
         elif name in CURRENCY_HEADERS:
@@ -443,6 +446,9 @@ def _records_from_table(table: list[list[object]]) -> tuple[list[dict], int, str
             account = _clean_text(own)
         text = _clean_text(cell("text"))
         purpose = _clean_text(cell("zweck"))
+        detail = _clean_text(cell("detail"))
+        if detail and detail not in purpose:
+            purpose = _clean_text(f"{purpose} {detail}".strip())
         if not purpose:
             purpose = text
             text = ""

@@ -178,6 +178,73 @@ class KontoauszugTest(unittest.TestCase):
         self.assertEqual(statement.movements[1].betrag, -26412.00)
         self.assertEqual(statement.closing_balance, 158588.00)
 
+    def test_oktober_workbook_layout(self) -> None:
+        headers = [
+            "Datum", "Zahlungspartner", "Verwendungszweck", "Betrag (EUR)", "Zahlungsrichtung",
+            "Buchungstext", "Gegenkonto (IBAN)", "Gegenkonto (BIC)", "Auszugsdatum", "Auszug-Nr.",
+            "Position", "Geschäftsvorfallcode", "Primanota", "PDF-Seite", "Weitere Buchungsdetails",
+        ]
+        detail = "SEPA-UBERWEISUNG, PmtInfId: 1031375929, InstrId: 202610013590008 Primanota: 97161"
+        shared = headers + [
+            "SEPA-UBERWEISUNG, PmtInfId: 1031375929", "Abbuchung",
+            "/20261001_0947_4102S_Hecht.xml", detail,
+            "Caterpillar Financial Services GmbH", "30028663/01-10-2026", "Leasingraten",
+            "DE73700400410225652700",
+        ]
+        def cell(ref: str, value: int, shared_string: bool) -> str:
+            kind = ' t="s"' if shared_string else ""
+            return f'<c r="{ref}"{kind}><v>{value}</v></c>'
+
+        sheet = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'
+            '<row r="1">' + "".join(cell(f"{chr(65+i)}1", i, True) for i in range(15)) + "</row>"
+            '<row r="2">'
+            + cell("A2", 46296, False) + cell("C2", 15, True) + cell("D2", "-53032.13", False)
+            + cell("E2", 16, True) + cell("F2", 17, True) + cell("I2", 46296, False) + cell("O2", 18, True)
+            + "</row>"
+            '<row r="3">'
+            + cell("A3", 46296, False) + cell("B3", 19, True) + cell("C3", 20, True) + cell("D3", "-5332.28", False)
+            + cell("E3", 16, True) + cell("F3", 21, True) + cell("G3", 22, True) + cell("I3", 46296, False)
+            + "</row></sheetData></worksheet>"
+        )
+        strings = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            + "".join(f"<si><t>{escape(item)}</t></si>" for item in shared) + "</sst>"
+        )
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr("[Content_Types].xml", '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"></Types>')
+            archive.writestr(
+                "xl/workbook.xml",
+                '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+                'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+                '<sheets><sheet name="Buchungen" sheetId="1" r:id="rId1"/></sheets></workbook>',
+            )
+            archive.writestr(
+                "xl/_rels/workbook.xml.rels",
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
+                'Target="worksheets/sheet1.xml"/></Relationships>',
+            )
+            archive.writestr("xl/sharedStrings.xml", strings)
+            archive.writestr("xl/worksheets/sheet1.xml", sheet)
+        content = buffer.getvalue()
+        statement = parse_statement(content, "Kontoauszug_Oktober_2026_Buchungen.xlsx")
+        self.assertEqual(len(statement.movements), 2)
+        self.assertEqual(statement.movements[0].betrag, -53032.13)
+        self.assertEqual(statement.movements[0].buchungsdatum, "2026-10-01")
+        self.assertEqual(statement.movements[0].valuta, "2026-10-01")
+        self.assertIn("PmtInfId: 1031375929", statement.movements[0].verwendungszweck)
+        self.assertIn("InstrId: 202610013590008", statement.movements[0].verwendungszweck)
+        self.assertEqual(statement.movements[1].betrag, -5332.28)
+        self.assertEqual(statement.movements[1].gegenpartei, "Caterpillar Financial Services GmbH")
+        self.assertEqual(statement.movements[1].gegen_iban, "DE73700400410225652700")
+        result = model.bank_statement_import("Kontoauszug_Oktober_2026_Buchungen.xlsx", content, write=False)
+        self.assertEqual(result["zeilen"], 2)
+        self.assertEqual([row["betragText"] for row in result["vorschau"]], ["-53.032,13", "-5.332,28"])
+
     def test_excel_statement(self) -> None:
         statement = parse_statement(statement_xlsx(), "umsatz.xlsx")
         self.assertEqual(statement.format, "Excel")
