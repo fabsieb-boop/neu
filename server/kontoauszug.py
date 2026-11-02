@@ -562,8 +562,14 @@ def _xlsx_value(cell: ET.Element, shared: list[str]) -> object:
             return raw
     if kind == "b":
         return raw == "1"
+    # Deutscher Betrag bleibt Text: -53.032,13. Erst danach gilt der Punkt als Tausender.
+    if "," in raw or "€" in raw:
+        return raw
     if any(mark in raw for mark in ".eE"):
-        return float(raw)
+        try:
+            return float(raw)
+        except ValueError:
+            return raw
     if raw.lstrip("-").isdigit():
         return int(raw)
     return raw

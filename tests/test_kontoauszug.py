@@ -267,6 +267,70 @@ class KontoauszugTest(unittest.TestCase):
         self.assertLessEqual(stored[3], 40)
         self.assertLessEqual(stored[4], 40)
 
+    def test_excel_keeps_german_amount_text(self) -> None:
+        amounts = ["-53.032,13 €", "-5.332,28 €", "-5.326,11 €", "-5.326,11 €"]
+        shared = [
+            "DATUM", "ZAHLUNGSPARTNER", "VERWENDUNGSZWECK", "BETRAG (EUR)", "ZAHLUNGSRICHTUNG", "BUCHUNGSTEXT",
+            "46296", "Caterpillar Financial Services", "SEPA-UBERWEISUNG, PmtInfld: 10", "Abbuchung", "Leasingraten",
+            *amounts,
+        ]
+        rows = ["<row r=\"1\">" + "".join(
+            f'<c r="{column}1" t="s"><v>{index}</v></c>' for index, column in enumerate("ABCDEF")
+        ) + "</row>"]
+        for offset, amount_index in enumerate(range(11, 15)):
+            row_number = offset + 2
+            values = [6, 7, 8, amount_index, 9, 10]
+            rows.append(
+                f'<row r="{row_number}">' + "".join(
+                    f'<c r="{column}{row_number}" t="s"><v>{value}</v></c>'
+                    for column, value in zip("ABCDEF", values)
+                ) + "</row>"
+            )
+        # Dieselbe Schreibweise auch direkt in der Zelle, ohne Shared String.
+        rows.append(
+            '<row r="6"><c r="A6" t="s"><v>6</v></c><c r="B6" t="s"><v>7</v></c>'
+            '<c r="C6" t="s"><v>8</v></c><c r="D6"><v>-53.032,13 €</v></c>'
+            '<c r="E6" t="s"><v>9</v></c><c r="F6" t="s"><v>10</v></c></row>'
+        )
+        sheet = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'
+            + "".join(rows) + "</sheetData></worksheet>"
+        )
+        strings = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            + "".join(f"<si><t>{escape(item)}</t></si>" for item in shared)
+            + "</sst>"
+        )
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr("[Content_Types].xml", '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"></Types>')
+            archive.writestr(
+                "xl/workbook.xml",
+                '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+                'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+                '<sheets><sheet name="Buchungen" sheetId="1" r:id="rId1"/></sheets></workbook>',
+            )
+            archive.writestr(
+                "xl/_rels/workbook.xml.rels",
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
+                'Target="worksheets/sheet1.xml"/></Relationships>',
+            )
+            archive.writestr("xl/sharedStrings.xml", strings)
+            archive.writestr("xl/worksheets/sheet1.xml", sheet)
+        statement = parse_statement(buffer.getvalue(), "Kontoauszug_Oktober_2026_Buchungen.xlsx")
+        self.assertEqual(
+            [row.betrag for row in statement.movements],
+            [-53032.13, -5332.28, -5326.11, -5326.11, -53032.13],
+        )
+        result = model.bank_statement_import("Kontoauszug_Oktober_2026_Buchungen.xlsx", buffer.getvalue(), write=False)
+        self.assertEqual(
+            [row["betragText"] for row in result["vorschau"]],
+            ["-53.032,13", "-5.332,28", "-5.326,11", "-5.326,11", "-53.032,13"],
+        )
+
     def test_amount_text_uses_german_separators(self) -> None:
         self.assertEqual(format_amount_de(54989), "54.989,00")
         self.assertEqual(format_amount_de(-54989), "-54.989,00")
