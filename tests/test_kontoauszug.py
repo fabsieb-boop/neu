@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT))
 
 from scripts.import_excel import import_workbook  # noqa: E402
 from server import model  # noqa: E402
-from server.kontoauszug import KontoauszugError, parse_statement  # noqa: E402
+from server.kontoauszug import KontoauszugError, format_amount_de, parse_statement  # noqa: E402
 
 SPARKASSE = """Umsatzanzeige
 Konto;Sparkasse Freising
@@ -267,6 +267,12 @@ class KontoauszugTest(unittest.TestCase):
         self.assertLessEqual(stored[3], 40)
         self.assertLessEqual(stored[4], 40)
 
+    def test_amount_text_uses_german_separators(self) -> None:
+        self.assertEqual(format_amount_de(54989), "54.989,00")
+        self.assertEqual(format_amount_de(-54989), "-54.989,00")
+        self.assertEqual(format_amount_de(1234567.8), "1.234.567,80")
+        self.assertNotIn(",", format_amount_de(54989).split(",")[0])
+
     def test_oktober_auszug_fits_varchar_60(self) -> None:
         reference = "/20261001_0847_41025_HACH" + ("X" * 50)
         self.assertGreater(len(reference), 60)
@@ -290,6 +296,10 @@ class KontoauszugTest(unittest.TestCase):
         self.assertEqual(second.buchungstext, "Leasingraten")
         result = model.bank_statement_import("Kontoauszug_Oktober_2026_Buchungen.csv", csv.encode(), write=True)
         self.assertEqual(result["importiert"], 2)
+        self.assertEqual(result["ausgangText"], "58.364,41")
+        self.assertEqual(result["vorschau"][0]["betragText"], "-53.032,13")
+        self.assertEqual(result["vorschau"][1]["betragText"], "-5.332,28")
+        self.assertNotIn("54,989.00", "".join(row["betragText"] for row in result["vorschau"]))
         with sqlite3.connect(self.database) as connection:
             stored = connection.execute(
                 "SELECT length(buchungstext), betrag FROM bankbewegung ORDER BY betrag"

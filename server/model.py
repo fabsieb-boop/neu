@@ -13,7 +13,7 @@ import sqlite3
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from server.kontoauszug import KontoauszugError, parse_statement
+from server.kontoauszug import KontoauszugError, format_amount_de, parse_statement
 
 ROOT = Path(__file__).resolve().parents[1]
 DB = Path(os.environ.get("TVF_DB", ROOT / "data" / "tvf.sqlite"))
@@ -1166,16 +1166,21 @@ def bank_statement_import(filename: str, content: bytes, *, write: bool) -> dict
         "zeilen": len(statement.movements),
         "uebersprungen": statement.skipped,
         "summe": round(sum(row.betrag for row in statement.movements), 2),
+        "summeText": format_amount_de(sum(row.betrag for row in statement.movements)),
         "eingang": round(incoming, 2),
+        "eingangText": format_amount_de(incoming),
         "ausgang": round(outgoing, 2),
+        "ausgangText": format_amount_de(outgoing),
         "neu": len(fresh),
         "bereits": len(statement.movements) - len(fresh),
         "schlussSaldo": statement.closing_balance,
+        "schlussSaldoText": format_amount_de(statement.closing_balance) if statement.closing_balance is not None else None,
         "schlussDatum": statement.closing_date,
         "vorschau": [
             {
                 "datum": row.buchungsdatum,
                 "betrag": row.betrag,
+                "betragText": format_amount_de(row.betrag),
                 "text": row.verwendungszweck or row.buchungstext,
                 "gegenpartei": row.gegenpartei,
             }

@@ -173,6 +173,18 @@ def _account(value: object) -> str:
     return re.sub(r"[^A-Z0-9/-]", "", text)[:ACCOUNT_LIMIT]
 
 
+def format_amount_de(value: float) -> str:
+    """54.989,00 — Punkt für die Tausender, Komma für die Cent."""
+    negative = value < 0
+    whole, frac = f"{abs(round(float(value), 2)):.2f}".split(".")
+    groups: list[str] = []
+    while whole:
+        groups.append(whole[-3:])
+        whole = whole[:-3]
+    text = f"{'.'.join(reversed(groups))},{frac}"
+    return f"-{text}" if negative else text
+
+
 def _parse_amount(value: object) -> float | None:
     if value is None or isinstance(value, bool):
         return None

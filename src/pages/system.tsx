@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { Download, FileUp, Mail as MailIcon, Search, Upload, UserPlus } from "lucide-react";
 import { Berichte } from "@/pages/berichte";
 import { useDash } from "@/data";
-import { DataTable, eur, Kpi, money, PageHeader, Panel } from "@/components/dash";
+import { DataTable, eur, Kpi, money, num, PageHeader, Panel } from "@/components/dash";
 import type { User } from "@/types";
 
 export function System() {
@@ -96,7 +96,7 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
 }
 
 type ImportRun = { id: number; erstelltAt: string; dateiname: string; schritt: string; status: string; zeilen: number; detail: string };
-type ImportPreview = { datum: string; betrag: number; text: string; gegenpartei: string };
+type ImportPreview = { datum: string; betrag: number; betragText?: string; text: string; gegenpartei: string };
 type ImportAnalysis = {
   art?: string;
   format?: string;
@@ -109,12 +109,16 @@ type ImportAnalysis = {
   von?: string;
   bis?: string;
   summe?: number;
+  summeText?: string;
   eingang?: number;
+  eingangText?: string;
   ausgang?: number;
+  ausgangText?: string;
   neu?: number;
   bereits?: number;
   uebersprungen?: number;
   schlussSaldo?: number | null;
+  schlussSaldoText?: string | null;
   schlussDatum?: string | null;
   vorschau?: ImportPreview[];
 };
@@ -188,14 +192,14 @@ function ImportManager() {
           {file && <div className="mt-4 flex flex-wrap gap-2"><button disabled={running} className={buttonClass} onClick={() => void execute("analyse")}>1 · Analysieren</button><button disabled={running || !analysis} className={buttonClass} onClick={() => void execute("testlauf")}>2 · Testlauf</button><button disabled={running || !analysis} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40" onClick={() => void execute("import")}>3 · Importieren</button></div>}
           {analysis?.art === "Kontoauszug" && (
             <div className="mt-5 space-y-3 text-sm">
-              <p>{analysis.format} · {analysis.konto || "Konto aus der Datei"} · {deDate(analysis.von)}–{deDate(analysis.bis)} · Eingang {eur(analysis.eingang ?? 0)} · Ausgang {eur(analysis.ausgang ?? 0)}</p>
-              {analysis.schlussSaldo != null && <p>Schlusssaldo laut Datei: {eur(analysis.schlussSaldo)}{analysis.schlussDatum ? ` am ${deDate(analysis.schlussDatum)}` : ""}</p>}
+              <p>{analysis.format} · {analysis.konto || "Konto aus der Datei"} · {deDate(analysis.von)}–{deDate(analysis.bis)} · Eingang {analysis.eingangText ?? num(analysis.eingang ?? 0, 2)} € · Ausgang {analysis.ausgangText ?? num(analysis.ausgang ?? 0, 2)} €</p>
+              {analysis.schlussSaldo != null && <p>Schlusssaldo laut Datei: {analysis.schlussSaldoText ?? num(analysis.schlussSaldo, 2)} €{analysis.schlussDatum ? ` am ${deDate(analysis.schlussDatum)}` : ""}</p>}
               {analysis.vorschau && analysis.vorschau.length > 0 && (
                 <DataTable rows={analysis.vorschau} cols={[
                   { key: "d", label: "Buchungstag", render: (row) => deDate(row.datum) },
                   { key: "g", label: "Gegenpartei", render: (row) => row.gegenpartei || "–" },
-                  { key: "t", label: "Text", render: (row) => row.text },
-                  { key: "b", label: "Betrag", right: true, render: (row) => money(row.betrag) },
+                  { key: "t", label: "Text", render: (row) => <span className="inline-block max-w-xs truncate align-bottom" title={row.text}>{row.text}</span> },
+                  { key: "b", label: "Betrag", right: true, render: (row) => <span className={row.betrag < 0 ? "text-negative" : ""}>{row.betragText ?? num(row.betrag, 2)} €</span> },
                 ]} />
               )}
             </div>
