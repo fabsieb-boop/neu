@@ -267,6 +267,34 @@ class KontoauszugTest(unittest.TestCase):
         self.assertLessEqual(stored[3], 40)
         self.assertLessEqual(stored[4], 40)
 
+    def test_oktober_auszug_fits_varchar_60(self) -> None:
+        reference = "/20261001_0847_41025_HACH" + ("X" * 50)
+        self.assertGreater(len(reference), 60)
+        csv = (
+            "DATUM;ZAHLUNGSPARTNER;VERWENDUNGSZWECK;BETRAG (EUR);ZAHLUNGSRICHTUNG;BUCHUNGSTEXT\n"
+            f"46296;Caterpillar Financial Services;SEPA-UBERWEISUNG, PmtInfld: 10;-53032,13;Abbuchung;{reference}\n"
+            "46296;Caterpillar Financial Services;30028663/01-10-2026;5332,28;Abbuchung;Leasingraten\n"
+        )
+        statement = parse_statement(csv.encode(), "Kontoauszug_Oktober_2026_Buchungen.csv")
+        first, second = statement.movements
+        self.assertEqual(first.buchungsdatum, "2026-10-01")
+        self.assertEqual(first.betrag, -53032.13)
+        self.assertEqual(second.betrag, -5332.28)
+        self.assertEqual(first.gegenpartei, "Caterpillar Financial Services")
+        self.assertEqual(len(first.buchungstext), 60)
+        self.assertTrue(first.buchungstext.startswith("/20261001_0847_41025_HACH"))
+        self.assertIn(reference, first.verwendungszweck)
+        self.assertLessEqual(len(first.buchungstext), 60)
+        self.assertEqual(second.buchungstext, "Leasingraten")
+        result = model.bank_statement_import("Kontoauszug_Oktober_2026_Buchungen.csv", csv.encode(), write=True)
+        self.assertEqual(result["importiert"], 2)
+        with sqlite3.connect(self.database) as connection:
+            stored = connection.execute(
+                "SELECT length(buchungstext), betrag FROM bankbewegung ORDER BY betrag"
+            ).fetchall()
+        self.assertEqual(stored[0][0], 60)
+        self.assertEqual(stored[0][1], -53032.13)
+
     def test_api_started_as_script_can_import_workbook_module(self) -> None:
         proc = subprocess.run(
             [

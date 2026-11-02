@@ -22,7 +22,7 @@ VALUTA_HEADERS = {"valutadatum", "valuta", "wertstellung", "wertstellungsdatum"}
 AMOUNT_HEADERS = {"betrag", "betrageur", "umsatz", "umsatzbetrag", "amount"}
 SOLL_HEADERS = {"soll", "sollbetrag", "sollbetrageur"}
 HABEN_HEADERS = {"haben", "habenbetrag", "habenbetrageur"}
-SH_HEADERS = {"sollhaben", "sollhabenkz", "shkz", "sh"}
+SH_HEADERS = {"sollhaben", "sollhabenkz", "shkz", "sh", "zahlungsrichtung", "richtung"}
 TEXT_HEADERS = {"buchungstext", "umsatzart", "vorgang", "text", "buchungsart"}
 PURPOSE_HEADERS = {"verwendungszweck", "zweck", "buchungsinformation"}
 OWN_HEADERS = {"auftragskonto", "eigenkonto"}
@@ -109,10 +109,10 @@ def _norm(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", text)
 
 
-# Kurze Kennzeichen dürfen character varying(6) nicht sprengen: die Währung
-# ist ein ISO-Code mit 3 Zeichen. Der Buchungstext folgt der DATEV-Länge 60,
-# der Name der Spalte mit 255, IBAN und Konto der Spalte mit 40. Was am
-# Buchungstext abgeschnitten wird, bleibt im Verwendungszweck (Text ohne Limit).
+# character varying(60) lehnt den Buchungstext ab, sobald die SEPA-Referenz
+# länger ist. Die Währung bleibt ein ISO-Code mit 3 Zeichen, der Name passt
+# in 255, IBAN und Konto in 40. Der abgeschnittene Buchungstext bleibt im
+# Verwendungszweck.
 BOOKING_TEXT_LIMIT = 60
 TEXT_LIMIT = 255
 ACCOUNT_LIMIT = 40
@@ -259,9 +259,13 @@ def _signed_amount(amount: float | None, soll: float | None, haben: float | None
     if amount is None:
         return None
     mark = sh.strip().upper()
-    if mark.startswith("S") or mark in {"DEBIT", "D", "DBIT"}:
+    if mark in {"ABBUCHUNG", "LASTSCHRIFT", "AUSGANG", "AUSZAHLUNG", "SOLL", "S", "DEBIT", "D", "DBIT"} or mark.startswith("ABBUCH"):
         return -abs(amount)
-    if mark.startswith("H") or mark in {"CREDIT", "C", "CRDT", "HABEN"}:
+    if mark in {"GUTSCHRIFT", "EINZAHLUNG", "EINGANG", "HABEN", "H", "CREDIT", "C", "CRDT"} or mark.startswith("GUTSCHRIFT"):
+        return abs(amount)
+    if mark.startswith("S"):
+        return -abs(amount)
+    if mark.startswith("H"):
         return abs(amount)
     return amount
 
@@ -356,7 +360,7 @@ def _map_headers(header: list[str]) -> dict[str, int]:
             score = 0
             if "beguenstigt" in name or "zahlungspflicht" in name:
                 score = 5
-            elif "auftraggeber" in name or "empfaenger" in name or "gegenpartei" in name:
+            elif "auftraggeber" in name or "empfaenger" in name or "gegenpartei" in name or "zahlungspartner" in name:
                 score = 4
             elif name in {"partner", "name", "zahlungsbeteiligter"}:
                 score = 2
