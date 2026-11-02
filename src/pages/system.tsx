@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { Download, FileUp, Mail as MailIcon, Search, Upload, UserPlus } from "lucide-react";
 import { Berichte } from "@/pages/berichte";
 import { useDash } from "@/data";
-import { DataTable, eur, Kpi, PageHeader, Panel } from "@/components/dash";
+import { DataTable, eur, Kpi, money, PageHeader, Panel } from "@/components/dash";
 import type { User } from "@/types";
 
 export function System() {
@@ -96,7 +96,42 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
 }
 
 type ImportRun = { id: number; erstelltAt: string; dateiname: string; schritt: string; status: string; zeilen: number; detail: string };
-type ImportAnalysis = { blaetter?: string[]; erkannt?: number; tabellen?: Record<string, number>; zeilen?: number; importiert?: number };
+type ImportPreview = { datum: string; betrag: number; text: string; gegenpartei: string };
+type ImportAnalysis = {
+  art?: string;
+  format?: string;
+  blaetter?: string[];
+  erkannt?: number;
+  tabellen?: Record<string, number>;
+  zeilen?: number;
+  importiert?: number;
+  konto?: string;
+  von?: string;
+  bis?: string;
+  summe?: number;
+  eingang?: number;
+  ausgang?: number;
+  neu?: number;
+  bereits?: number;
+  uebersprungen?: number;
+  schlussSaldo?: number | null;
+  schlussDatum?: string | null;
+  vorschau?: ImportPreview[];
+};
+
+function importMessage(step: "analyse" | "testlauf" | "import", result: ImportAnalysis) {
+  if (result.art === "Kontoauszug") {
+    if (step === "import") return `${(result.importiert ?? 0).toLocaleString("de-DE")} Buchungen aus dem Kontoauszug übernommen.`;
+    const neu = (result.neu ?? 0).toLocaleString("de-DE");
+    const schon = (result.bereits ?? 0).toLocaleString("de-DE");
+    return `${result.format}: ${(result.zeilen ?? 0).toLocaleString("de-DE")} Buchungen erkannt, ${neu} neu, ${schon} schon vorhanden.`;
+  }
+  if (step === "analyse") return `${result.erkannt} benötigte Blätter erkannt.`;
+  if (step === "testlauf") return `${result.zeilen} Quellzeilen im isolierten Test verarbeitet.`;
+  return `${result.importiert} Quellzeilen importiert.`;
+}
+
+const deDate = (value?: string) => value ? value.split("-").reverse().join(".") : "";
 
 function ImportManager() {
   const { updateDash, updateJournal } = useDash();
@@ -118,7 +153,7 @@ function ImportManager() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Import fehlgeschlagen.");
       setAnalysis(result);
-      setMessage(step === "analyse" ? `${result.erkannt} benötigte Blätter erkannt.` : step === "testlauf" ? `${result.zeilen} Quellzeilen im isolierten Test verarbeitet.` : `${result.importiert} Quellzeilen importiert.`);
+      setMessage(importMessage(step, result));
       if (step === "import") {
         const [dashboard, journal] = await Promise.all([fetch("/api/dashboard").then((item) => item.json()), fetch("/api/journal").then((item) => item.json())]);
         updateDash(dashboard); updateJournal(journal);
@@ -138,15 +173,33 @@ function ImportManager() {
   };
   return (
     <div>
-      <PageHeader title="Datenimport" subtitle="Analyse, isolierter Testlauf und direkter Import der TVF-Excel-Datei" />
+      <PageHeader title="Datenimport" subtitle="Excel-Mappe oder Kontoauszug: CSV, CAMT, MT940" />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         {(message || error) && <p className={`rounded-lg px-4 py-3 text-sm ${error ? "bg-negative/10 text-negative" : "bg-positive/10 text-positive"}`}>{error || message}</p>}
         <Panel title="SAP-Daten & Listen" subtitle="Excel-Quelldatei">
-          <label className="grid min-h-48 cursor-pointer place-items-center rounded-xl border-2 border-dashed border-border bg-muted/30 p-8 text-center hover:border-primary">
-            <div><Upload className="mx-auto h-8 w-8 text-primary" /><p className="mt-3 font-semibold">{file ? file.name : "Datei hierher ziehen oder klicken"}</p><p className="mt-1 text-xs text-muted-foreground">tvf-dashboard-download.xlsx · Art und benötigte Blätter werden geprüft</p></div>
-            <input type="file" accept=".xlsx" className="sr-only" onChange={(event) => choose(event.target.files?.[0])} />
+          <label
+            className="grid min-h-48 cursor-pointer place-items-center rounded-xl border-2 border-dashed border-border bg-muted/30 p-8 text-center hover:border-primary"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => { event.preventDefault(); choose(event.dataTransfer.files?.[0]); }}
+          >
+            <div><Upload className="mx-auto h-8 w-8 text-primary" /><p className="mt-3 font-semibold">{file ? file.name : "Datei hierher ziehen oder klicken"}</p><p className="mt-1 text-xs text-muted-foreground">Dashboard-Mappe oder Kontoauszug der Bank · Sparkasse, VR, DATEV, CAMT, MT940</p></div>
+            <input type="file" accept=".xlsx,.xlsm,.csv,.txt,.xml,.sta,.mt940,text/csv,text/plain,application/xml,text/xml" className="sr-only" onChange={(event) => choose(event.target.files?.[0])} />
           </label>
           {file && <div className="mt-4 flex flex-wrap gap-2"><button disabled={running} className={buttonClass} onClick={() => void execute("analyse")}>1 · Analysieren</button><button disabled={running || !analysis} className={buttonClass} onClick={() => void execute("testlauf")}>2 · Testlauf</button><button disabled={running || !analysis} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40" onClick={() => void execute("import")}>3 · Importieren</button></div>}
+          {analysis?.art === "Kontoauszug" && (
+            <div className="mt-5 space-y-3 text-sm">
+              <p>{analysis.format} · {analysis.konto || "Konto aus der Datei"} · {deDate(analysis.von)}–{deDate(analysis.bis)} · Eingang {eur(analysis.eingang ?? 0)} · Ausgang {eur(analysis.ausgang ?? 0)}</p>
+              {analysis.schlussSaldo != null && <p>Schlusssaldo laut Datei: {eur(analysis.schlussSaldo)}{analysis.schlussDatum ? ` am ${deDate(analysis.schlussDatum)}` : ""}</p>}
+              {analysis.vorschau && analysis.vorschau.length > 0 && (
+                <DataTable rows={analysis.vorschau} cols={[
+                  { key: "d", label: "Buchungstag", render: (row) => deDate(row.datum) },
+                  { key: "g", label: "Gegenpartei", render: (row) => row.gegenpartei || "–" },
+                  { key: "t", label: "Text", render: (row) => row.text },
+                  { key: "b", label: "Betrag", right: true, render: (row) => money(row.betrag) },
+                ]} />
+              )}
+            </div>
+          )}
           {analysis?.blaetter && <div className="mt-5 flex flex-wrap gap-2">{analysis.blaetter.map((sheet) => <span key={sheet} className="rounded-full bg-muted px-3 py-1 text-xs">{sheet}</span>)}</div>}
           {analysis?.tabellen && <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{Object.entries(analysis.tabellen).map(([table, count]) => <div key={table} className="rounded-lg bg-muted p-3 text-sm"><p className="font-mono text-xs text-muted-foreground">{table}</p><p className="mt-1 font-semibold">{count.toLocaleString("de-DE")} Zeilen</p></div>)}</div>}
         </Panel>
@@ -170,7 +223,7 @@ async function executeFile(file: File, setRunning: (value: boolean) => void, set
     const response = await fetch("/api/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schritt: "analyse", dateiname: file.name, inhalt: await fileBase64(file) }) });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Analyse fehlgeschlagen.");
-    setAnalysis(result); setMessage(`${result.erkannt} benötigte Blätter erkannt.`);
+    setAnalysis(result); setMessage(importMessage("analyse", result));
   } catch (reason) { setError(reason instanceof Error ? reason.message : "Analyse fehlgeschlagen."); } finally { setRunning(false); }
 }
 

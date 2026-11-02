@@ -219,6 +219,25 @@ CREATE TABLE import_protokoll (
   detail TEXT NOT NULL DEFAULT ''
 );
 
+-- Kontoauszüge. Die Zeilen stammen aus der Bankdatei, nicht aus der Excel-Mappe,
+-- und bleiben bei einem erneuten Excel-Import erhalten.
+CREATE TABLE bankbewegung (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  fingerprint TEXT NOT NULL UNIQUE,
+  buchungsdatum TEXT NOT NULL,
+  valuta TEXT,
+  betrag REAL NOT NULL,
+  waehrung TEXT NOT NULL DEFAULT 'EUR',
+  buchungstext TEXT NOT NULL DEFAULT '',
+  verwendungszweck TEXT NOT NULL DEFAULT '',
+  gegenpartei TEXT NOT NULL DEFAULT '',
+  gegen_iban TEXT NOT NULL DEFAULT '',
+  eigenkonto TEXT NOT NULL DEFAULT '',
+  dateiname TEXT NOT NULL DEFAULT '',
+  importiert_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_bankbewegung_datum ON bankbewegung (buchungsdatum);
+
 -- Dieselbe Zuordnung wie die Formeln in Auftrag_Journal, Spalten M–AC.
 CREATE VIEW v_journal AS
 SELECT

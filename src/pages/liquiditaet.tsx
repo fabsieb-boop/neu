@@ -1,9 +1,16 @@
+import { Link } from "react-router-dom";
 import { Area, Bar, CartesianGrid, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from "recharts";
 import { useDash } from "@/data";
 import { DataTable, money, eur, Panel, PageHeader, Kpi, ChartTip, axis } from "@/components/dash";
 
+const monatLabel = (value: string) => {
+  const [year, month] = value.split("-");
+  const names = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+  return `${names[Number(month) - 1] ?? month} ${year}`;
+};
+
 export function Liquiditaet() {
-  const { dash } = useDash();
+  const { dash, user } = useDash();
   const { start, dso, dpo, weeks } = dash.liquidity;
   const konto = dash.konto[0];
   const min = Math.min(...weeks.map((w) => w.bestand));
@@ -44,6 +51,27 @@ export function Liquiditaet() {
             { key: "n", label: "Netto", right: true, render: (r) => money(r.netto) },
             { key: "b", label: "Bestand", right: true, render: (r) => <span className="font-semibold">{money(r.bestand)}</span> },
           ]} />
+        </Panel>
+        <Panel title="Kontoauszüge" subtitle={dash.bank.anzahl ? `${dash.bank.anzahl.toLocaleString("de-DE")} Buchungen` : "noch keine Bankdatei"}>
+          {dash.bank.anzahl === 0 ? (
+            <p className="text-sm text-muted-foreground">Noch keine Bankbewegungen importiert. CSV, CAMT und MT940 werden unter Import gelesen; schon vorhandene Buchungen werden beim erneuten Einspielen übersprungen.</p>
+          ) : (
+            <div className="space-y-6">
+              <DataTable rows={dash.bank.monate} cols={[
+                { key: "m", label: "Monat", render: (row) => monatLabel(row.monat) },
+                { key: "e", label: "Eingang", right: true, render: (row) => money(row.ein) },
+                { key: "a", label: "Ausgang", right: true, render: (row) => money(row.aus) },
+                { key: "n", label: "Buchungen", right: true, render: (row) => row.anzahl.toLocaleString("de-DE") },
+              ]} />
+              <DataTable rows={dash.bank.bewegungen} cols={[
+                { key: "d", label: "Buchungstag", render: (row) => row.datum.split("-").reverse().join(".") },
+                { key: "g", label: "Gegenpartei", render: (row) => row.gegenpartei || "–" },
+                { key: "t", label: "Text", render: (row) => row.zweck || row.text },
+                { key: "b", label: "Betrag", right: true, render: (row) => money(row.betrag) },
+              ]} />
+            </div>
+          )}
+          {user.istAdmin && <Link className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" to="/system/import">Kontoauszug importieren</Link>}
         </Panel>
         <Panel title="Cash-Pool" subtitle={dash.liqBestand[0]?.quelle}>
           <DataTable rows={dash.liqBestand} cols={[

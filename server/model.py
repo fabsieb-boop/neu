@@ -13,6 +13,8 @@ import sqlite3
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+from server.kontoauszug import KontoauszugError, parse_statement
+
 ROOT = Path(__file__).resolve().parents[1]
 DB = Path(os.environ.get("TVF_DB", ROOT / "data" / "tvf.sqlite"))
 MONATE = [
@@ -68,6 +70,22 @@ CREATE TABLE IF NOT EXISTS import_protokoll (
   zeilen INTEGER NOT NULL DEFAULT 0,
   detail TEXT NOT NULL DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS bankbewegung (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  fingerprint TEXT NOT NULL UNIQUE,
+  buchungsdatum TEXT NOT NULL,
+  valuta TEXT,
+  betrag REAL NOT NULL,
+  waehrung TEXT NOT NULL DEFAULT 'EUR',
+  buchungstext TEXT NOT NULL DEFAULT '',
+  verwendungszweck TEXT NOT NULL DEFAULT '',
+  gegenpartei TEXT NOT NULL DEFAULT '',
+  gegen_iban TEXT NOT NULL DEFAULT '',
+  eigenkonto TEXT NOT NULL DEFAULT '',
+  dateiname TEXT NOT NULL DEFAULT '',
+  importiert_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_bankbewegung_datum ON bankbewegung (buchungsdatum);
 """
 
 
@@ -840,6 +858,7 @@ def build(allowed_regions: set[str] | None = None) -> dict:
             "dpo": dpo if allowed_regions is None else 0,
             "weeks": weeks if allowed_regions is None else [],
         },
+        "bank": _bank_overview(con, allowed_regions is None),
         "auftragDetail": details,
         "scope": {
             "regional": allowed_regions is not None,
@@ -1032,6 +1051,138 @@ def annual_document(key: str) -> tuple[str, bytes] | None:
     if not row or not row["dateiname"] or row["dokument"] is None:
         return None
     return str(row["dateiname"]), bytes(row["dokument"])
+
+
+def _bank_overview(con: sqlite3.Connection, visible: bool) -> dict:
+    empty = {"anzahl": 0, "summe": 0.0, "monate": [], "bewegungen": []}
+    if not visible:
+        return empty
+    exists = con.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'bankbewegung'"
+    ).fetchone()
+    if not exists:
+        return empty
+    count, total = con.execute(
+        "SELECT COUNT(*), COALESCE(SUM(betrag), 0) FROM bankbewegung"
+    ).fetchone()
+    months = [
+        {
+            "monat": row["monat"],
+            "ein": row["ein"],
+            "aus": row["aus"],
+            "anzahl": row["anzahl"],
+        }
+        for row in con.execute(
+            """
+            SELECT substr(buchungsdatum, 1, 7) AS monat,
+                   SUM(CASE WHEN betrag > 0 THEN betrag ELSE 0 END) AS ein,
+                   SUM(CASE WHEN betrag < 0 THEN -betrag ELSE 0 END) AS aus,
+                   COUNT(*) AS anzahl
+            FROM bankbewegung
+            GROUP BY monat
+            ORDER BY monat
+            """
+        )
+    ]
+    movements = [
+        {
+            "datum": row["buchungsdatum"],
+            "valuta": row["valuta"],
+            "betrag": row["betrag"],
+            "waehrung": row["waehrung"],
+            "text": row["buchungstext"],
+            "zweck": row["verwendungszweck"],
+            "gegenpartei": row["gegenpartei"],
+            "iban": row["gegen_iban"],
+            "konto": row["eigenkonto"],
+        }
+        for row in con.execute(
+            """
+            SELECT buchungsdatum, valuta, betrag, waehrung, buchungstext,
+                   verwendungszweck, gegenpartei, gegen_iban, eigenkonto
+            FROM bankbewegung
+            ORDER BY buchungsdatum DESC, id DESC
+            LIMIT 200
+            """
+        )
+    ]
+    return {
+        "anzahl": int(count),
+        "summe": float(total),
+        "monate": months,
+        "bewegungen": movements,
+    }
+
+
+def bank_statement_import(filename: str, content: bytes, *, write: bool) -> dict:
+    """Prüft einen Kontoauszug und übernimmt neue Buchungen auf Wunsch."""
+    ensure_system_schema()
+    try:
+        statement = parse_statement(content, filename)
+    except KontoauszugError as error:
+        raise SystemInputError(str(error)) from error
+    name = Path(filename).name[:240] or "kontoauszug"
+    with connect() as con:
+        known = {
+            row[0]
+            for row in con.execute("SELECT fingerprint FROM bankbewegung")
+        }
+        fresh = [row for row in statement.movements if row.fingerprint not in known]
+        if write:
+            con.executemany(
+                """
+                INSERT OR IGNORE INTO bankbewegung (
+                  fingerprint, buchungsdatum, valuta, betrag, waehrung,
+                  buchungstext, verwendungszweck, gegenpartei, gegen_iban,
+                  eigenkonto, dateiname
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    (
+                        row.fingerprint,
+                        row.buchungsdatum,
+                        row.valuta,
+                        row.betrag,
+                        row.waehrung,
+                        row.buchungstext,
+                        row.verwendungszweck,
+                        row.gegenpartei,
+                        row.gegen_iban,
+                        row.eigenkonto,
+                        name,
+                    )
+                    for row in fresh
+                ],
+            )
+    incoming = sum(row.betrag for row in statement.movements if row.betrag > 0)
+    outgoing = sum(-row.betrag for row in statement.movements if row.betrag < 0)
+    dates = [row.buchungsdatum for row in statement.movements]
+    return {
+        "art": "Kontoauszug",
+        "format": statement.format,
+        "konto": statement.konto,
+        "von": min(dates),
+        "bis": max(dates),
+        "zeilen": len(statement.movements),
+        "uebersprungen": statement.skipped,
+        "summe": round(sum(row.betrag for row in statement.movements), 2),
+        "eingang": round(incoming, 2),
+        "ausgang": round(outgoing, 2),
+        "neu": len(fresh),
+        "bereits": len(statement.movements) - len(fresh),
+        "schlussSaldo": statement.closing_balance,
+        "schlussDatum": statement.closing_date,
+        "vorschau": [
+            {
+                "datum": row.buchungsdatum,
+                "betrag": row.betrag,
+                "text": row.verwendungszweck or row.buchungstext,
+                "gegenpartei": row.gegenpartei,
+            }
+            for row in statement.movements[:8]
+        ],
+        "importiert": len(fresh) if write else 0,
+    }
 
 
 def log_import(

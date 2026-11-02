@@ -26,7 +26,11 @@ from threading import Lock
 from urllib.parse import parse_qs, urlparse
 from xml.etree import ElementTree as ET
 
-from model import (
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from server.model import (
     DB,
     ForecastInputError,
     SystemInputError,
@@ -41,6 +45,7 @@ from model import (
     delete_report_template,
     ensure_system_schema,
     get_user,
+    bank_statement_import,
     import_log,
     journal_rows,
     list_users,
@@ -53,13 +58,12 @@ from model import (
     user_regions,
 )
 
-ROOT = Path(__file__).resolve().parents[1]
 XLSX = ROOT / "data" / "tvf-dashboard-download.xlsx"
 HOST = os.environ.get("TVF_API_HOST", "127.0.0.1")
 PORT = int(os.environ.get("TVF_API_PORT", "8787"))
 COOKIE = "tvf_session"
 SESSION_SECRET = os.environ.get("TVF_SESSION_SECRET", "").encode() or secrets.token_bytes(32)
-SYSTEM_TABLES = ("benutzer", "bericht_vorlage", "ja_stand", "import_protokoll")
+SYSTEM_TABLES = ("benutzer", "bericht_vorlage", "ja_stand", "import_protokoll", "bankbewegung")
 SOURCE_TABLES = (
     "parameter",
     "projekt",
@@ -96,6 +100,19 @@ def _session_user(token: str) -> dict | None:
         return get_user(int(raw_id))
     except (ValueError, TypeError):
         return None
+
+
+def _is_dashboard_workbook(content: bytes) -> bool:
+    if not content.startswith(b"PK"):
+        return False
+    from scripts.import_excel import SHEETS, workbook_sheet_names
+
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            names = set(workbook_sheet_names(archive))
+    except (zipfile.BadZipFile, KeyError, ET.ParseError, ValueError) as error:
+        raise SystemInputError("Die Datei ist keine lesbare Excel-Mappe.") from error
+    return bool(names & set(SHEETS))
 
 
 def _analyse_workbook(content: bytes) -> dict:
@@ -479,11 +496,24 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     content = base64.b64decode(payload.get("inhalt", ""), validate=True)
                 except (ValueError, TypeError) as error:
-                    raise SystemInputError("Die Excel-Datei ist ungültig.") from error
+                    raise SystemInputError("Die Datei ist ungültig.") from error
                 if not content or len(content) > 32 * 1024 * 1024:
-                    raise SystemInputError("Die Excel-Datei fehlt oder ist zu groß.")
+                    raise SystemInputError("Die Datei fehlt oder ist zu groß.")
                 filename = Path(str(payload.get("dateiname", "dashboard.xlsx"))).name
                 step = str(payload.get("schritt", "analyse"))
+                if not _is_dashboard_workbook(content):
+                    if step not in {"analyse", "testlauf", "import"}:
+                        raise SystemInputError("Der Importschritt ist ungültig.")
+                    result = bank_statement_import(filename, content, write=step == "import")
+                    if step == "import":
+                        with self.data_lock:
+                            log_import(filename, step, "ERFOLGREICH", result["importiert"], result["format"])
+                            Handler.dashboard = build()
+                            Handler.scoped_dashboards.clear()
+                    elif step == "testlauf":
+                        log_import(filename, step, "ERFOLGREICH", result["zeilen"], result["format"])
+                    self._json(result)
+                    return
                 analysis = _analyse_workbook(content)
                 if step == "analyse":
                     self._json({"art": "TVF-Dashboard", **analysis})

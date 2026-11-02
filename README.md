@@ -19,6 +19,14 @@ erfundenen Fachwerte:
 - `bericht_vorlage` für persönliche Berichtsbaukästen
 - `ja_stand` für Status und Dokumente der Jahresabschluss-Unterlagen
 - `import_protokoll` für ausgeführte Importläufe
+- `bankbewegung` für importierte Kontoauszüge
+
+Unter System → Import lässt sich neben der Dashboard-Mappe ein Kontoauszug
+einlesen. CSV von Sparkasse, VR-Bank und DATEV sowie CAMT-XML und MT940 werden
+erkannt. Zufluss bleibt positiv, Abfluss negativ. Dieselbe Buchung wird beim
+erneuten Import übersprungen. Die Zeilen bleiben erhalten, wenn die Excel-Mappe
+neu eingelesen wird. Auf der Seite Liquidität stehen die Monatssummen und die
+letzten Buchungen.
 
 GuV-Summen, Kennzahlen, EBITDA-Anzeige, Forecast, Regionen, Auftragsauswertung und der 26-Wochen-Plan sind Abfragen. Die Zuordnung jeder Buchung steht in der Sicht `v_zeile` und folgt den Formeln des Auftragsjournals.
 

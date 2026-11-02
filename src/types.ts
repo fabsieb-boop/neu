@@ -143,6 +143,12 @@ export type Dash = {
   liqBestand: { monat: number; saldo: number; quelle: string }[];
   forecastPlan: { region: string; nr: string; name: string; groesse: string; art: string; monat: number; wert: number }[];
   liquidity: { start: number; dso: number; dpo: number; weeks: { datum: string; jahr: number; monat: number; ein: number; aus: number; netto: number; bestand: number }[] };
+  bank: {
+    anzahl: number;
+    summe: number;
+    monate: { monat: string; ein: number; aus: number; anzahl: number }[];
+    bewegungen: { datum: string; valuta: string | null; betrag: number; waehrung: string; text: string; zweck: string; gegenpartei: string; iban: string; konto: string }[];
+  };
   auftragDetail: Record<string, AuftragDetail>;
   scope: { regional: boolean; regions: string[] };
 };
