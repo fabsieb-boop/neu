@@ -388,7 +388,8 @@ const counterRows = [
 
 function Countercheck() {
   const { dash, journal } = useDash();
-  const [month, setMonth] = useState(Math.min(dash.letzterIst, 9));
+  const columns = dash.guv[0]?.values.length ?? 9;
+  const [month, setMonth] = useState(Math.min(dash.letzterIst, columns));
   const rows = counterRows.map(([group, position, source]) => {
     const guv = dash.guv.find((row) => row.name === position)?.values[month - 1] ?? 0;
     const matching = journal.filter((row) => row.monat === month && row.guvGruppe === group);
@@ -405,7 +406,7 @@ function Countercheck() {
     <div>
       <PageHeader title="Gegenkontrolle" subtitle="GuV gegen die nach Kontenstamm zugeordneten Buchungen" />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-        <label className="block w-fit text-xs font-medium text-muted-foreground">Monat<select value={month} onChange={(event) => setMonth(Number(event.target.value))} className="mt-1 block rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground">{dash.monate.slice(0, 9).map((name, index) => <option key={name} value={index + 1}>{name} {dash.jahr}</option>)}</select></label>
+        <label className="block w-fit text-xs font-medium text-muted-foreground">Monat<select value={month} onChange={(event) => setMonth(Number(event.target.value))} className="mt-1 block rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground">{dash.monate.slice(0, columns).map((name, index) => <option key={name} value={index + 1}>{name} {dash.jahr}</option>)}</select></label>
         <section className="grid gap-4 sm:grid-cols-3">
           <Kpi label={`EBITDA ${dash.monate[month - 1]}`} value={ebitda} hint="GuV-Zeile EBITDA" signed />
           <Kpi label="Buchungsableitung" value={journalEbitda} hint="Beitrag der Gruppen 1–6 und 8" signed />

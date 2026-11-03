@@ -86,6 +86,10 @@ CREATE TABLE IF NOT EXISTS bankbewegung (
   importiert_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_bankbewegung_datum ON bankbewegung (buchungsdatum);
+CREATE TABLE IF NOT EXISTS ist_freigabe (
+  jahr INTEGER PRIMARY KEY,
+  monat INTEGER NOT NULL
+);
 """
 
 
@@ -483,6 +487,7 @@ def add_forecast_plan(
         monate.add(monat)
         prepared.append((monat, float(wert)))
 
+    ensure_system_schema()
     con = connect()
     try:
         parameter = con.execute(
@@ -491,7 +496,8 @@ def add_forecast_plan(
         projekt = _forecast_target(con, projekt_nr) if parameter is not None else None
         if parameter is None or projekt is None:
             raise ForecastInputError("Der aktive Auftrag wurde nicht gefunden.")
-        if any(monat <= parameter["letzter_ist_monat"] for monat, _ in prepared):
+        letzter, _, _ = read_ist_cutoff(con)
+        if any(monat <= letzter for monat, _ in prepared):
             raise ForecastInputError(
                 "Forecast-Werte sind nur für Monate nach dem letzten Ist-Monat zulässig."
             )
@@ -683,18 +689,139 @@ def liquidity(monate: list[dict], stichtag: date, dso: float, dpo: float, start:
     return weeks
 
 
+SHEET_MONATE = 9
+_JOURNAL_GUV = (
+    ("1 Umsatzerlöse", "Summe Umsatzerlöse", "beitrag"),
+    ("2 Bestandsveränderungen", "Bestandsveraend. UE und FE", "beitrag"),
+    ("3 Sonstige betriebliche Erträge", "Andere sonstige betriebliche Ertraege", "beitrag"),
+    ("4 Materialaufwand", "Aufwendungen für RHB", "beitrag"),
+    ("5 Aufwand für bezogene Leistungen", "Fremdleistungen", "beitrag"),
+    ("6 Personalaufwand", "Personalaufwand", "beitrag"),
+    ("8 Sonstige betriebliche Aufwendungen", "Sachkosten", "beitrag"),
+    ("12 Periodenfremdes Ergebnis", "Neutrales Ergebnis", "wert"),
+    ("7 Abschreibungen", "Abschreibungen", "wert"),
+    ("10 Zinsergebnis", "Finanzergebnis", "wert"),
+)
+
+
+def read_ist_cutoff(con: sqlite3.Connection) -> tuple[int, int, bool]:
+    parameter = con.execute("SELECT jahr, letzter_ist_monat FROM parameter").fetchone()
+    sheet = int(parameter["letzter_ist_monat"])
+    row = con.execute(
+        "SELECT monat FROM ist_freigabe WHERE jahr = ?",
+        (parameter["jahr"],),
+    ).fetchone()
+    if row is None:
+        return sheet, sheet, False
+    monat = int(row["monat"])
+    if monat < 1 or monat > 12:
+        return sheet, sheet, False
+    return monat, sheet, True
+
+
+def set_ist_freigabe(monat: int | None) -> dict:
+    if monat is not None and (
+        isinstance(monat, bool) or not isinstance(monat, int) or monat < 1 or monat > 12
+    ):
+        raise SystemInputError("Der Monat ist ungültig.")
+    ensure_system_schema()
+    con = connect()
+    try:
+        jahr = int(con.execute("SELECT jahr FROM parameter").fetchone()["jahr"])
+        if monat is None:
+            con.execute("DELETE FROM ist_freigabe WHERE jahr = ?", (jahr,))
+        else:
+            con.execute(
+                """
+                INSERT INTO ist_freigabe (jahr, monat)
+                VALUES (?, ?)
+                ON CONFLICT(jahr) DO UPDATE SET monat = excluded.monat
+                """,
+                (jahr, monat),
+            )
+        con.commit()
+        letzter, sheet, gesetzt = read_ist_cutoff(con)
+        return {"jahr": jahr, "monat": letzter, "mappeMonat": sheet, "gesetzt": gesetzt}
+    except Exception:
+        con.rollback()
+        raise
+    finally:
+        con.close()
+
+
+def _journal_overrides(zeilen: list[dict], monat: int) -> dict[str, float]:
+    grouped: dict[str, list[dict]] = {}
+    for row in zeilen:
+        if row["monat"] == monat:
+            grouped.setdefault(row["guv_gruppe"], []).append(row)
+    overrides: dict[str, float] = {}
+    for gruppe, name, quelle in _JOURNAL_GUV:
+        rows = grouped.get(gruppe, [])
+        if quelle == "beitrag":
+            overrides[name] = sum(row["beitrag"] for row in rows)
+        else:
+            overrides[name] = -sum(row["wert"] for row in rows)
+    return overrides
+
+
+def extend_guv_with_journal(
+    con: sqlite3.Connection,
+    guv: list[dict],
+    zeilen: list[dict],
+    letzter: int,
+) -> None:
+    """Hängt freigegebene Monate nach der Excel-GuV aus dem Journal an.
+
+    Summenzeilen mit einer Buchungsgruppe bekommen diesen Betrag. Darunter
+    liegende Einzelzeilen bleiben leer, weil das Journal sie nicht aufteilt.
+    """
+    if letzter <= SHEET_MONATE:
+        return
+    positionen = [
+        dict(row)
+        for row in con.execute("SELECT zeile, position, formel FROM guv_position ORDER BY zeile")
+    ]
+    for monat in range(SHEET_MONATE + 1, letzter + 1):
+        overrides = _journal_overrides(zeilen, monat)
+        extra: dict[int, float | None] = {}
+        for pos in positionen:
+            if pos["position"] in overrides:
+                extra[pos["zeile"]] = overrides[pos["position"]]
+            elif pos["formel"]:
+                parts = [int(part) for part in pos["formel"].split("+")]
+                numbers = [extra[part] for part in parts]
+                extra[pos["zeile"]] = (
+                    None
+                    if all(value is None for value in numbers)
+                    else sum(value or 0.0 for value in numbers)
+                )
+            else:
+                extra[pos["zeile"]] = None
+        for row in guv:
+            row["values"].append(extra[row["zeile"]])
+
+
+def _guv_month(guv: list[dict], name: str, monat: int) -> float:
+    row = next(item for item in guv if item["name"] == name)
+    value = row["values"][monat - 1]
+    return 0.0 if value is None else float(value)
+
+
 def build(allowed_regions: set[str] | None = None) -> dict:
+    ensure_system_schema()
     con = connect()
     parameter = dict(con.execute("SELECT * FROM parameter").fetchone())
     jahr = parameter["jahr"]
-    letzter = parameter["letzter_ist_monat"]
+    letzter, mappe_monat, freigabe_gesetzt = read_ist_cutoff(con)
     stichtag = date.fromisoformat(parameter["stichtag"])
     guv = guv_matrix(con)
     dso = con.execute("SELECT wert FROM liq_parameter WHERE jahr = ? AND schluessel = 'dso_tage'", (jahr,)).fetchone()["wert"]
     dpo = con.execute("SELECT wert FROM liq_parameter WHERE jahr = ? AND schluessel = 'dpo_tage'", (jahr,)).fetchone()["wert"]
     start = con.execute("SELECT saldo FROM liq_bestand ORDER BY rowid DESC LIMIT 1").fetchone()["saldo"]
 
-    zeilen = [dict(r) for r in con.execute("SELECT * FROM v_zeile WHERE jahr = ?", (jahr,))]
+    alle_zeilen = [dict(r) for r in con.execute("SELECT * FROM v_zeile WHERE jahr = ?", (jahr,))]
+    extend_guv_with_journal(con, guv, alle_zeilen, letzter)
+    zeilen = alle_zeilen
     plaene = [dict(r) for r in con.execute("SELECT * FROM forecast_plan WHERE jahr = ? AND art = 'plan'", (jahr,))]
     all_stamm = {
         r["projekt_nr"]: dict(r) for r in con.execute("SELECT * FROM projekt")
@@ -719,10 +846,19 @@ def build(allowed_regions: set[str] | None = None) -> dict:
     kenn = []
     for m in range(1, 13):
         ist = m <= letzter
-        if m <= 9:
+        if m <= SHEET_MONATE:
             umsatz, bestand, sonstige = row_values(guv, 8)[m - 1], row_values(guv, 10)[m - 1], row_values(guv, 28)[m - 1]
             ebitda_guv, abschr = row_values(guv, 74)[m - 1], row_values(guv, 77)[m - 1]
             finanz, steuern, neutral = row_values(guv, 89)[m - 1], row_values(guv, 57)[m - 1], row_values(guv, 73)[m - 1]
+        elif ist:
+            umsatz = _guv_month(guv, "Summe Umsatzerlöse", m)
+            bestand = _guv_month(guv, "Bestandsveraend. UE und FE", m)
+            sonstige = _guv_month(guv, "Andere sonstige betriebliche Ertraege", m)
+            ebitda_guv = _guv_month(guv, "EBITDA", m)
+            abschr = _guv_month(guv, "Abschreibungen", m)
+            finanz = _guv_month(guv, "Finanzergebnis", m)
+            neutral = _guv_month(guv, "Neutrales Ergebnis", m)
+            steuern = 0.0
         else:
             umsatz = bestand = sonstige = ebitda_guv = abschr = finanz = steuern = neutral = 0.0
         kenn.append({
@@ -950,6 +1086,9 @@ def build(allowed_regions: set[str] | None = None) -> dict:
         "jahr": jahr,
         "letzterIst": letzter,
         "letzterIstName": MONATE[letzter - 1],
+        "mappeMonat": mappe_monat,
+        "mappeMonatName": MONATE[mappe_monat - 1],
+        "freigabeGesetzt": freigabe_gesetzt,
         "stichtag": parameter["stichtag"],
         "auftragsnummer": parameter["auftragsnummer"],
         "monate": MONATE,
@@ -984,6 +1123,7 @@ def build(allowed_regions: set[str] | None = None) -> dict:
         "parameter": [
             {"name": "Jahr", "wert": str(jahr)},
             {"name": "Letzter Ist-Monat", "wert": MONATE[letzter - 1]},
+            {"name": "Ist-Monat der Mappe", "wert": MONATE[mappe_monat - 1]},
             {"name": "Stichtag", "wert": stichtag.strftime("%d.%m.%Y")},
             {"name": "DSO", "wert": f"{dso:g} Tage"},
             {"name": "DPO", "wert": f"{dpo:g} Tage"},
@@ -991,6 +1131,7 @@ def build(allowed_regions: set[str] | None = None) -> dict:
         ] if allowed_regions is None else [
             {"name": "Jahr", "wert": str(jahr)},
             {"name": "Letzter Ist-Monat", "wert": MONATE[letzter - 1]},
+            {"name": "Ist-Monat der Mappe", "wert": MONATE[mappe_monat - 1]},
             {"name": "Stichtag", "wert": stichtag.strftime("%d.%m.%Y")},
         ],
         "projektstamm": [

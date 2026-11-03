@@ -39,7 +39,7 @@ SHEETS = (
     "Regionen",
     "Auftrag",
 )
-SYSTEM_TABLES = ("benutzer", "bericht_vorlage", "ja_stand", "import_protokoll", "bankbewegung")
+SYSTEM_TABLES = ("benutzer", "bericht_vorlage", "ja_stand", "import_protokoll", "bankbewegung", "ist_freigabe")
 
 
 def col_row(ref: str) -> tuple[int, int]:

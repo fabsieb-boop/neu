@@ -219,6 +219,13 @@ CREATE TABLE import_protokoll (
   detail TEXT NOT NULL DEFAULT ''
 );
 
+-- Freigabe des Ist-Monats. Die Mappe behält ihren eigenen letzten Ist-Monat.
+-- Diese Zeile bleibt bei einem erneuten Excel-Import erhalten.
+CREATE TABLE ist_freigabe (
+  jahr INTEGER PRIMARY KEY,
+  monat INTEGER NOT NULL
+);
+
 -- Kontoauszüge. Die Zeilen stammen aus der Bankdatei, nicht aus der Excel-Mappe,
 -- und bleiben bei einem erneuten Excel-Import erhalten.
 CREATE TABLE bankbewegung (

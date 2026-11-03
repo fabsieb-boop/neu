@@ -619,8 +619,8 @@ function reportSources(dash: Dash, journal: ReturnType<typeof useDash>["journal"
   return {
     guv: {
       label: "GuV je Position und Monat",
-      description: "Die Positionen und Monatswerte aus GuV_Positionen.",
-      rows: dash.guv.flatMap((row) => row.values.map((value, index) => ({ zeile: row.zeile, nummer: row.nr, position: row.name, monat: index + 1, wert: value }))),
+      description: "Die Positionen der GuV. Monate nach der Excel-Mappe stammen aus dem Journal.",
+      rows: dash.guv.flatMap((row) => row.values.flatMap((value, index) => (value == null ? [] : [{ zeile: row.zeile, nummer: row.nr, position: row.name, monat: index + 1, wert: value }]))),
     },
     projekte: {
       label: "Deckungsbeitrag je Projekt",

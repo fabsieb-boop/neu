@@ -1,5 +1,6 @@
 import { useDash } from "@/data";
 import { Panel, PageHeader, num, eur } from "@/components/dash";
+import { IstFreigabe } from "@/components/ist-freigabe";
 
 export function Einstellungen() {
   const { dash } = useDash();
@@ -7,6 +8,7 @@ export function Einstellungen() {
     <div>
       <PageHeader title="Parameter und Legende" subtitle="Stellschrauben und Rechenwege aus der Mappe" />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+        <IstFreigabe />
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {dash.parameter.map((p) => (
             <div key={p.name} className="rounded-xl border border-border bg-card p-5 shadow-card">

@@ -5,7 +5,8 @@ import { buildGuvWaterfall } from "@/lib/guv-waterfall";
 
 export function GuV() {
   const { dash } = useDash();
-  const mon = dash.monate.slice(0, 9).map((m) => m.slice(0, 3));
+  const spalten = dash.guv[0]?.values.length ?? 0;
+  const mon = dash.monate.slice(0, spalten).map((m) => m.slice(0, 3));
   const { wf } = buildGuvWaterfall(dash.guv);
 
   return (
@@ -41,11 +42,11 @@ export function GuV() {
               </thead>
               <tbody>
                 {dash.guv.map((g) => {
-                  const t = g.values.reduce((a, b) => a + b, 0);
+                  const t = g.values.reduce<number>((a, b) => a + (b ?? 0), 0);
                   return (
                     <tr key={g.zeile} className={`border-t border-border ${g.sum ? "bg-muted font-semibold" : ""}`}>
                       <td className="whitespace-nowrap py-2 pl-2 pr-4">{g.name}</td>
-                      {g.values.map((v, j) => <td key={j} className={`whitespace-nowrap px-2 text-right ${v < 0 ? "text-negative" : ""}`}>{eur(v, true)}</td>)}
+                      {g.values.map((v, j) => <td key={j} className={`whitespace-nowrap px-2 text-right ${v != null && v < 0 ? "text-negative" : ""}`}>{v == null ? "–" : eur(v, true)}</td>)}
                       <td className={`whitespace-nowrap pl-2 pr-2 text-right ${t < 0 ? "text-negative" : ""}`}>{eur(t, true)}</td>
                     </tr>
                   );
@@ -53,6 +54,11 @@ export function GuV() {
               </tbody>
             </table>
           </div>
+          {spalten > 9 && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Ab {dash.monate[9]} stammen die Summen aus dem Journal. Zeilen ohne Buchungsgruppe bleiben offen.
+            </p>
+          )}
         </Panel>
       </main>
     </div>

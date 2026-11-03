@@ -2,6 +2,7 @@ import { Bar, CartesianGrid, Cell, ComposedChart, Line, ResponsiveContainer, Too
 import { AlertTriangle } from "lucide-react";
 import { useDash } from "@/data";
 import { eur, short, Kpi, Panel, ChartTip, PageHeader } from "@/components/dash";
+import { IstFreigabe } from "@/components/ist-freigabe";
 
 const GUV_ZEILEN = ["Summe Umsatzerlöse", "Rohertrag", "Personalaufwand", "Sachkosten", "EBITDA (Operatives Ergebnis)", "Neutrales Ergebnis", "EBITDA", "Abschreibungen", "Finanzergebnis", "Ergebnis vor Steuern"];
 
@@ -20,6 +21,7 @@ export function Uebersicht() {
     <div>
       <PageHeader title="Übersicht" subtitle={`Geschäftsjahr ${dash.jahr}, Ist bis ${dash.letzterIstName}`} />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+        <IstFreigabe />
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <Kpi label="Gesamtleistung Ist" value={leistungIst} hint={`Monate bis ${dash.letzterIstName}`} />
           <Kpi label="EBITDA Ist" value={ebitdaIst} hint="Operativ plus neutral" signed />
@@ -105,7 +107,7 @@ export function Uebersicht() {
           <Panel title={`GuV Januar–${dash.letzterIstName}`} subtitle="Zwischensummen">
             <ul className="divide-y divide-border text-sm">
               {dash.guv.filter((g) => g.sum && GUV_ZEILEN.includes(g.name)).map((g) => {
-                const t = g.values.reduce((a, b) => a + b, 0);
+                const t = g.values.reduce<number>((a, b) => a + (b ?? 0), 0);
                 const key = g.name === "EBITDA" || g.name === "Ergebnis vor Steuern";
                 return (
                   <li key={g.name} className={`flex justify-between py-2 ${key ? "font-semibold" : ""}`}>

@@ -1,6 +1,6 @@
 type GuvSourceRow = {
   name: string;
-  values: number[];
+  values: (number | null)[];
 };
 
 export type WaterfallBar = {
@@ -14,7 +14,7 @@ export function buildGuvWaterfall(rows: GuvSourceRow[]) {
   const total = (name: string) => {
     const row = rows.find((item) => item.name === name);
     if (!row) throw new Error(`GuV-Zeile fehlt: ${name}`);
-    return row.values.reduce((sum, value) => sum + value, 0);
+    return row.values.reduce<number>((sum, value) => sum + (value ?? 0), 0);
   };
 
   const umsatz = total("Summe Umsatzerlöse");

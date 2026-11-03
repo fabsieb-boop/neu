@@ -54,6 +54,7 @@ from server.model import (
     report_templates,
     save_annual_entry,
     save_report_template,
+    set_ist_freigabe,
     update_user,
     user_count,
     user_regions,
@@ -64,7 +65,7 @@ HOST = os.environ.get("TVF_API_HOST", "127.0.0.1")
 PORT = int(os.environ.get("TVF_API_PORT", "8787"))
 COOKIE = "tvf_session"
 SESSION_SECRET = os.environ.get("TVF_SESSION_SECRET", "").encode() or secrets.token_bytes(32)
-SYSTEM_TABLES = ("benutzer", "bericht_vorlage", "ja_stand", "import_protokoll", "bankbewegung")
+SYSTEM_TABLES = ("benutzer", "bericht_vorlage", "ja_stand", "import_protokoll", "bankbewegung", "ist_freigabe")
 SOURCE_TABLES = (
     "parameter",
     "projekt",
@@ -432,6 +433,26 @@ class Handler(BaseHTTPRequestHandler):
                     str(payload.get("rolle", "NEUTRAL")),
                 )
                 self._json({"user": created, "setupComplete": False}, status=201)
+                return
+            if path == "/api/ist-freigabe":
+                roles = set(user["rollen"])
+                if user["regional"] or not roles & {"ADMIN", "CONTROLLING"}:
+                    self._json({"error": "Keine Berechtigung für die Ist-Freigabe."}, status=403)
+                    return
+                payload = self._read_json()
+                raw = payload.get("monat")
+                if raw is None:
+                    monat = None
+                elif isinstance(raw, bool) or not isinstance(raw, (int, float)) or not float(raw).is_integer():
+                    raise SystemInputError("Der Monat ist ungültig.")
+                else:
+                    monat = int(raw)
+                with self.data_lock:
+                    freigabe = set_ist_freigabe(monat)
+                    Handler.dashboard = build()
+                    Handler.scoped_dashboards.clear()
+                    dashboard = self._dashboard_for(user)
+                self._json({"freigabe": freigabe, "dashboard": dashboard})
                 return
             if path == "/api/projektakte":
                 roles = set(user["rollen"])

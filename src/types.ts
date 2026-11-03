@@ -19,7 +19,7 @@ export type Month = {
   ebitda: number;
 };
 
-export type GuvRow = { zeile: number; nr: number; name: string; sum: boolean; values: number[] };
+export type GuvRow = { zeile: number; nr: number; name: string; sum: boolean; values: (number | null)[] };
 export type Order = {
   nr: string;
   name: string;
@@ -91,6 +91,9 @@ export type Dash = {
   jahr: number;
   letzterIst: number;
   letzterIstName: string;
+  mappeMonat: number;
+  mappeMonatName: string;
+  freigabeGesetzt: boolean;
   stichtag: string;
   auftragsnummer: string;
   monate: string[];
