@@ -123,6 +123,35 @@ class ForecastInputTest(unittest.TestCase):
             ["jahr", "region", "auftrag", "auftragname", "groesse", "art", "monat", "wert"],
         )
 
+    def test_saves_forecast_for_journal_order_missing_from_master(self) -> None:
+        nummer = "P4102307452"
+        with self.connection() as connection:
+            self.assertIsNone(
+                connection.execute(
+                    "SELECT 1 FROM projekt WHERE projekt_nr = ?",
+                    (nummer,),
+                ).fetchone()
+            )
+            self.assertIsNotNone(
+                connection.execute(
+                    "SELECT 1 FROM buchung WHERE auftrag = ?",
+                    (nummer,),
+                ).fetchone()
+            )
+
+        saved = model.add_forecast_plan(nummer, "kosten", [{"monat": 10, "wert": 1500.0}])
+        self.assertEqual(saved[0]["nr"], nummer)
+        self.assertEqual(saved[0]["region"], "Ohne Zuordnung")
+        self.assertEqual(saved[0]["wert"], 1500.0)
+
+        order = next(row for row in model.build()["forecastOrders"] if row["nr"] == nummer)
+        self.assertEqual(order["region"], "Ohne Zuordnung")
+        self.assertEqual(order["status"], "OHNE STAMM")
+        self.assertEqual(order["monate"][9], -1500.0)
+
+        with self.assertRaisesRegex(model.ForecastInputError, "nicht gefunden"):
+            model.add_forecast_plan("P9990000001", "kosten", [{"monat": 10, "wert": 10.0}])
+
     def test_rejects_forecast_for_a_region_outside_the_user_scope(self) -> None:
         project = self.active_project()
         allowed = next(

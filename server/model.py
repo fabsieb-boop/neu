@@ -389,6 +389,50 @@ def user_regions(user: dict) -> set[str] | None:
     return regions or None
 
 
+_AUFTRAG_NR = re.compile(r"^[PW]\d{8,}$")
+_OHNE_STAMM = "Ohne Zuordnung"
+
+
+def journal_orders_without_master(con: sqlite3.Connection) -> list[str]:
+    """Auftragsnummern aus dem Journal, die im Projektstamm fehlen."""
+    rows = con.execute(
+        """
+        SELECT DISTINCT auftrag
+        FROM buchung
+        WHERE auftrag <> ''
+          AND NOT EXISTS (
+            SELECT 1 FROM projekt WHERE projekt.projekt_nr = buchung.auftrag
+          )
+        ORDER BY auftrag
+        """
+    )
+    return [row["auftrag"] for row in rows if _AUFTRAG_NR.fullmatch(row["auftrag"] or "")]
+
+
+def _forecast_target(con: sqlite3.Connection, projekt_nr: str) -> dict | None:
+    row = con.execute(
+        """
+        SELECT projekt_nr, name, region, status
+        FROM projekt
+        WHERE projekt_nr = ?
+        """,
+        (projekt_nr,),
+    ).fetchone()
+    if row is not None:
+        if row["status"] != "AKTIV":
+            return None
+        return {"projekt_nr": row["projekt_nr"], "name": row["name"], "region": row["region"]}
+    if not _AUFTRAG_NR.fullmatch(projekt_nr):
+        return None
+    booking = con.execute(
+        "SELECT 1 FROM buchung WHERE auftrag = ? LIMIT 1",
+        (projekt_nr,),
+    ).fetchone()
+    if booking is None:
+        return None
+    return {"projekt_nr": projekt_nr, "name": "", "region": _OHNE_STAMM}
+
+
 def add_forecast_plan(
     projekt_nr: str,
     groesse: str,
@@ -424,14 +468,7 @@ def add_forecast_plan(
         parameter = con.execute(
             "SELECT jahr, letzter_ist_monat FROM parameter"
         ).fetchone()
-        projekt = con.execute(
-            """
-            SELECT projekt_nr, name, region
-            FROM projekt
-            WHERE projekt_nr = ? AND status = 'AKTIV'
-            """,
-            (projekt_nr,),
-        ).fetchone()
+        projekt = _forecast_target(con, projekt_nr) if parameter is not None else None
         if parameter is None or projekt is None:
             raise ForecastInputError("Der aktive Auftrag wurde nicht gefunden.")
         if any(monat <= parameter["letzter_ist_monat"] for monat, _ in prepared):
@@ -675,7 +712,8 @@ def build(allowed_regions: set[str] | None = None) -> dict:
         for r in con.execute("SELECT projekt_nr FROM auftrag_liste ORDER BY zeile")
         if allowed_regions is None or r["projekt_nr"] in stamm
     ]
-    for nr in listen_nummern + [p["auftrag"] for p in plaene] + [z["projekt_nr"] for z in zeilen if z["kostentraeger"] == "Projekt"]:
+    ohne_stamm = set(journal_orders_without_master(con) if allowed_regions is None else [])
+    for nr in listen_nummern + [p["auftrag"] for p in plaene] + [z["projekt_nr"] for z in zeilen if z["kostentraeger"] == "Projekt"] + sorted(ohne_stamm):
         if nr and nr not in gesehen:
             gesehen.add(nr)
             nummern.append(nr)
@@ -689,8 +727,8 @@ def build(allowed_regions: set[str] | None = None) -> dict:
         forecast_orders.append({
             "nr": nr,
             "name": (s["name"] if s and s["name"] else p["auftragname"] if p else ""),
-            "region": (s["region"] if s and s["region"] else p["region"] if p else ""),
-            "status": s["status"] if s else "",
+            "region": (s["region"] if s and s["region"] else p["region"] if p else (_OHNE_STAMM if nr in ohne_stamm else "")),
+            "status": s["status"] if s else ("OHNE STAMM" if nr in ohne_stamm else ""),
             "monate": serie(nr),
         })
 

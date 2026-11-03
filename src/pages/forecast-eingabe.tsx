@@ -29,12 +29,23 @@ export function ForecastEingabe() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const projects = useMemo(
-    () => dash.projektstamm
-      .filter((project) => project.status === "AKTIV")
-      .sort((a, b) => `${a.region} ${a.name} ${a.nr}`.localeCompare(`${b.region} ${b.name} ${b.nr}`, "de")),
-    [dash.projektstamm],
-  );
+  const projects = useMemo(() => {
+    const active = dash.projektstamm.filter((project) => project.status === "AKTIV");
+    const known = new Set(dash.projektstamm.map((project) => project.nr));
+    const fromJournal = dash.forecastOrders
+      .filter((order) => order.nr && !known.has(order.nr))
+      .map((order) => ({
+        id: 0,
+        nr: order.nr,
+        name: order.name,
+        typ: "Journal",
+        region: order.region || "Ohne Zuordnung",
+        status: "OHNE STAMM",
+        budgetUmsatz: 0,
+        budgetKosten: 0,
+      }));
+    return [...active, ...fromJournal].sort((a, b) => `${a.region} ${a.name} ${a.nr}`.localeCompare(`${b.region} ${b.name} ${b.nr}`, "de"));
+  }, [dash.forecastOrders, dash.projektstamm]);
   const selected = projects.find((project) => project.nr === projektNr);
   const existing = dash.forecastPlan.filter((entry) => entry.nr === projektNr);
   const existingPlan = existing.filter((entry) => entry.art === "plan");
@@ -50,7 +61,7 @@ export function ForecastEingabe() {
     setSuccess("");
 
     if (!selected) {
-      setError("Bitte einen aktiven Auftrag wählen.");
+      setError("Bitte einen Auftrag aus der Liste wählen.");
       return;
     }
     if (parsed.some((value) => !Number.isFinite(value))) {
@@ -90,7 +101,7 @@ export function ForecastEingabe() {
     <div>
       <PageHeader title="Forecast-Eingabe" subtitle="Planwerte je Auftrag und Monat direkt erfassen" />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-        <Panel title="Forecast je Projekt eingeben" subtitle={`${projects.length} aktive Aufträge`}>
+        <Panel title="Forecast je Projekt eingeben" subtitle={`${projects.length} Aufträge, inklusive Journal ohne Projektstamm`}>
           <form onSubmit={submit} className="space-y-6">
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
               <div>
@@ -122,6 +133,9 @@ export function ForecastEingabe() {
               <div className="rounded-lg bg-muted px-4 py-3 text-sm">
                 <span className="font-semibold">{selected.name || selected.nr}</span>
                 <span className="ml-2 text-muted-foreground">{selected.nr} · {selected.region} · {selected.typ}</span>
+                {selected.status === "OHNE STAMM" && (
+                  <p className="mt-1 text-muted-foreground">Der Auftrag steht im Journal und fehlt im Projektstamm. Planwerte werden unter Ohne Zuordnung gespeichert.</p>
+                )}
               </div>
             )}
 
@@ -267,7 +281,7 @@ function ProjectSearch({ projects, value, onSelect }: { projects: Project[]; val
       </label>
       {open && (
         <ul className="absolute z-20 mt-2 max-h-96 w-full overflow-auto rounded-xl border border-border bg-popover p-1 shadow-card">
-          {hits.length === 0 && <li className="px-3 py-3 text-sm text-muted-foreground">Kein aktiver Auftrag gefunden</li>}
+          {hits.length === 0 && <li className="px-3 py-3 text-sm text-muted-foreground">Kein Auftrag gefunden</li>}
           {hits.map((project) => (
             <li key={project.nr}>
               <button
