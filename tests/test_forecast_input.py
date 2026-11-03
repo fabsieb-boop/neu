@@ -178,16 +178,39 @@ class ForecastInputTest(unittest.TestCase):
 
         saved = model.add_forecast_plan(nummer, "kosten", [{"monat": 10, "wert": 1500.0}])
         self.assertEqual(saved[0]["nr"], nummer)
-        self.assertEqual(saved[0]["region"], "Ohne Zuordnung")
+        self.assertEqual(saved[0]["region"], "Süd-West")
         self.assertEqual(saved[0]["wert"], 1500.0)
 
         order = next(row for row in model.build()["forecastOrders"] if row["nr"] == nummer)
-        self.assertEqual(order["region"], "Ohne Zuordnung")
+        self.assertEqual(order["region"], "Süd-West")
         self.assertEqual(order["status"], "OHNE STAMM")
         self.assertEqual(order["monate"][9], -1500.0)
 
         with self.assertRaisesRegex(model.ForecastInputError, "nicht gefunden"):
             model.add_forecast_plan("P9990000001", "kosten", [{"monat": 10, "wert": 10.0}])
+
+    def test_journal_order_without_master_shows_region_and_bookings(self) -> None:
+        dashboard = model.build()
+        forecast = next(row for row in dashboard["forecastOrders"] if row["nr"] == "P4102157474")
+        report = next(row for row in dashboard["orders"] if row["nr"] == "P4102157474")
+        neighbor = next(row for row in dashboard["forecastOrders"] if row["nr"] == "P4102157473")
+        neighbor_report = next(row for row in dashboard["orders"] if row["nr"] == "P4102157473")
+
+        self.assertEqual(forecast["region"], "West")
+        self.assertEqual(forecast["status"], "OHNE STAMM")
+        self.assertEqual(forecast["psp"], "157474")
+        self.assertIn("Wallstein", forecast["name"])
+        self.assertTrue(any(value != 0 for value in forecast["monate"]))
+        self.assertEqual(report["region"], "West")
+        self.assertAlmostEqual(report["leistung"], 0, places=2)
+        self.assertLess(report["akte"], 0)
+        self.assertEqual(neighbor["region"], "West")
+        self.assertAlmostEqual(neighbor["monate"][9], 22500, places=2)
+        self.assertAlmostEqual(neighbor_report["leistung"], 22500, places=2)
+
+        west = model.build({"West"})
+        self.assertIn("P4102157474", {row["nr"] for row in west["forecastOrders"]})
+        self.assertNotIn("P4102307452", {row["nr"] for row in west["forecastOrders"]})
 
     def test_rejects_forecast_for_a_region_outside_the_user_scope(self) -> None:
         project = self.active_project()

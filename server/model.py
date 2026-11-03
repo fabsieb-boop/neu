@@ -417,6 +417,34 @@ def region_for_psp(psp: str) -> str:
     return _PSP_REGION.get(psp[:2], "")
 
 
+def order_region(nr: str, stamm_row: dict | None, plan_row: dict | None, *, ohne_stamm: bool) -> str:
+    """Region aus dem Projektstamm, sonst aus der PSP in der Auftragsnummer."""
+    if stamm_row and stamm_row.get("region"):
+        return str(stamm_row["region"])
+    derived = region_for_psp(psp_from_auftrag(nr))
+    if derived:
+        return derived
+    if plan_row and plan_row.get("region") and plan_row["region"] != _OHNE_STAMM:
+        return str(plan_row["region"])
+    if ohne_stamm:
+        return _OHNE_STAMM
+    return str(plan_row["region"]) if plan_row and plan_row.get("region") else ""
+
+
+def journal_title(rows: list[dict], nr: str) -> str:
+    counts: dict[str, int] = {}
+    for row in rows:
+        if row.get("projekt_nr") != nr:
+            continue
+        text = str(row.get("text") or "").strip()
+        if not text or text.lower().startswith("zu erw"):
+            continue
+        counts[text] = counts.get(text, 0) + 1
+    if not counts:
+        return ""
+    return max(counts, key=lambda item: (counts[item], len(item)))[:120]
+
+
 def journal_orders_without_master(con: sqlite3.Connection) -> list[str]:
     """Auftragsnummern aus dem Journal, die im Projektstamm fehlen."""
     rows = con.execute(
@@ -454,7 +482,11 @@ def _forecast_target(con: sqlite3.Connection, projekt_nr: str) -> dict | None:
     ).fetchone()
     if booking is None:
         return None
-    return {"projekt_nr": projekt_nr, "name": "", "region": _OHNE_STAMM}
+    return {
+        "projekt_nr": projekt_nr,
+        "name": "",
+        "region": region_for_psp(psp_from_auftrag(projekt_nr)) or _OHNE_STAMM,
+    }
 
 
 def add_forecast_plan(
@@ -826,16 +858,30 @@ def build(allowed_regions: set[str] | None = None) -> dict:
     all_stamm = {
         r["projekt_nr"]: dict(r) for r in con.execute("SELECT * FROM projekt")
     }
+    offene_nummern = set(journal_orders_without_master(con))
     stamm = all_stamm
     if allowed_regions is not None:
-        zeilen = [row for row in zeilen if row["region"] in allowed_regions]
+        def im_zuschnitt(row: dict) -> bool:
+            if row["region"] in allowed_regions:
+                return True
+            nummer = row["projekt_nr"]
+            return nummer in offene_nummern and region_for_psp(psp_from_auftrag(nummer)) in allowed_regions
+
+        zeilen = [row for row in zeilen if im_zuschnitt(row)]
         plaene = [row for row in plaene if row["region"] in allowed_regions]
         stamm = {
             nr: row for nr, row in stamm.items() if row["region"] in allowed_regions
         }
+    ohne_stamm = {
+        nr
+        for nr in offene_nummern
+        if allowed_regions is None or region_for_psp(psp_from_auftrag(nr)) in allowed_regions
+    }
 
     def passt(z, nr, monat=None, gruppe=None):
-        if z["projekt_nr"] != nr or z["kostentraeger"] != "Projekt" or not z["ergebnisrelevant"] or z["belegart"] == "CA":
+        if z["projekt_nr"] != nr or not z["ergebnisrelevant"] or z["belegart"] == "CA":
+            return False
+        if z["kostentraeger"] != "Projekt" and not (nr in ohne_stamm and z["kostentraeger"] == "Offen"):
             return False
         if monat is not None and z["monat"] != monat:
             return False
@@ -903,24 +949,38 @@ def build(allowed_regions: set[str] | None = None) -> dict:
             "angezeigt": journal if ist else umsatz_plan + bestand_plan - kosten_plan,
         })
 
+    def planwert(nr: str, monat: int) -> float:
+        sums: dict[str, float] = {}
+        for p in plaene:
+            if p["monat"] == monat and p["auftrag"] == nr:
+                sums[p["groesse"]] = sums.get(p["groesse"], 0.0) + p["wert"]
+        return -sums.get("umsatz", 0.0) + sums.get("ba", 0.0) - sums.get("kosten", 0.0)
+
     def serie(nr: str) -> list[float]:
         werte = []
         for m in range(1, 13):
-            if m <= letzter:
-                werte.append(sum(z["leistung"] for z in zeilen if z["monat"] == m and z["projekt_nr"] == nr and z["ergebnisrelevant"] and z["kostentraeger"] == "Projekt"))
+            plan = planwert(nr, m)
+            if m <= letzter or (nr in ohne_stamm and plan == 0):
+                if nr in ohne_stamm:
+                    leistung = sum(z["leistung"] for z in zeilen if passt(z, nr, monat=m))
+                    kosten = sum(z["kvar"] + z["kfix"] + z["umlage"] for z in zeilen if passt(z, nr, monat=m))
+                    werte.append(leistung if leistung else -kosten)
+                else:
+                    werte.append(sum(
+                        z["leistung"]
+                        for z in zeilen
+                        if z["monat"] == m and z["projekt_nr"] == nr and z["ergebnisrelevant"] and z["kostentraeger"] == "Projekt"
+                    ))
             else:
-                sums: dict[str, float] = {}
-                for p in plaene:
-                    if p["monat"] == m and p["auftrag"] == nr:
-                        sums[p["groesse"]] = sums.get(p["groesse"], 0.0) + p["wert"]
-                werte.append(-sums.get("umsatz", 0.0) + sums.get("ba", 0.0) - sums.get("kosten", 0.0))
+                werte.append(plan)
         return werte
 
     orders = []
-    for nr in con.execute("SELECT projekt_nr FROM auftrag_liste ORDER BY zeile"):
-        projekt_nr = nr["projekt_nr"]
+    gelistet = [nr["projekt_nr"] for nr in con.execute("SELECT projekt_nr FROM auftrag_liste ORDER BY zeile")]
+    for projekt_nr in gelistet + [nr for nr in sorted(ohne_stamm) if nr not in set(gelistet)]:
         s = stamm.get(projekt_nr)
-        if allowed_regions is not None and s is None:
+        region = order_region(projekt_nr, s, None, ohne_stamm=projekt_nr in ohne_stamm)
+        if allowed_regions is not None and region not in allowed_regions:
             continue
         leistung = sum(z["leistung"] for z in zeilen if passt(z, projekt_nr))
         kvar = sum(z["kvar"] for z in zeilen if passt(z, projekt_nr))
@@ -930,9 +990,9 @@ def build(allowed_regions: set[str] | None = None) -> dict:
         akte = leistung - (kvar + kfix + umlage)
         orders.append({
             "nr": projekt_nr,
-            "name": s["name"] if s else "",
-            "region": s["region"] if s else "",
-            "status": s["status"] if s else "",
+            "name": s["name"] if s and s["name"] else journal_title(zeilen, projekt_nr),
+            "region": region,
+            "status": s["status"] if s else ("OHNE STAMM" if projekt_nr in ohne_stamm else ""),
             "leistung": leistung, "kvar": kvar, "kfix": kfix, "umlage": umlage,
             "db": ergebnis_db, "akte": akte, "abgrenzung": ergebnis_db - akte,
         })
@@ -969,7 +1029,6 @@ def build(allowed_regions: set[str] | None = None) -> dict:
         for r in con.execute("SELECT projekt_nr FROM auftrag_liste ORDER BY zeile")
         if allowed_regions is None or r["projekt_nr"] in stamm
     ]
-    ohne_stamm = set(journal_orders_without_master(con) if allowed_regions is None else [])
     for nr in listen_nummern + [p["auftrag"] for p in plaene] + [z["projekt_nr"] for z in zeilen if z["kostentraeger"] == "Projekt"] + sorted(ohne_stamm):
         if nr and nr not in gesehen:
             gesehen.add(nr)
@@ -983,8 +1042,8 @@ def build(allowed_regions: set[str] | None = None) -> dict:
         p = plan_name.get(nr)
         forecast_orders.append({
             "nr": nr,
-            "name": (s["name"] if s and s["name"] else p["auftragname"] if p else ""),
-            "region": (s["region"] if s and s["region"] else p["region"] if p else (_OHNE_STAMM if nr in ohne_stamm else "")),
+            "name": (s["name"] if s and s["name"] else p["auftragname"] if p and p["auftragname"] else journal_title(zeilen, nr)),
+            "region": order_region(nr, s, p, ohne_stamm=nr in ohne_stamm),
             "status": s["status"] if s else ("OHNE STAMM" if nr in ohne_stamm else ""),
             "psp": psp_from_auftrag(nr),
             "monate": serie(nr),
