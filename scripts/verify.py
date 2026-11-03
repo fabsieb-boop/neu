@@ -66,7 +66,7 @@ def main() -> None:
     system = {"benutzer", "bericht_vorlage", "ja_stand", "import_protokoll"}
     intern = {"sqlite_sequence"}
     present = set(tables)
-    if not (quellen | system | intern) <= present or present - quellen - system - intern - {"bankbewegung"}:
+    if not (quellen | system | intern) <= present or present - quellen - system - intern - {"bankbewegung", "ist_freigabe"}:
         raise SystemExit(f"Tabellen weichen ab: {tables}")
 
     with zipfile.ZipFile(XLSX) as archive:

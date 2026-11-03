@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from "recharts";
 import { Search } from "lucide-react";
 import { useDash } from "@/data";
@@ -25,7 +26,7 @@ export function Orders() {
   );
 
   return (
-    <Panel title="Aufträge" subtitle={`${rows.length} Projekte der Liste`}>
+    <Panel title="Aufträge" subtitle={`${rows.length.toLocaleString("de-DE")} Aufträge in der Auswertung`}>
       <div className="mb-4 flex flex-wrap gap-3">
         <label className="flex flex-1 items-center gap-2 rounded-lg border border-input bg-background px-3 py-2 text-sm">
           <Search className="h-4 w-4 text-muted-foreground" />
@@ -68,7 +69,7 @@ export function Orders() {
               const marge = o.leistung ? (o.akte / o.leistung) * 100 : 0;
               return (
                 <tr key={o.nr} className="border-t border-border">
-                  <td className="py-2.5"><p className="font-medium">{o.name || "—"}</p><p className="text-xs text-muted-foreground">{o.nr}</p></td>
+                  <td className="py-2.5"><Link to={`/auftrag?nr=${encodeURIComponent(o.nr)}`} className="font-medium hover:underline">{o.name || "—"}</Link><p className="text-xs text-muted-foreground">{o.nr}{o.status ? ` · ${o.status}` : ""}</p></td>
                   <td className="text-muted-foreground">{o.region}</td>
                   <td className="text-right">{eur(o.leistung)}</td>
                   <td className="text-right text-muted-foreground">{eur(o.kvar)}</td>

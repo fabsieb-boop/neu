@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useDash } from "@/data";
@@ -42,7 +43,7 @@ export function Buchungen() {
             { key: "d", label: "Datum", render: (r) => r.datum.split("-").reverse().join(".") },
             { key: "a", label: "Art", render: (r) => <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-semibold">{r.belegart}</span> },
             { key: "b", label: "Beleg", render: (r) => <span className="text-muted-foreground">{r.beleg}</span> },
-            { key: "p", label: "Projekt", render: (r) => <><p className="font-medium">{r.projekt || "—"}</p><p className="text-xs text-muted-foreground">{r.nr} · {r.region}</p></> },
+            { key: "p", label: "Projekt", render: (r) => <><p className="font-medium">{r.projekt || "—"}</p><p className="text-xs text-muted-foreground"><Link to={`/auftrag?nr=${encodeURIComponent(r.nr)}`} className="hover:underline">{r.nr}</Link> · {r.region}</p></> },
             { key: "k", label: "Kostenart", render: (r) => r.kostenart },
             { key: "t", label: "Text", render: (r) => <span className="text-muted-foreground">{r.text}</span> },
             { key: "w", label: "Wert", right: true, render: (r) => money(r.wert) },

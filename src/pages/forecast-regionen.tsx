@@ -1,8 +1,10 @@
 import { Fragment, useMemo, useState } from "react";
 import { ChevronDown, Search } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useDash } from "@/data";
 import { eur, num, Panel, PageHeader, Kpi, axis } from "@/components/dash";
+import type { ForecastOrder } from "@/types";
 
 const MON = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 const C = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)"];
@@ -37,13 +39,23 @@ export function ForecastRegionen() {
   const chart = MON.map((m, i) => Object.fromEntries([["m", m], ...byRegion.map((g) => [g.r, g.sum[i]])]));
   const tot = (from: number, to: number) => orders.reduce((s, o) => s + o.monate.slice(from, to).reduce((a, b) => a + b, 0), 0);
   const toggle = (r: string) => setAktiv((a) => (a.includes(r) ? a.filter((x) => x !== r) : [...a, r]));
-  const cell = (v: number, i: number) => (
-    <td key={i} className={`whitespace-nowrap px-2 py-2 text-right tabular-nums ${i >= istBis ? "bg-plan/15" : ""} ${v === 0 ? "text-muted-foreground/40" : ""}`}>{v === 0 ? "–" : num(v / 1000)}</td>
-  );
+  const hinweis = (order: ForecastOrder, index: number) => {
+    if (order.status !== "OHNE STAMM") return undefined;
+    const leistung = order.leistungMonate[index] ?? 0;
+    const kosten = order.kostenMonate[index] ?? 0;
+    if (leistung === 0 && kosten === 0) return undefined;
+    return `Journal-Ergebnis: Leistung ${num(leistung, 2)} €, Kosten ${num(kosten, 2)} €`;
+  };
+  const cell = (order: ForecastOrder, index: number) => {
+    const value = order.monate[index] ?? 0;
+    return (
+      <td key={index} title={hinweis(order, index)} className={`whitespace-nowrap px-2 py-2 text-right tabular-nums ${index >= istBis ? "bg-plan/15" : ""} ${value === 0 ? "text-muted-foreground/40" : ""} ${value < 0 ? "text-negative" : ""}`}>{value === 0 ? "–" : num(value / 1000)}</td>
+    );
+  };
 
   return (
     <div>
-      <PageHeader title="Forecast je Region" subtitle="Ist ist die Projektleistung, Plan ist Umsatz mit umgekehrtem Vorzeichen plus Bestand minus Kosten" />
+      <PageHeader title="Forecast je Region" subtitle="Ist mit Projektstamm ist Leistung. Aufträge ohne Stamm zeigen das Journal-Ergebnis. Planmonate zeigen den gespeicherten Forecast." />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Kpi label={`Ist Jan–${dash.letzterIstName.slice(0, 3)}`} value={tot(0, istBis)} hint={`${orders.length} Aufträge im Filter`} />
@@ -86,7 +98,7 @@ export function ForecastRegionen() {
             </ResponsiveContainer>
           </div>
         </Panel>
-        <Panel title="Aufträge je Monat" subtitle="Werte in Tsd. €">
+        <Panel title="Aufträge je Monat" subtitle="Werte in Tsd. €. Die Regionssumme ist die Summe der Zellen. Der Tooltip eines Auftrags ohne Stamm zeigt Leistung und Kosten in Euro.">
           <div className="max-h-[70vh] overflow-auto">
             <table className="w-full text-sm">
               <thead className="sticky top-0 z-[1] bg-card">
@@ -111,10 +123,10 @@ export function ForecastRegionen() {
                       {!closed && g.list.map((o) => (
                         <tr key={o.nr} className="border-t border-border hover:bg-muted/50">
                           <td className="sticky left-0 min-w-60 max-w-72 bg-card py-2 pl-8 pr-4">
-                            <p className="truncate font-medium">{o.name || o.nr}</p>
-                            <p className="text-xs text-muted-foreground">{o.nr}{o.status ? ` · ${o.status}` : ""}</p>
+                            <Link to={`/auftrag?nr=${encodeURIComponent(o.nr)}`} className="block truncate font-medium hover:underline">{o.name || o.nr}</Link>
+                            <p className="text-xs text-muted-foreground">{o.nr}{o.status ? ` · ${o.status}` : ""}{o.psp ? ` · PSP ${o.psp}` : ""}</p>
                           </td>
-                          {cols.map((i) => cell(o.monate[i] ?? 0, i))}
+                          {cols.map((i) => cell(o, i))}
                           <td className="whitespace-nowrap px-2 text-right font-semibold">{num(cols.reduce((s, i) => s + (o.monate[i] ?? 0), 0) / 1000)}</td>
                         </tr>
                       ))}

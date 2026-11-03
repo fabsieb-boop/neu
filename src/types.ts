@@ -33,7 +33,16 @@ export type Order = {
   akte: number;
   abgrenzung: number;
 };
-export type ForecastOrder = { nr: string; name: string; region: string; status: string; psp: string; monate: number[] };
+export type ForecastOrder = {
+  nr: string;
+  name: string;
+  region: string;
+  status: string;
+  psp: string;
+  monate: number[];
+  leistungMonate: number[];
+  kostenMonate: number[];
+};
 export type Region = { region: string; akte: number[]; forecast: (number | null)[]; umsatz: number[] };
 export type AuftragDetail = {
   umsatz: number;

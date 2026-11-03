@@ -23,7 +23,7 @@ export const short = (n: string) => n.slice(0, 3);
 export const axis = { fill: "var(--muted-foreground)", fontSize: 12 };
 export const money = (v: number) => <span className={v < 0 ? "text-negative" : ""}>{num(v, 2)} €</span>;
 
-export function Kpi({ label, value, hint, signed, icon, plain }: { label: string; value: number; hint: string; signed?: boolean; icon?: boolean; plain?: boolean }) {
+export function Kpi({ label, value, hint, signed, icon, plain, cents }: { label: string; value: number; hint: string; signed?: boolean; icon?: boolean; plain?: boolean; cents?: boolean }) {
   const neg = value < 0;
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-card">
@@ -31,7 +31,7 @@ export function Kpi({ label, value, hint, signed, icon, plain }: { label: string
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
         {icon ? <Landmark className="h-4 w-4 text-muted-foreground" /> : signed ? (neg ? <ArrowDownRight className="h-4 w-4 text-negative" /> : <ArrowUpRight className="h-4 w-4 text-positive" />) : null}
       </div>
-      <p className={`mt-3 font-display text-2xl font-semibold tracking-tight ${signed && neg ? "text-negative" : ""}`}>{plain ? num(value) : eur(value, true)}</p>
+      <p className={`mt-3 font-display text-2xl font-semibold tracking-tight ${signed && neg ? "text-negative" : ""}`}>{plain ? num(value) : cents ? `${num(value, 2)} €` : eur(value, true)}</p>
       <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
     </div>
   );

@@ -956,24 +956,48 @@ def build(allowed_regions: set[str] | None = None) -> dict:
                 sums[p["groesse"]] = sums.get(p["groesse"], 0.0) + p["wert"]
         return -sums.get("umsatz", 0.0) + sums.get("ba", 0.0) - sums.get("kosten", 0.0)
 
-    def serie(nr: str) -> list[float]:
-        werte = []
+    def leistung_und_kosten(nr: str, monat: int) -> tuple[float, float]:
+        treffer = [z for z in zeilen if passt(z, nr, monat=monat)]
+        return (
+            sum(z["leistung"] for z in treffer),
+            sum(z["kvar"] + z["kfix"] + z["umlage"] for z in treffer),
+        )
+
+    def serie(nr: str) -> tuple[list[float], list[float], list[float]]:
+        """Angezeigte Monate, Leistung und Kosten.
+
+        Aufträge mit Stamm behalten im Ist die Leistung. Aufträge ohne Stamm
+        zeigen das Journal-Ergebnis, also Leistung minus Kosten, damit die
+        Zeile, die Regionssumme und die Akte dieselbe Zahl verwenden.
+        """
+        gezeigt: list[float] = []
+        leistung_monate: list[float] = []
+        kosten_monate: list[float] = []
         for m in range(1, 13):
             plan = planwert(nr, m)
             if m <= letzter or (nr in ohne_stamm and plan == 0):
                 if nr in ohne_stamm:
-                    leistung = sum(z["leistung"] for z in zeilen if passt(z, nr, monat=m))
-                    kosten = sum(z["kvar"] + z["kfix"] + z["umlage"] for z in zeilen if passt(z, nr, monat=m))
-                    werte.append(leistung if leistung else -kosten)
+                    leistung, kosten = leistung_und_kosten(nr, m)
+                    gezeigt.append(leistung - kosten)
+                    leistung_monate.append(leistung)
+                    kosten_monate.append(kosten)
                 else:
-                    werte.append(sum(
+                    leistung = sum(
                         z["leistung"]
                         for z in zeilen
-                        if z["monat"] == m and z["projekt_nr"] == nr and z["ergebnisrelevant"] and z["kostentraeger"] == "Projekt"
-                    ))
+                        if z["monat"] == m
+                        and z["projekt_nr"] == nr
+                        and z["ergebnisrelevant"]
+                        and z["kostentraeger"] == "Projekt"
+                    )
+                    gezeigt.append(leistung)
+                    leistung_monate.append(leistung)
+                    kosten_monate.append(0.0)
             else:
-                werte.append(plan)
-        return werte
+                gezeigt.append(plan)
+                leistung_monate.append(0.0)
+                kosten_monate.append(0.0)
+        return gezeigt, leistung_monate, kosten_monate
 
     orders = []
     gelistet = [nr["projekt_nr"] for nr in con.execute("SELECT projekt_nr FROM auftrag_liste ORDER BY zeile")]
@@ -1040,13 +1064,16 @@ def build(allowed_regions: set[str] | None = None) -> dict:
     for nr in nummern:
         s = stamm.get(nr)
         p = plan_name.get(nr)
+        gezeigt, leistung_monate, kosten_monate = serie(nr)
         forecast_orders.append({
             "nr": nr,
             "name": (s["name"] if s and s["name"] else p["auftragname"] if p and p["auftragname"] else journal_title(zeilen, nr)),
             "region": order_region(nr, s, p, ohne_stamm=nr in ohne_stamm),
             "status": s["status"] if s else ("OHNE STAMM" if nr in ohne_stamm else ""),
             "psp": psp_from_auftrag(nr),
-            "monate": serie(nr),
+            "monate": gezeigt,
+            "leistungMonate": leistung_monate,
+            "kostenMonate": kosten_monate,
         })
 
     def auftrag_detail(nr: str) -> dict:
@@ -1229,23 +1256,32 @@ def build(allowed_regions: set[str] | None = None) -> dict:
     return payload
 
 
+def booking_region(nr: str, region: str, offene: set[str]) -> str:
+    """Region der Buchung. Fehlt der Stamm, gilt die PSP in der Auftragsnummer."""
+    if region != _OHNE_STAMM or nr not in offene:
+        return region
+    return region_for_psp(psp_from_auftrag(nr)) or region
+
+
 def journal_rows(allowed_regions: set[str] | None = None) -> list[dict]:
     con = connect()
     jahr = con.execute("SELECT jahr FROM parameter").fetchone()["jahr"]
-    rows = [
-        {
+    offene = set(journal_orders_without_master(con))
+    rows = []
+    for r in con.execute("SELECT * FROM v_zeile WHERE jahr = ? ORDER BY datum, id", (jahr,)):
+        region = booking_region(r["projekt_nr"], r["region"], offene)
+        if allowed_regions is not None and region not in allowed_regions:
+            continue
+        rows.append({
             "id": r["id"], "datum": r["datum"], "monat": r["monat"], "belegart": r["belegart"],
             "beleg": r["belegnummer"], "nr": r["projekt_nr"], "projekt": r["projektname"],
-            "region": r["region"], "kostenart": r["konto"], "text": r["text"], "wert": r["wert"],
+            "region": region, "kostenart": r["konto"], "text": r["text"], "wert": r["wert"],
             "stufe": r["db_stufe"], "guvGruppe": r["guv_gruppe"],
             "belegkreis": r["belegkreis"], "kostentraeger": r["kostentraeger"],
             "ergebnisrelevant": bool(r["ergebnisrelevant"]), "leistung": r["leistung"],
             "kvar": r["kvar"], "kfix": r["kfix"], "umlage": r["umlage"],
             "beitrag": r["beitrag"],
-        }
-        for r in con.execute("SELECT * FROM v_zeile WHERE jahr = ? ORDER BY datum, id", (jahr,))
-        if allowed_regions is None or r["region"] in allowed_regions
-    ]
+        })
     con.close()
     return rows
 
