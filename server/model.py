@@ -796,41 +796,103 @@ def _journal_overrides(zeilen: list[dict], monat: int) -> dict[str, float]:
     return overrides
 
 
+def _guv_positions(con: sqlite3.Connection) -> list[dict]:
+    return [
+        dict(row)
+        for row in con.execute("SELECT zeile, position, formel FROM guv_position ORDER BY zeile")
+    ]
+
+
+def _column_from_positions(positionen: list[dict], anchors: dict[str, float]) -> dict[int, float | None]:
+    """Eine GuV-Spalte. Bekannte Summen werden gesetzt, Formeln rechnen danach weiter."""
+    extra: dict[int, float | None] = {}
+    for pos in positionen:
+        if pos["position"] in anchors:
+            extra[pos["zeile"]] = anchors[pos["position"]]
+        elif pos["formel"]:
+            parts = [int(part) for part in pos["formel"].split("+")]
+            numbers = [extra[part] for part in parts]
+            extra[pos["zeile"]] = (
+                None
+                if all(value is None for value in numbers)
+                else sum(value or 0.0 for value in numbers)
+            )
+        else:
+            extra[pos["zeile"]] = None
+    return extra
+
+
+def _write_guv_column(guv: list[dict], monat: int, extra: dict[int, float | None]) -> None:
+    index = monat - 1
+    for row in guv:
+        value = extra[row["zeile"]]
+        if index < len(row["values"]):
+            row["values"][index] = value
+        else:
+            row["values"].append(value)
+
+
+def _plan_anchors(con: sqlite3.Connection, jahr: int, monat: int) -> dict[str, float]:
+    sums: dict[str, float] = {}
+    for row in con.execute(
+        """
+        SELECT groesse, wert FROM forecast_plan
+        WHERE jahr = ? AND monat = ? AND art = 'plan'
+        """,
+        (jahr, monat),
+    ):
+        sums[row["groesse"]] = sums.get(row["groesse"], 0.0) + row["wert"]
+    plan = con.execute(
+        "SELECT overhead FROM ebitda_plan WHERE jahr = ? AND monat = ?",
+        (jahr, monat),
+    ).fetchone()
+    overhead = float(plan["overhead"]) if plan is not None else 0.0
+    bewertet = float(con.execute(
+        """
+        SELECT COALESCE(SUM(betrag), 0) FROM verlust
+        WHERE monat = ? AND gebucht = 1 AND im_forecast = 1 AND nachrichtlich = 0
+        """,
+        (monat,),
+    ).fetchone()[0])
+    return {
+        "Summe Umsatzerlöse": -sums.get("umsatz", 0.0),
+        "Bestandsveraend. UE und FE": sums.get("ba", 0.0),
+        "Vorleistungen": -sums.get("kosten", 0.0),
+        "Sachkosten": overhead + bewertet,
+    }
+
+
+def extend_guv_with_plan(con: sqlite3.Connection, guv: list[dict], jahr: int) -> None:
+    """Hängt Oktober bis Dezember aus Forecast_Plan und EBITDA_Plan an.
+
+    Die Mappe hat für diese Monate keine Einzelkonten. Umsatz, Bestand und
+    Projektkosten kommen aus dem Forecast, der Overhead steht in den Sachkosten.
+    """
+    positionen = _guv_positions(con)
+    for monat in range(SHEET_MONATE + 1, 13):
+        _write_guv_column(guv, monat, _column_from_positions(positionen, _plan_anchors(con, jahr, monat)))
+
+
 def extend_guv_with_journal(
     con: sqlite3.Connection,
     guv: list[dict],
     zeilen: list[dict],
     letzter: int,
 ) -> None:
-    """Hängt freigegebene Monate nach der Excel-GuV aus dem Journal an.
+    """Ersetzt freigegebene Monate nach der Excel-GuV durch das Journal.
 
     Summenzeilen mit einer Buchungsgruppe bekommen diesen Betrag. Darunter
     liegende Einzelzeilen bleiben leer, weil das Journal sie nicht aufteilt.
     """
     if letzter <= SHEET_MONATE:
         return
-    positionen = [
-        dict(row)
-        for row in con.execute("SELECT zeile, position, formel FROM guv_position ORDER BY zeile")
-    ]
+    positionen = _guv_positions(con)
     for monat in range(SHEET_MONATE + 1, letzter + 1):
-        overrides = _journal_overrides(zeilen, monat)
-        extra: dict[int, float | None] = {}
-        for pos in positionen:
-            if pos["position"] in overrides:
-                extra[pos["zeile"]] = overrides[pos["position"]]
-            elif pos["formel"]:
-                parts = [int(part) for part in pos["formel"].split("+")]
-                numbers = [extra[part] for part in parts]
-                extra[pos["zeile"]] = (
-                    None
-                    if all(value is None for value in numbers)
-                    else sum(value or 0.0 for value in numbers)
-                )
-            else:
-                extra[pos["zeile"]] = None
-        for row in guv:
-            row["values"].append(extra[row["zeile"]])
+        _write_guv_column(
+            guv,
+            monat,
+            _column_from_positions(positionen, _journal_overrides(zeilen, monat)),
+        )
 
 
 def _guv_month(guv: list[dict], name: str, monat: int) -> float:
@@ -847,6 +909,7 @@ def build(allowed_regions: set[str] | None = None) -> dict:
     letzter, mappe_monat, freigabe_gesetzt = read_ist_cutoff(con)
     stichtag = date.fromisoformat(parameter["stichtag"])
     guv = guv_matrix(con)
+    extend_guv_with_plan(con, guv, jahr)
     dso = con.execute("SELECT wert FROM liq_parameter WHERE jahr = ? AND schluessel = 'dso_tage'", (jahr,)).fetchone()["wert"]
     dpo = con.execute("SELECT wert FROM liq_parameter WHERE jahr = ? AND schluessel = 'dpo_tage'", (jahr,)).fetchone()["wert"]
     start = con.execute("SELECT saldo FROM liq_bestand ORDER BY rowid DESC LIMIT 1").fetchone()["saldo"]
@@ -892,21 +955,14 @@ def build(allowed_regions: set[str] | None = None) -> dict:
     kenn = []
     for m in range(1, 13):
         ist = m <= letzter
-        if m <= SHEET_MONATE:
-            umsatz, bestand, sonstige = row_values(guv, 8)[m - 1], row_values(guv, 10)[m - 1], row_values(guv, 28)[m - 1]
-            ebitda_guv, abschr = row_values(guv, 74)[m - 1], row_values(guv, 77)[m - 1]
-            finanz, steuern, neutral = row_values(guv, 89)[m - 1], row_values(guv, 57)[m - 1], row_values(guv, 73)[m - 1]
-        elif ist:
-            umsatz = _guv_month(guv, "Summe Umsatzerlöse", m)
-            bestand = _guv_month(guv, "Bestandsveraend. UE und FE", m)
-            sonstige = _guv_month(guv, "Andere sonstige betriebliche Ertraege", m)
-            ebitda_guv = _guv_month(guv, "EBITDA", m)
-            abschr = _guv_month(guv, "Abschreibungen", m)
-            finanz = _guv_month(guv, "Finanzergebnis", m)
-            neutral = _guv_month(guv, "Neutrales Ergebnis", m)
-            steuern = 0.0
-        else:
-            umsatz = bestand = sonstige = ebitda_guv = abschr = finanz = steuern = neutral = 0.0
+        umsatz = _guv_month(guv, "Summe Umsatzerlöse", m)
+        bestand = _guv_month(guv, "Bestandsveraend. UE und FE", m)
+        sonstige = _guv_month(guv, "Andere sonstige betriebliche Ertraege", m)
+        ebitda_guv = _guv_month(guv, "EBITDA", m)
+        abschr = _guv_month(guv, "Abschreibungen", m)
+        finanz = _guv_month(guv, "Finanzergebnis", m)
+        neutral = _guv_month(guv, "Neutrales Ergebnis", m)
+        steuern = _guv_month(guv, "Sonstige Steuern", m)
         kenn.append({
             "m": m, "name": MONATE[m - 1], "ist": ist, "umsatz": umsatz, "bestand": bestand,
             "sonstige": sonstige, "leistung": umsatz + bestand, "ebitdaGuV": ebitda_guv,

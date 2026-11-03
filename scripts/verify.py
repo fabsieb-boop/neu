@@ -161,7 +161,7 @@ def main() -> None:
         for month, expected in enumerate(expected_values):
             close(model_guv[row]["values"][month], expected)
 
-    totals = {row["name"]: sum(row["values"]) for row in data["guv"]}
+    totals = {row["name"]: sum(value or 0 for value in row["values"]) for row in data["guv"]}
     waterfall_end = (
         totals["Summe Umsatzerlöse"]
         + totals["Rohertrag"] - totals["Summe Umsatzerlöse"]
@@ -182,7 +182,17 @@ def main() -> None:
     m1 = data["months"][0]
     close(m1["umsatz"], summe["values"][0])
     close(m1["ebitda"], ebitda["values"][0])
-    close(data["months"][9]["umsatz"], 0)
+    october_umsatz = con.execute(
+        """
+        SELECT -COALESCE(SUM(wert), 0) FROM forecast_plan
+        WHERE jahr = ? AND monat = 10 AND art = 'plan' AND groesse = 'umsatz'
+        """,
+        (data["jahr"],),
+    ).fetchone()[0]
+    if len(summe["values"]) != 12:
+        raise SystemExit(f"GuV hat {len(summe['values'])} Monate")
+    close(data["months"][9]["umsatz"], october_umsatz)
+    close(summe["values"][9], october_umsatz)
     month_ten_plan = con.execute(
         "SELECT operativ + overhead FROM ebitda_plan WHERE jahr = ? AND monat = 10",
         (data["jahr"],),

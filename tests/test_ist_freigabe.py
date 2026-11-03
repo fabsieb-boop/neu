@@ -40,8 +40,15 @@ class IstFreigabeTest(unittest.TestCase):
         self.assertEqual(dashboard["mappeMonat"], 9)
         self.assertFalse(dashboard["freigabeGesetzt"])
         self.assertFalse(october["ist"])
-        self.assertEqual(october["umsatz"], 0)
-        self.assertEqual(len(umsatz["values"]), 9)
+        self.assertAlmostEqual(october["umsatz"], 1351000, places=2)
+        self.assertAlmostEqual(october["ebitda"], 278192, places=2)
+        self.assertEqual(len(umsatz["values"]), 12)
+        self.assertAlmostEqual(umsatz["values"][9], 1351000, places=2)
+        vorleistungen = next(row for row in dashboard["guv"] if row["name"] == "Vorleistungen")
+        sachkosten = next(row for row in dashboard["guv"] if row["name"] == "Sachkosten")
+        self.assertAlmostEqual(vorleistungen["values"][9], -930250, places=2)
+        self.assertAlmostEqual(sachkosten["values"][9], -142558, places=2)
+        self.assertIsNone(next(row for row in dashboard["guv"] if row["name"] == "Erl. sonst. DL Deutschland")["values"][9])
 
     def test_released_october_shows_journal_figures_and_can_return_to_the_sheet(self) -> None:
         before = model.build()
@@ -63,8 +70,9 @@ class IstFreigabeTest(unittest.TestCase):
         self.assertAlmostEqual(october["leistung"], october["umsatz"] + october["bestand"], places=2)
         self.assertAlmostEqual(october["ebitda"], ebitda["values"][9], places=2)
         self.assertNotEqual(round(october["ebitda"], 2), 0)
-        self.assertEqual(len(umsatz["values"]), 10)
+        self.assertEqual(len(umsatz["values"]), 12)
         self.assertAlmostEqual(umsatz["values"][9], -179903.49, places=2)
+        self.assertAlmostEqual(umsatz["values"][10], 2099750, places=2)
         self.assertAlmostEqual(umsatz["values"][8], september_umsatz, places=2)
         self.assertIsNone(leaf["values"][9])
 
@@ -82,11 +90,11 @@ class IstFreigabeTest(unittest.TestCase):
         self.assertEqual(restored["letzterIst"], 9)
         self.assertFalse(restored["freigabeGesetzt"])
         self.assertFalse(restored_october["ist"])
-        self.assertEqual(restored_october["umsatz"], 0)
+        self.assertAlmostEqual(restored_october["umsatz"], 1351000, places=2)
         self.assertAlmostEqual(restored_october["ebitda"], october_plan, places=2)
         self.assertEqual(
             len(next(row for row in restored["guv"] if row["name"] == "Summe Umsatzerlöse")["values"]),
-            9,
+            12,
         )
 
     def test_excel_import_keeps_the_released_month(self) -> None:

@@ -6,14 +6,15 @@ import { buildGuvWaterfall } from "@/lib/guv-waterfall";
 export function GuV() {
   const { dash } = useDash();
   const spalten = dash.guv[0]?.values.length ?? 0;
-  const mon = dash.monate.slice(0, spalten).map((m) => m.slice(0, 3));
+  const mon = dash.monate.slice(0, spalten);
+  const istBis = dash.letzterIst;
   const { wf } = buildGuvWaterfall(dash.guv);
 
   return (
     <div>
-      <PageHeader title="Gewinn- und Verlustrechnung" subtitle={`Januar bis ${dash.letzterIstName}`} />
+      <PageHeader title="Gewinn- und Verlustrechnung" subtitle={`Ist bis ${dash.letzterIstName}, Oktober bis Dezember aus dem Plan`} />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-        <Panel title="Vom Umsatz zum EBITDA" subtitle={`Wasserfall Jan–${mon.at(-1)}`}>
+        <Panel title="Vom Umsatz zum EBITDA" subtitle={`Wasserfall Januar–${mon.at(-1) ?? "Dezember"}, Planmonate mitgerechnet`}>
           <div className="h-80">
             <ResponsiveContainer>
               <BarChart data={wf}>
@@ -36,7 +37,7 @@ export function GuV() {
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
                   <th className="pb-3 font-medium">Position</th>
-                  {mon.map((m) => <th key={m} className="pb-3 text-right font-medium">{m}</th>)}
+                  {mon.map((m, j) => <th key={m} className={`pb-3 text-right font-medium ${j >= istBis ? "text-primary" : ""}`}>{m.slice(0, 3)}{j >= istBis ? " Plan" : ""}</th>)}
                   <th className="pb-3 text-right font-medium">Summe</th>
                 </tr>
               </thead>
@@ -46,7 +47,7 @@ export function GuV() {
                   return (
                     <tr key={g.zeile} className={`border-t border-border ${g.sum ? "bg-muted font-semibold" : ""}`}>
                       <td className="whitespace-nowrap py-2 pl-2 pr-4">{g.name}</td>
-                      {g.values.map((v, j) => <td key={j} className={`whitespace-nowrap px-2 text-right ${v != null && v < 0 ? "text-negative" : ""}`}>{v == null ? "–" : eur(v, true)}</td>)}
+                      {g.values.map((v, j) => <td key={j} className={`whitespace-nowrap px-2 text-right ${j >= istBis ? "bg-plan/15" : ""} ${v != null && v < 0 ? "text-negative" : ""}`}>{v == null ? "–" : eur(v, true)}</td>)}
                       <td className={`whitespace-nowrap pl-2 pr-2 text-right ${t < 0 ? "text-negative" : ""}`}>{eur(t, true)}</td>
                     </tr>
                   );
@@ -54,11 +55,9 @@ export function GuV() {
               </tbody>
             </table>
           </div>
-          {spalten > 9 && (
-            <p className="mt-3 text-xs text-muted-foreground">
-              Ab {dash.monate[9]} stammen die Summen aus dem Journal. Zeilen ohne Buchungsgruppe bleiben offen.
-            </p>
-          )}
+          <p className="mt-3 text-xs text-muted-foreground">
+            Januar bis {dash.letzterIstName} stehen wie in der Mappe. Danach kommen Umsatzerlöse, Bestand und Vorleistungen aus dem Forecast und der Overhead in den Sachkosten aus dem EBITDA-Plan. Einzelkonten gibt es dafür nicht. Ein freigegebener Monat ersetzt diese Spalte durch das Journal.
+          </p>
         </Panel>
       </main>
     </div>
