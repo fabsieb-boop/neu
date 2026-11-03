@@ -123,6 +123,43 @@ class ForecastInputTest(unittest.TestCase):
             ["jahr", "region", "auftrag", "auftragname", "groesse", "art", "monat", "wert"],
         )
 
+    def test_creates_projektakte_with_psp_from_the_order_number(self) -> None:
+        nummer = "P4102307452"
+        self.assertEqual(model.psp_from_auftrag(nummer), "307452")
+        self.assertEqual(model.psp_from_auftrag("P410281020"), "81020")
+        created = model.create_projektakte(nummer, "Asbestsanierung Mannheim", "Süd-West")
+        self.assertEqual(created["psp"], "307452")
+        self.assertGreater(created["belege"], 0)
+
+        with self.connection() as connection:
+            project = connection.execute(
+                "SELECT name, region, regionscode, status, typ FROM projekt WHERE projekt_nr = ?",
+                (nummer,),
+            ).fetchone()
+            linked = connection.execute(
+                """
+                SELECT COUNT(*) FROM buchung
+                WHERE auftrag = ? AND projekt_id IS NOT NULL
+                """,
+                (nummer,),
+            ).fetchone()[0]
+            meldung = connection.execute(
+                "SELECT psp, titel, region FROM kosten_meldung WHERE auftrag = ?",
+                (nummer,),
+            ).fetchone()
+        self.assertEqual(project["region"], "Süd-West")
+        self.assertEqual(project["regionscode"], "30")
+        self.assertEqual(project["status"], "AKTIV")
+        self.assertEqual(project["typ"], "PROJEKT")
+        self.assertEqual(linked, created["belege"])
+        self.assertEqual(meldung["psp"], "307452")
+        self.assertEqual(meldung["region"], "Region Südwest")
+
+        order = next(row for row in model.build()["orders"] if row["nr"] == nummer)
+        self.assertAlmostEqual(order["akte"], -1791.33, places=2)
+        with self.assertRaisesRegex(model.ForecastInputError, "schon im Projektstamm"):
+            model.create_projektakte(nummer, "Noch einmal", "Süd-West")
+
     def test_saves_forecast_for_journal_order_missing_from_master(self) -> None:
         nummer = "P4102307452"
         with self.connection() as connection:

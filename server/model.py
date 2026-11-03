@@ -390,7 +390,27 @@ def user_regions(user: dict) -> set[str] | None:
 
 
 _AUFTRAG_NR = re.compile(r"^[PW]\d{8,}$")
+_AUFTRAG_PSP = re.compile(r"^[PW]4102(\d{5,6}(?:-\d{2})?)$")
 _OHNE_STAMM = "Ohne Zuordnung"
+_REGION_CODE = {"West": "15", "Süd-West": "30", "Ost": "60", "Berlin": "65", "Verwaltung": "50"}
+_PSP_REGION = {code: name for name, code in _REGION_CODE.items()}
+_KV_REGION = {
+    "West": "Dortmund",
+    "Süd-West": "Region Südwest",
+    "Ost": "Region Ost",
+    "Berlin": "Region Berlin",
+    "Verwaltung": "Verwaltung",
+}
+
+
+def psp_from_auftrag(auftrag: str) -> str:
+    """PSP ist der Teil hinter P4102 oder W4102, wie 307452 bei P4102307452."""
+    match = _AUFTRAG_PSP.fullmatch(auftrag.strip())
+    return match.group(1) if match else ""
+
+
+def region_for_psp(psp: str) -> str:
+    return _PSP_REGION.get(psp[:2], "")
 
 
 def journal_orders_without_master(con: sqlite3.Connection) -> list[str]:
@@ -511,6 +531,107 @@ def add_forecast_plan(
             )
         con.commit()
         return saved
+    except Exception:
+        con.rollback()
+        raise
+    finally:
+        con.close()
+
+
+def create_projektakte(
+    auftrag: str,
+    name: str,
+    region: str,
+    allowed_regions: set[str] | None = None,
+) -> dict:
+    """Legt die Projektakte für einen Journal-Auftrag an und hängt die Belege an."""
+    auftrag = auftrag.strip() if isinstance(auftrag, str) else ""
+    name = name.strip() if isinstance(name, str) else ""
+    region = region.strip() if isinstance(region, str) else ""
+    psp = psp_from_auftrag(auftrag)
+    if not psp:
+        raise ForecastInputError(
+            "Aus dieser Auftragsnummer ergibt sich keine PSP-Nummer. "
+            "Bei den Projektakten steht sie hinter P4102 oder W4102, zum Beispiel 307452 bei P4102307452."
+        )
+    if not name:
+        raise ForecastInputError("Bitte einen Namen für die Projektakte eintragen.")
+    if len(name) > 200:
+        raise ForecastInputError("Der Name ist zu lang.")
+    if not region:
+        region = region_for_psp(psp)
+    if region not in _REGION_CODE:
+        raise ForecastInputError("Die Region ist unbekannt.")
+    if allowed_regions is not None and region not in allowed_regions:
+        raise ForecastInputError("Der Auftrag gehört nicht zu Ihrer Region.")
+
+    con = connect()
+    try:
+        existing = con.execute(
+            "SELECT projekt_nr FROM projekt WHERE projekt_nr = ?",
+            (auftrag,),
+        ).fetchone()
+        if existing is not None:
+            raise ForecastInputError("Die Projektakte steht schon im Projektstamm.")
+        bookings = con.execute(
+            "SELECT COUNT(*) FROM buchung WHERE auftrag = ?",
+            (auftrag,),
+        ).fetchone()[0]
+        if not bookings:
+            raise ForecastInputError("Der Auftrag steht nicht im Journal.")
+        other = con.execute(
+            "SELECT auftrag FROM kosten_meldung WHERE psp = ? AND auftrag <> ?",
+            (psp, auftrag),
+        ).fetchone()
+        if other is not None:
+            raise ForecastInputError(
+                f"Die PSP-Nummer {psp} gehört bereits zur Akte {other['auftrag']}."
+            )
+
+        projekt_id = con.execute("SELECT COALESCE(MAX(projekt_id), 0) + 1 FROM projekt").fetchone()[0]
+        con.execute(
+            """
+            INSERT INTO projekt (
+              projekt_id, projekt_nr, name, typ, regionscode, region, status, budget_umsatz, budget_kosten
+            ) VALUES (?, ?, ?, 'PROJEKT', ?, ?, 'AKTIV', 0, 0)
+            """,
+            (projekt_id, auftrag, name, _REGION_CODE[region], region),
+        )
+        linked = con.execute(
+            """
+            UPDATE buchung
+            SET projekt_id = ?
+            WHERE auftrag = ? AND projekt_id IS NULL
+            """,
+            (projekt_id, auftrag),
+        ).rowcount
+        if con.execute(
+            "SELECT 1 FROM kosten_meldung WHERE auftrag = ?",
+            (auftrag,),
+        ).fetchone() is None:
+            zeile = con.execute("SELECT COALESCE(MAX(zeile), 0) + 1 FROM kosten_meldung").fetchone()[0]
+            con.execute(
+                """
+                INSERT INTO kosten_meldung (
+                  zeile, psp, auftrag, titel, region, umsatz_meldung, kosten_meldung, ergebnis_meldung, vertrag_umsatz
+                ) VALUES (?, ?, ?, ?, ?, 0, 0, 0, 0)
+                """,
+                (zeile, psp, auftrag, name, _KV_REGION[region]),
+            )
+        if con.execute(
+            "SELECT 1 FROM auftrag_liste WHERE projekt_nr = ?",
+            (auftrag,),
+        ).fetchone() is None:
+            zeile = con.execute("SELECT COALESCE(MAX(zeile), 0) + 1 FROM auftrag_liste").fetchone()[0]
+            con.execute("INSERT INTO auftrag_liste (zeile, projekt_nr) VALUES (?, ?)", (zeile, auftrag))
+        con.commit()
+        return {
+            "nr": auftrag,
+            "name": name,
+            "region": region,
+            "psp": psp,
+            "belege": int(linked),
+        }
     except Exception:
         con.rollback()
         raise
@@ -729,6 +850,7 @@ def build(allowed_regions: set[str] | None = None) -> dict:
             "name": (s["name"] if s and s["name"] else p["auftragname"] if p else ""),
             "region": (s["region"] if s and s["region"] else p["region"] if p else (_OHNE_STAMM if nr in ohne_stamm else "")),
             "status": s["status"] if s else ("OHNE STAMM" if nr in ohne_stamm else ""),
+            "psp": psp_from_auftrag(nr),
             "monate": serie(nr),
         })
 

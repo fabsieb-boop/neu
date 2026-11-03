@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Check, Search, X } from "lucide-react";
 import { useDash } from "@/data";
-import { eur, Kpi, Panel, PageHeader } from "@/components/dash";
+import { eur, num, Kpi, Panel, PageHeader } from "@/components/dash";
 import type { Dash } from "@/types";
 
 const ARTEN = {
@@ -21,7 +21,7 @@ const parseAmount = (raw: string) => {
 const shownValue = (groesse: string, wert: number) => groesse === "umsatz" ? -wert : wert;
 
 export function ForecastEingabe() {
-  const { dash, updateDash } = useDash();
+  const { dash, updateDash, updateJournal } = useDash();
   const [projektNr, setProjektNr] = useState("");
   const [groesse, setGroesse] = useState<Art>("umsatz");
   const [werte, setWerte] = useState<string[]>(Array(12).fill(""));
@@ -47,6 +47,7 @@ export function ForecastEingabe() {
     return [...active, ...fromJournal].sort((a, b) => `${a.region} ${a.name} ${a.nr}`.localeCompare(`${b.region} ${b.name} ${b.nr}`, "de"));
   }, [dash.forecastOrders, dash.projektstamm]);
   const selected = projects.find((project) => project.nr === projektNr);
+  const selectedOrder = dash.forecastOrders.find((order) => order.nr === projektNr);
   const existing = dash.forecastPlan.filter((entry) => entry.nr === projektNr);
   const existingPlan = existing.filter((entry) => entry.art === "plan");
   const sumExisting = (art: Art) => existingPlan
@@ -134,7 +135,7 @@ export function ForecastEingabe() {
                 <span className="font-semibold">{selected.name || selected.nr}</span>
                 <span className="ml-2 text-muted-foreground">{selected.nr} · {selected.region} · {selected.typ}</span>
                 {selected.status === "OHNE STAMM" && (
-                  <p className="mt-1 text-muted-foreground">Der Auftrag steht im Journal und fehlt im Projektstamm. Planwerte werden unter Ohne Zuordnung gespeichert.</p>
+                  <p className="mt-1 text-muted-foreground">PSP {selectedOrder?.psp || "–"}. Das ist der Teil hinter P4102. Die Belege hängen noch nicht an einer Projektakte.</p>
                 )}
               </div>
             )}
@@ -197,6 +198,19 @@ export function ForecastEingabe() {
           </form>
         </Panel>
 
+        {selected?.status === "OHNE STAMM" && (
+          <AkteAnlegen
+            nr={selected.nr}
+            psp={selectedOrder?.psp || ""}
+            onCreated={async (dashboard) => {
+              updateDash(dashboard);
+              const response = await fetch("/api/journal");
+              if (response.ok) updateJournal(await response.json());
+              setSuccess(`Projektakte angelegt. PSP ${selectedOrder?.psp}.`);
+            }}
+          />
+        )}
+
         {selected && (
           <>
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -243,6 +257,66 @@ export function ForecastEingabe() {
         )}
       </main>
     </div>
+  );
+}
+
+const PSP_REGION: Record<string, string> = { "15": "West", "30": "Süd-West", "60": "Ost", "65": "Berlin" };
+
+function AkteAnlegen({ nr, psp, onCreated }: { nr: string; psp: string; onCreated: (dash: Dash) => Promise<void> }) {
+  const { dash, journal } = useDash();
+  const belege = journal.filter((row) => row.nr === nr);
+  const summe = belege.reduce((sum, row) => sum + row.wert, 0);
+  const [name, setName] = useState("");
+  const [region, setRegion] = useState(PSP_REGION[psp.slice(0, 2)] || dash.regions[0]?.region || "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError("");
+    setSaving(true);
+    try {
+      const response = await fetch("/api/projektakte", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ auftrag: nr, name, region }),
+      });
+      const result = await response.json() as { error?: string; dashboard?: Dash };
+      if (!response.ok || !result.dashboard) throw new Error(result.error || "Die Projektakte konnte nicht angelegt werden.");
+      await onCreated(result.dashboard);
+      setName("");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Die Projektakte konnte nicht angelegt werden.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Panel title="Projektakte anlegen" subtitle={psp ? `PSP ${psp}` : "PSP fehlt"}>
+      <form onSubmit={submit} className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Die PSP-Nummer ist {psp || "nicht ableitbar"}. Sie steht hinter P4102 in der Auftragsnummer {nr}.
+          Im Journal liegen {belege.length.toLocaleString("de-DE")} Belege über {num(summe, 2)} €. Nach dem Anlegen zählt die Akte diese Belege.
+        </p>
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_16rem]">
+          <label className="text-xs font-medium text-muted-foreground">
+            Name
+            <input value={name} onChange={(event) => setName(event.target.value)} required maxLength={200} className="mt-1 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground" />
+          </label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Region
+            <select value={region} onChange={(event) => setRegion(event.target.value)} className="mt-1 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground">
+              {dash.regions.map((entry) => <option key={entry.region} value={entry.region}>{entry.region}</option>)}
+            </select>
+          </label>
+        </div>
+        <button type="submit" disabled={saving || !psp} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60">
+          {saving ? "Wird angelegt …" : "Projektakte anlegen"}
+        </button>
+        {error && <p role="status" className="rounded-lg bg-negative/10 px-3 py-2 text-sm text-negative">{error}</p>}
+      </form>
+    </Panel>
   );
 }
 

@@ -35,6 +35,7 @@ from server.model import (
     ForecastInputError,
     SystemInputError,
     add_forecast_plan,
+    create_projektakte,
     annual_document,
     annual_entries,
     authenticate,
@@ -431,6 +432,24 @@ class Handler(BaseHTTPRequestHandler):
                     str(payload.get("rolle", "NEUTRAL")),
                 )
                 self._json({"user": created, "setupComplete": False}, status=201)
+                return
+            if path == "/api/projektakte":
+                roles = set(user["rollen"])
+                if not roles & {"ADMIN", "CONTROLLING", "FORECAST-PFLEGE"}:
+                    self._json({"error": "Keine Berechtigung für die Projektakte."}, status=403)
+                    return
+                payload = self._read_json()
+                with self.data_lock:
+                    akte = create_projektakte(
+                        str(payload.get("auftrag", "")),
+                        str(payload.get("name", "")),
+                        str(payload.get("region", "")),
+                        user_regions(user),
+                    )
+                    Handler.dashboard = build()
+                    Handler.scoped_dashboards.clear()
+                    dashboard = self._dashboard_for(user)
+                self._json({"akte": akte, "dashboard": dashboard}, status=201)
                 return
             if path == "/api/forecast":
                 roles = set(user["rollen"])
