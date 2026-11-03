@@ -862,15 +862,80 @@ def _plan_anchors(con: sqlite3.Connection, jahr: int, monat: int) -> dict[str, f
     }
 
 
+def _leaf_rows(positionen: list[dict], zeile: int) -> list[int]:
+    children = {
+        pos["zeile"]: [int(part) for part in pos["formel"].split("+")] if pos["formel"] else []
+        for pos in positionen
+    }
+
+    def walk(current: int) -> list[int]:
+        below = children.get(current, [])
+        if not below:
+            return [current]
+        found: list[int] = []
+        for child in below:
+            found.extend(walk(child))
+        return found
+
+    return walk(zeile)
+
+
+def _spread_on_accounts(positionen: list[dict], ist: dict[int, list[float]], anchors: dict[str, float]) -> dict[int, float]:
+    """Legt eine Plansumme auf die Konten, die sie in den Ist-Monaten getragen haben."""
+    zeile_of = {pos["position"]: pos["zeile"] for pos in positionen}
+    amounts: dict[int, float] = {}
+    for name, target in anchors.items():
+        leaves = _leaf_rows(positionen, zeile_of[name])
+        weights = [(zeile, sum(ist.get(zeile, []))) for zeile in leaves]
+        weighted = [(zeile, weight) for zeile, weight in weights if abs(weight) >= 0.005]
+        if not weighted:
+            if leaves:
+                amounts[leaves[0]] = amounts.get(leaves[0], 0.0) + target
+            continue
+        total = sum(weight for _, weight in weighted)
+        running = 0.0
+        for index, (zeile, weight) in enumerate(weighted):
+            if index == len(weighted) - 1:
+                share = target - running
+            else:
+                share = target * weight / total
+                running += share
+            amounts[zeile] = amounts.get(zeile, 0.0) + share
+    return amounts
+
+
+def _column_from_leaves(positionen: list[dict], leaves: dict[int, float]) -> dict[int, float | None]:
+    extra: dict[int, float | None] = {}
+    for pos in positionen:
+        if not pos["formel"] and pos["zeile"] in leaves:
+            extra[pos["zeile"]] = leaves[pos["zeile"]]
+        elif pos["formel"]:
+            parts = [int(part) for part in pos["formel"].split("+")]
+            numbers = [extra[part] for part in parts]
+            extra[pos["zeile"]] = (
+                None
+                if all(value is None for value in numbers)
+                else sum(value or 0.0 for value in numbers)
+            )
+        else:
+            extra[pos["zeile"]] = None
+    return extra
+
+
 def extend_guv_with_plan(con: sqlite3.Connection, guv: list[dict], jahr: int) -> None:
     """Hängt Oktober bis Dezember aus Forecast_Plan und EBITDA_Plan an.
 
-    Die Mappe hat für diese Monate keine Einzelkonten. Umsatz, Bestand und
-    Projektkosten kommen aus dem Forecast, der Overhead steht in den Sachkosten.
+    Die Summen sind der Plan. Sie werden auf die Konten im Verhältnis der
+    Ist-Monate verteilt, damit der Kontenplan auch in den Planmonaten steht.
     """
     positionen = _guv_positions(con)
+    ist = {
+        row["zeile"]: [float(value or 0.0) for value in row["values"][:SHEET_MONATE]]
+        for row in guv
+    }
     for monat in range(SHEET_MONATE + 1, 13):
-        _write_guv_column(guv, monat, _column_from_positions(positionen, _plan_anchors(con, jahr, monat)))
+        leaves = _spread_on_accounts(positionen, ist, _plan_anchors(con, jahr, monat))
+        _write_guv_column(guv, monat, _column_from_leaves(positionen, leaves))
 
 
 def extend_guv_with_journal(

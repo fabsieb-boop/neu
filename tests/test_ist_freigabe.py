@@ -48,7 +48,13 @@ class IstFreigabeTest(unittest.TestCase):
         sachkosten = next(row for row in dashboard["guv"] if row["name"] == "Sachkosten")
         self.assertAlmostEqual(vorleistungen["values"][9], -930250, places=2)
         self.assertAlmostEqual(sachkosten["values"][9], -142558, places=2)
-        self.assertIsNone(next(row for row in dashboard["guv"] if row["name"] == "Erl. sonst. DL Deutschland")["values"][9])
+        erloese = next(row for row in dashboard["guv"] if row["name"] == "Erl. sonst. DL Deutschland")
+        waren = next(row for row in dashboard["guv"] if row["name"] == "Erl. Waren, Prod.,Verwert. Deutschland")
+        schmaelerung = next(row for row in dashboard["guv"] if row["name"] == "Erloesschmaelerungen")
+        self.assertAlmostEqual(erloese["values"][9] + waren["values"][9] + schmaelerung["values"][9], 1351000, places=2)
+        self.assertGreater(erloese["values"][9], 1_000_000)
+        fremd = next(row for row in dashboard["guv"] if row["name"] == "Uebrige bezog. Leistg.")
+        self.assertLess(fremd["values"][9], -800_000)
 
     def test_released_october_shows_journal_figures_and_can_return_to_the_sheet(self) -> None:
         before = model.build()

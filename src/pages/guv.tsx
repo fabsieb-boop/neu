@@ -56,7 +56,7 @@ export function GuV() {
             </table>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Januar bis {dash.letzterIstName} stehen wie in der Mappe. Danach kommen Umsatzerlöse, Bestand und Vorleistungen aus dem Forecast und der Overhead in den Sachkosten aus dem EBITDA-Plan. Einzelkonten gibt es dafür nicht. Ein freigegebener Monat ersetzt diese Spalte durch das Journal.
+            Januar bis {dash.letzterIstName} stehen wie in der Mappe. Danach bleibt die Summe der Plan. Sie liegt auf denselben Konten wie in den Ist-Monaten, im gleichen Verhältnis. Ein freigegebener Monat ersetzt diese Spalte durch das Journal.
           </p>
         </Panel>
       </main>
