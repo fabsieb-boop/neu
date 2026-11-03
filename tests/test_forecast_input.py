@@ -203,18 +203,28 @@ class ForecastInputTest(unittest.TestCase):
         self.assertAlmostEqual(forecast["leistungMonate"][7], 0, places=2)
         self.assertAlmostEqual(forecast["kostenMonate"][8], 885.2, places=2)
         self.assertAlmostEqual(forecast["monate"][8], -885.2, places=2)
-        self.assertAlmostEqual(forecast["kostenMonate"][9], 2500, places=2)
-        self.assertAlmostEqual(forecast["monate"][9], -2500, places=2)
-        self.assertAlmostEqual(sum(forecast["monate"]), report["akte"], places=2)
+        self.assertAlmostEqual(forecast["leistungMonate"][9], 0, places=2)
+        self.assertAlmostEqual(forecast["kostenMonate"][9], 0, places=2)
+        self.assertAlmostEqual(forecast["monate"][9], 0, places=2)
         self.assertEqual(report["region"], "West")
         self.assertAlmostEqual(report["leistung"], 0, places=2)
         self.assertLess(report["akte"], 0)
         self.assertEqual(neighbor["region"], "West")
-        self.assertAlmostEqual(neighbor["leistungMonate"][9], 22500, places=2)
-        self.assertAlmostEqual(neighbor["kostenMonate"][9], 12948.73, places=2)
-        self.assertAlmostEqual(neighbor["monate"][9], 22500 - 12948.73, places=2)
-        self.assertAlmostEqual(sum(neighbor["monate"]), neighbor_report["akte"], places=2)
+        self.assertAlmostEqual(neighbor["monate"][8], -5314.9, places=2)
+        self.assertAlmostEqual(neighbor["monate"][9], 0, places=2)
         self.assertAlmostEqual(neighbor_report["leistung"], 22500, places=2)
+        october = dashboard["forecast"][9]
+        self.assertFalse(october["ist"])
+        self.assertAlmostEqual(october["umsatzPlan"], 1351000, places=2)
+        self.assertAlmostEqual(october["kostenPlan"], 930250, places=2)
+        self.assertAlmostEqual(october["angezeigt"], 420750, places=2)
+        self.assertAlmostEqual(
+            sum(row["monate"][9] for row in dashboard["forecastOrders"]),
+            october["angezeigt"],
+            places=2,
+        )
+        self.assertAlmostEqual(october["leistungJournal"], -237285.29, places=2)
+        self.assertEqual(dashboard["months"][9]["auftragsergebnis"], 0)
 
         west = model.build({"West"})
         self.assertIn("P4102157474", {row["nr"] for row in west["forecastOrders"]})

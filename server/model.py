@@ -911,7 +911,7 @@ def build(allowed_regions: set[str] | None = None) -> dict:
             "m": m, "name": MONATE[m - 1], "ist": ist, "umsatz": umsatz, "bestand": bestand,
             "sonstige": sonstige, "leistung": umsatz + bestand, "ebitdaGuV": ebitda_guv,
             "abschreibungen": abschr, "finanzergebnis": finanz, "steuern": steuern, "neutral": neutral,
-            "auftragsergebnis": sum(z["ergebnis_akte"] for z in zeilen if z["monat"] == m),
+            "auftragsergebnis": sum(z["ergebnis_akte"] for z in zeilen if z["monat"] == m) if ist else 0.0,
         })
 
     plan = {r["monat"]: r for r in con.execute("SELECT monat, operativ, overhead, bewertung FROM ebitda_plan WHERE jahr = ?", (jahr,))}
@@ -967,15 +967,16 @@ def build(allowed_regions: set[str] | None = None) -> dict:
         """Angezeigte Monate, Leistung und Kosten.
 
         Aufträge mit Stamm behalten im Ist die Leistung. Aufträge ohne Stamm
-        zeigen das Journal-Ergebnis, also Leistung minus Kosten, damit die
-        Zeile, die Regionssumme und die Akte dieselbe Zahl verwenden.
+        zeigen im Ist das Journal-Ergebnis, also Leistung minus Kosten.
+        Ab dem ersten Planmonat gilt nur der gespeicherte Forecast.
         """
         gezeigt: list[float] = []
         leistung_monate: list[float] = []
         kosten_monate: list[float] = []
         for m in range(1, 13):
             plan = planwert(nr, m)
-            if m <= letzter or (nr in ohne_stamm and plan == 0):
+            # Nach dem letzten Ist-Monat gilt der Plan, auch wenn das Journal schon Buchungen hat.
+            if m <= letzter:
                 if nr in ohne_stamm:
                     leistung, kosten = leistung_und_kosten(nr, m)
                     gezeigt.append(leistung - kosten)

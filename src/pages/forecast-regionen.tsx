@@ -55,7 +55,7 @@ export function ForecastRegionen() {
 
   return (
     <div>
-      <PageHeader title="Forecast je Region" subtitle="Ist mit Projektstamm ist Leistung. Aufträge ohne Stamm zeigen das Journal-Ergebnis. Planmonate zeigen den gespeicherten Forecast." />
+      <PageHeader title="Forecast je Region" subtitle="Bis zum letzten Ist-Monat steht die Leistung, bei Aufträgen ohne Stamm das Journal-Ergebnis. Danach steht nur der gespeicherte Plan." />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Kpi label={`Ist Jan–${dash.letzterIstName.slice(0, 3)}`} value={tot(0, istBis)} hint={`${orders.length} Aufträge im Filter`} />
@@ -98,7 +98,7 @@ export function ForecastRegionen() {
             </ResponsiveContainer>
           </div>
         </Panel>
-        <Panel title="Aufträge je Monat" subtitle="Werte in Tsd. €. Die Regionssumme ist die Summe der Zellen. Der Tooltip eines Auftrags ohne Stamm zeigt Leistung und Kosten in Euro.">
+        <Panel title="Aufträge je Monat" subtitle="Werte in Tsd. €. Planmonate kommen aus dem Forecast, nicht aus dem Journal. Die Regionssumme ist die Summe der Zellen.">
           <div className="max-h-[70vh] overflow-auto">
             <table className="w-full text-sm">
               <thead className="sticky top-0 z-[1] bg-card">

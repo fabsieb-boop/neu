@@ -28,7 +28,7 @@ export function Auftrag() {
               <Kpi label="Ergebnis Akte" value={d.akte} hint={d.leistung ? `Marge ${((d.akte / d.leistung) * 100).toFixed(1)} %` : "Leistung minus Kosten"} signed cents />
             </section>
             {bewegteMonate.length > 0 && (
-              <Panel title="Monate mit Buchungen" subtitle="Leistung, Kosten und Ergebnis in Euro">
+              <Panel title="Monate mit Buchungen" subtitle={`Journal in Euro. Ab ${dash.monate[dash.letzterIst] ?? "dem nächsten Monat"} gilt im Forecast der Plan.`}>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
