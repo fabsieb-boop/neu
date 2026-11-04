@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import calendar
+import json
 import posixpath
+import re
 import sqlite3
 import zipfile
 from datetime import date, timedelta
@@ -39,7 +42,98 @@ SHEETS = (
     "Regionen",
     "Auftrag",
 )
-SYSTEM_TABLES = ("benutzer", "bericht_vorlage", "ja_stand", "import_protokoll")
+_AUFTRAG_NR = re.compile(r"^[PW]\d{8,}$")
+_AUFTRAG_PSP = re.compile(r"^[PW]4102(\d{5,6}(?:-\d{2})?)$")
+_REGION_CODE = {
+    "West": "WEST",
+    "Süd-West": "SW",
+    "Sued-West": "SW",
+    "Ost": "OST",
+    "Berlin": "BER",
+    "Verwaltung": "VERW",
+}
+_PSP_REGION = {"15": "WEST", "30": "SW", "60": "OST", "65": "BER", "50": "VERW"}
+_ROLE_CODE = {
+    "ADMIN": "ADMIN",
+    "CONTROLLING": "CONTROLLING",
+    "GF": "GF",
+    "CHEF": "GF",
+    "PROJEKTLEITER": "PROJEKTLEITER",
+    "PROJEKTLEITUNG": "PROJEKTLEITER",
+    "LESEN": "LESEN",
+    "NEUTRAL": "LESEN",
+    "SACHBEARBEITUNG": "LESEN",
+    "FORECAST-PFLEGE": "CONTROLLING",
+}
+_NEUTRAL_KONTEN = {"201000", "231500", "251000"}
+_STEUER_KONTEN = {"401030", "430010", "430040"}
+_ERTRAG = {"UMSATZ", "BESTANDSVERAENDERUNG", "SONST_ERTRAEGE"}
+_POSITION = {
+    "1": "UMSATZ",
+    "2": "BESTANDSVERAENDERUNG",
+    "3": "SONST_ERTRAEGE",
+    "4": "MATERIAL_FREMD",
+    "5": "MATERIAL_FREMD",
+    "6": "PERSONAL",
+    "7": "ABSCHREIBUNGEN",
+    "8": "SONST_AUFWAND",
+    "9": "NEUTRAL_ERGEBNIS",
+    "10": "ZINSEN_STEUERN",
+    "11": "ZINSEN_STEUERN",
+    "12": "NEUTRAL_ERGEBNIS",
+}
+
+LIQ_POSTEN_DDL = """
+CREATE TABLE IF NOT EXISTS liq_posten (
+    posten_id        INTEGER PRIMARY KEY,
+    szenario_id      INTEGER NOT NULL REFERENCES liq_szenario (szenario_id) ON DELETE CASCADE,
+    projekt_id       INTEGER REFERENCES projekt (projekt_id),
+    datum            TEXT NOT NULL,
+    richtung         TEXT NOT NULL CHECK (richtung IN ('EIN', 'AUS')),
+    kategorie        TEXT NOT NULL
+                     CHECK (kategorie IN ('AUSGANGSRECHNUNG', 'ANZAHLUNG', 'EINGANGSRECHNUNG', 'PERSONAL', 'STEUER', 'SONSTIGE')),
+    betrag           REAL NOT NULL CHECK (betrag >= 0),
+    sicherheit       TEXT NOT NULL DEFAULT 'WAHRSCHEINLICH'
+                     CHECK (sicherheit IN ('SICHER', 'WAHRSCHEINLICH', 'UNSICHER')),
+    quelle           TEXT NOT NULL DEFAULT 'MANUELL'
+                     CHECK (quelle IN ('FORECAST', 'UNTERAUFTRAG_KV', 'BESTELLUNG', 'MANUELL')),
+    kv_position_id   INTEGER,
+    forecast_wert_id INTEGER REFERENCES forecast_wert (forecast_wert_id),
+    bemerkung        TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_liq_posten_szenario_datum ON liq_posten (szenario_id, datum);
+"""
+
+BENUTZER_DDL = """
+CREATE TABLE IF NOT EXISTS benutzer (
+    benutzer_id      INTEGER PRIMARY KEY,
+    login            TEXT NOT NULL UNIQUE,
+    anzeigename      TEXT NOT NULL,
+    email            TEXT,
+    passwort_hash    TEXT NOT NULL,
+    aktiv            INTEGER NOT NULL DEFAULT 1 CHECK (aktiv IN (0, 1)),
+    muss_pw_aendern  INTEGER NOT NULL DEFAULT 1 CHECK (muss_pw_aendern IN (0, 1)),
+    angelegt_am      TEXT NOT NULL DEFAULT (datetime('now')),
+    letzte_anmeldung TEXT
+);
+CREATE TABLE IF NOT EXISTS benutzer_rolle (
+    benutzer_id INTEGER NOT NULL REFERENCES benutzer (benutzer_id) ON DELETE CASCADE,
+    rolle_id    INTEGER NOT NULL REFERENCES rolle (rolle_id),
+    PRIMARY KEY (benutzer_id, rolle_id)
+);
+"""
+
+BENUTZER_ZUGRIFF_DDL = """
+CREATE TABLE IF NOT EXISTS benutzer_zugriff (
+    zugriff_id     INTEGER PRIMARY KEY,
+    benutzer_id    INTEGER NOT NULL REFERENCES benutzer (benutzer_id) ON DELETE CASCADE,
+    region_id      INTEGER REFERENCES region (region_id),
+    projekt_id     INTEGER REFERENCES projekt (projekt_id) ON DELETE CASCADE,
+    darf_schreiben INTEGER NOT NULL DEFAULT 0 CHECK (darf_schreiben IN (0, 1)),
+    CHECK (region_id IS NOT NULL OR projekt_id IS NOT NULL)
+);
+CREATE INDEX IF NOT EXISTS ix_benutzer_zugriff_benutzer ON benutzer_zugriff (benutzer_id);
+"""
 
 
 def col_row(ref: str) -> tuple[int, int]:
@@ -190,309 +284,800 @@ def sum_rows(formula_text: str) -> str:
     return "+".join(rows)
 
 
-def _saved_system_rows(db_path: Path) -> dict[str, tuple[list[str], list[tuple]]]:
+def _columns(connection: sqlite3.Connection, table: str) -> list[str]:
+    exists = connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+        (table,),
+    ).fetchone()
+    if not exists:
+        return []
+    return [row[1] for row in connection.execute(f'PRAGMA table_info("{table}")')]
+
+
+def _roles_from_json(raw: str | None) -> list[str]:
+    try:
+        value = json.loads(raw or "[]")
+    except json.JSONDecodeError:
+        return ["LESEN"]
+    if not isinstance(value, list):
+        return ["LESEN"]
+    codes = []
+    for item in value:
+        code = _ROLE_CODE.get(str(item))
+        if code and code not in codes:
+            codes.append(code)
+    return codes or ["LESEN"]
+
+
+def snapshot_preserved(db_path: Path) -> dict:
+    """Benutzer, Kontoauszug und eine abweichende Ist-Freigabe vor dem Neuaufbau."""
+    empty = {"users": [], "bank": [], "logs": [], "ist_bis": None}
     if not db_path.exists():
-        return {}
-    saved: dict[str, tuple[list[str], list[tuple]]] = {}
+        return empty
     with sqlite3.connect(db_path) as connection:
-        for table in SYSTEM_TABLES:
-            exists = connection.execute(
-                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
-                (table,),
-            ).fetchone()
-            if not exists:
-                continue
-            columns = [
-                row[1]
-                for row in connection.execute(f'PRAGMA table_info("{table}")')
-            ]
-            rows = [
-                tuple(row)
-                for row in connection.execute(f'SELECT * FROM "{table}"')
-            ]
-            saved[table] = (columns, rows)
-    return saved
+        connection.row_factory = sqlite3.Row
+        users = _snapshot_users(connection)
+        bank = _snapshot_bank(connection)
+        logs = _snapshot_logs(connection)
+        ist_bis = _snapshot_cutoff(connection)
+    return {"users": users, "bank": bank, "logs": logs, "ist_bis": ist_bis}
 
 
-def _restore_system_rows(
-    connection: sqlite3.Connection,
-    saved: dict[str, tuple[list[str], list[tuple]]],
-) -> None:
-    for table in SYSTEM_TABLES:
-        if table not in saved:
-            continue
-        columns, rows = saved[table]
-        if not rows:
-            continue
-        names = ", ".join(f'"{column}"' for column in columns)
-        marks = ", ".join("?" for _ in columns)
-        connection.executemany(
-            f'INSERT INTO "{table}" ({names}) VALUES ({marks})',
-            rows,
+def _snapshot_users(connection: sqlite3.Connection) -> list[dict]:
+    columns = _columns(connection, "benutzer")
+    if not columns:
+        return []
+    users = []
+    if "login" in columns:
+        role_table = "benutzer_rolle" in {
+            row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+        }
+        access_table = "benutzer_zugriff" in {
+            row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+        }
+        for row in connection.execute("SELECT * FROM benutzer"):
+            rollen = []
+            regionen = []
+            if role_table:
+                rollen = [
+                    item["code"]
+                    for item in connection.execute(
+                        """
+                        SELECT rolle.code
+                        FROM benutzer_rolle
+                        JOIN rolle ON rolle.rolle_id = benutzer_rolle.rolle_id
+                        WHERE benutzer_rolle.benutzer_id = ?
+                        """,
+                        (row["benutzer_id"],),
+                    )
+                ]
+            if access_table:
+                regionen = [
+                    item["bezeichnung"]
+                    for item in connection.execute(
+                        """
+                        SELECT region.bezeichnung
+                        FROM benutzer_zugriff
+                        JOIN region ON region.region_id = benutzer_zugriff.region_id
+                        WHERE benutzer_zugriff.benutzer_id = ? AND benutzer_zugriff.region_id IS NOT NULL
+                        """,
+                        (row["benutzer_id"],),
+                    )
+                ]
+            users.append({
+                "login": row["login"],
+                "anzeigename": row["anzeigename"],
+                "email": row["email"],
+                "passwort_hash": row["passwort_hash"],
+                "aktiv": int(row["aktiv"]),
+                "muss_pw_aendern": int(row["muss_pw_aendern"]),
+                "letzte_anmeldung": row["letzte_anmeldung"],
+                "rollen": rollen or ["LESEN"],
+                "regionen": regionen,
+            })
+        return users
+    for row in connection.execute("SELECT * FROM benutzer"):
+        vorname = str(row["vorname"] or "").strip()
+        nachname = str(row["nachname"] or "").strip()
+        users.append({
+            "login": row["email"],
+            "anzeigename": f"{vorname} {nachname}".strip() or row["email"],
+            "email": row["email"],
+            "passwort_hash": row["passwort_hash"],
+            "aktiv": int(row["aktiv"]),
+            "muss_pw_aendern": int(row["passwort_aendern"]),
+            "letzte_anmeldung": row["letzter_login"],
+            "rollen": _roles_from_json(row["rollen"]),
+            "regionen": json.loads(row["regionen"] or "[]"),
+        })
+    return users
+
+
+def _snapshot_bank(connection: sqlite3.Connection) -> list[dict]:
+    if _columns(connection, "bankbewegung"):
+        return [
+            {
+                "fingerprint": row["fingerprint"],
+                "datum": row["buchungsdatum"],
+                "valuta": row["valuta"],
+                "betrag": row["betrag"],
+                "waehrung": row["waehrung"],
+                "text": row["buchungstext"],
+                "zweck": row["verwendungszweck"],
+                "gegenpartei": row["gegenpartei"],
+                "iban": row["gegen_iban"],
+                "konto": row["eigenkonto"],
+                "dateiname": row["dateiname"],
+            }
+            for row in connection.execute("SELECT * FROM bankbewegung")
+        ]
+    if not _columns(connection, "liq_posten"):
+        return []
+    rows = []
+    for row in connection.execute(
+        """
+        SELECT liq_posten.*
+        FROM liq_posten
+        JOIN liq_szenario ON liq_szenario.szenario_id = liq_posten.szenario_id
+        WHERE liq_szenario.bezeichnung = 'Kontoauszug'
+        """
+    ):
+        payload = {}
+        bemerkung = row["bemerkung"] or ""
+        if bemerkung.startswith("{"):
+            try:
+                payload = json.loads(bemerkung)
+            except json.JSONDecodeError:
+                payload = {}
+        signed = row["betrag"] if row["richtung"] == "EIN" else -row["betrag"]
+        rows.append({
+            "fingerprint": payload.get("fp", ""),
+            "datum": row["datum"],
+            "valuta": payload.get("valuta"),
+            "betrag": signed,
+            "waehrung": payload.get("waehrung", "EUR"),
+            "text": payload.get("text", ""),
+            "zweck": payload.get("zweck", ""),
+            "gegenpartei": payload.get("gegenpartei", ""),
+            "iban": payload.get("iban", ""),
+            "konto": payload.get("konto", ""),
+            "dateiname": payload.get("dateiname", ""),
+        })
+    return [row for row in rows if row["fingerprint"]]
+
+
+def _snapshot_logs(connection: sqlite3.Connection) -> list[dict]:
+    if _columns(connection, "import_protokoll"):
+        return [
+            {
+                "dateiname": row["dateiname"],
+                "bemerkung": f"schritt={row['schritt']};status={row['status']};detail={row['detail']}",
+                "zeilen": row["zeilen"],
+            }
+            for row in connection.execute("SELECT * FROM import_protokoll")
+        ]
+    if not _columns(connection, "import_lauf"):
+        return []
+    return [
+        {"dateiname": row["dateiname"], "bemerkung": row["bemerkung"], "zeilen": row["zeilen"]}
+        for row in connection.execute("SELECT * FROM import_lauf WHERE quelle = 'MANUELL'")
+    ]
+
+
+def _snapshot_cutoff(connection: sqlite3.Connection) -> int | None:
+    if _columns(connection, "ist_freigabe"):
+        row = connection.execute("SELECT monat FROM ist_freigabe").fetchone()
+        return int(row["monat"]) if row else None
+    if not _columns(connection, "forecast_version"):
+        return None
+    plan = connection.execute(
+        "SELECT ist_bis_periode FROM forecast_version WHERE typ = 'PLAN' ORDER BY version_id LIMIT 1"
+    ).fetchone()
+    rolling = connection.execute(
+        """
+        SELECT ist_bis_periode FROM forecast_version
+        WHERE typ = 'ROLLING_FORECAST' AND ist_aktiv = 1
+        ORDER BY version_id LIMIT 1
+        """
+    ).fetchone()
+    if plan is None or rolling is None:
+        return None
+    if int(rolling["ist_bis_periode"]) == int(plan["ist_bis_periode"]):
+        return None
+    return int(rolling["ist_bis_periode"])
+
+
+def restore_preserved(connection: sqlite3.Connection, snapshot: dict) -> None:
+    users = snapshot.get("users") or []
+    if users:
+        connection.executescript(BENUTZER_DDL)
+    for user in users:
+        cursor = connection.execute(
+            """
+            INSERT INTO benutzer
+              (login, anzeigename, email, passwort_hash, aktiv, muss_pw_aendern, letzte_anmeldung)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user["login"],
+                user["anzeigename"],
+                user["email"],
+                user["passwort_hash"],
+                user["aktiv"],
+                user["muss_pw_aendern"],
+                user["letzte_anmeldung"],
+            ),
         )
+        benutzer_id = cursor.lastrowid
+        for code in user.get("rollen") or ["LESEN"]:
+            rolle = connection.execute("SELECT rolle_id FROM rolle WHERE code = ?", (code,)).fetchone()
+            if rolle is None:
+                continue
+            connection.execute(
+                "INSERT INTO benutzer_rolle (benutzer_id, rolle_id) VALUES (?, ?)",
+                (benutzer_id, rolle[0]),
+            )
+        regions = [name for name in user.get("regionen") or [] if name]
+        if regions:
+            connection.executescript(BENUTZER_ZUGRIFF_DDL)
+            for name in regions:
+                code = _REGION_CODE.get(name, _REGION_CODE.get(name.replace("Sued-West", "Süd-West")))
+                if name == "Sued-West":
+                    code = "SW"
+                region = connection.execute(
+                    "SELECT region_id FROM region WHERE code = ? OR bezeichnung = ?",
+                    (code, name),
+                ).fetchone()
+                if region is None:
+                    continue
+                connection.execute(
+                    """
+                    INSERT INTO benutzer_zugriff (benutzer_id, region_id, darf_schreiben)
+                    VALUES (?, ?, 0)
+                    """,
+                    (benutzer_id, region[0]),
+                )
+    if snapshot.get("bank"):
+        _restore_bank(connection, snapshot["bank"])
+    for entry in snapshot.get("logs") or []:
+        connection.execute(
+            """
+            INSERT INTO import_lauf (quelle, dateiname, zeilen, bemerkung)
+            VALUES ('MANUELL', ?, ?, ?)
+            """,
+            (entry.get("dateiname"), entry.get("zeilen") or 0, entry.get("bemerkung") or ""),
+        )
+    ist_bis = snapshot.get("ist_bis")
+    if ist_bis is not None:
+        connection.execute(
+            """
+            UPDATE forecast_version
+            SET ist_bis_periode = ?
+            WHERE typ = 'ROLLING_FORECAST' AND ist_aktiv = 1
+            """,
+            (int(ist_bis),),
+        )
+
+
+def _restore_bank(connection: sqlite3.Connection, rows: list[dict]) -> None:
+    connection.executescript(LIQ_POSTEN_DDL)
+    scenario = connection.execute(
+        "SELECT szenario_id FROM liq_szenario WHERE bezeichnung = 'Kontoauszug'"
+    ).fetchone()
+    if scenario is None:
+        liquid = connection.execute(
+            "SELECT startdatum, enddatum FROM liq_szenario WHERE bezeichnung = 'Liquidität'"
+        ).fetchone()
+        start, end = liquid if liquid else ("2026-01-01", "2026-12-31")
+        cursor = connection.execute(
+            """
+            INSERT INTO liq_szenario
+              (bezeichnung, startdatum, enddatum, startsaldo, dso_tage, dpo_tage)
+            VALUES ('Kontoauszug', ?, ?, 0, 0, 0)
+            """,
+            (start, end),
+        )
+        scenario_id = cursor.lastrowid
+    else:
+        scenario_id = scenario[0]
+    for row in rows:
+        amount = float(row["betrag"])
+        payload = json.dumps({
+            "fp": row["fingerprint"],
+            "valuta": row.get("valuta"),
+            "waehrung": row.get("waehrung") or "EUR",
+            "text": row.get("text") or "",
+            "zweck": row.get("zweck") or "",
+            "gegenpartei": row.get("gegenpartei") or "",
+            "iban": row.get("iban") or "",
+            "konto": row.get("konto") or "",
+            "dateiname": row.get("dateiname") or "",
+        }, ensure_ascii=False)
+        connection.execute(
+            """
+            INSERT INTO liq_posten
+              (szenario_id, datum, richtung, kategorie, betrag, sicherheit, quelle, bemerkung)
+            VALUES (?, ?, ?, 'SONSTIGE', ?, 'SICHER', 'MANUELL', ?)
+            """,
+            (
+                scenario_id,
+                row["datum"],
+                "EIN" if amount >= 0 else "AUS",
+                abs(amount),
+                payload,
+            ),
+        )
+
+
+def _position_code(konto: str, gruppe: str) -> str:
+    if konto in _NEUTRAL_KONTEN:
+        return "NEUTRAL_ERGEBNIS"
+    if konto in _STEUER_KONTEN:
+        return "SONST_STEUERN"
+    return _POSITION.get(gruppe.split(" ", 1)[0], "SONST_AUFWAND")
+
+
+def _kostenart_code(art: str, gruppe: str, klr: str, name: str) -> str | None:
+    if art == "ERTRAG":
+        return None
+    blob = f"{gruppe} {klr} {name}".lower()
+    if "entsorg" in blob:
+        return "ENTSORGUNG"
+    if gruppe.startswith("6") or "personal" in klr.lower():
+        return "PERSONAL"
+    if gruppe.startswith("5") or "fremd" in blob:
+        return "FREMDLEISTUNG"
+    if gruppe.startswith("4") or "material" in klr.lower():
+        return "MATERIAL"
+    if "fuhrpark" in blob or "gerät" in blob or "geraet" in blob:
+        return "GERAET"
+    return "SONSTIGE"
+
+
+def _psp(auftrag: str) -> str:
+    match = _AUFTRAG_PSP.fullmatch(auftrag.strip())
+    return match.group(1) if match else ""
+
+
+def _region_code(name: str, regionscode: str, auftrag: str) -> str:
+    digits = "".join(ch for ch in str(regionscode) if ch.isdigit())
+    if digits in _PSP_REGION:
+        return _PSP_REGION[digits]
+    if name in _REGION_CODE:
+        return _REGION_CODE[name]
+    psp = _psp(auftrag)
+    return _PSP_REGION.get(psp[:2], "VERW")
+
+
+def _month_end(year: int, month: int) -> str:
+    return date(year, month, calendar.monthrange(year, month)[1]).isoformat()
+
+
+def _drop_empty_tables(connection: sqlite3.Connection) -> None:
+    """Nach dem Einlesen hat eine leere Tabelle keinen Inhalt und verschwindet."""
+    connection.execute("PRAGMA foreign_keys = OFF")
+    while True:
+        names = [
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+            )
+        ]
+        dropped = False
+        for name in names:
+            count = connection.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()[0]
+            if count == 0:
+                connection.execute(f'DROP TABLE "{name}"')
+                dropped = True
+        if not dropped:
+            break
+    connection.execute("PRAGMA foreign_keys = ON")
 
 
 def import_workbook(xlsx_path: Path = XLSX, db_path: Path = DB) -> dict[str, int]:
-    """Importiert eine Mappe in eine neue SQLite-Datei.
+    """Baut die Datenbank aus der Mappe neu auf.
 
-    Die frei wählbaren Pfade werden vom Importmanager für einen isolierten
-    Testlauf genutzt; der normale Aufruf verwendet weiterhin die Repo-Dateien.
+    Benutzer, Kontoauszüge und eine vom Blatt abweichende Ist-Freigabe
+    bleiben erhalten. Jede Zahl steht nur einmal.
     """
-    system_rows = _saved_system_rows(db_path)
+    preserved = snapshot_preserved(db_path)
     if db_path.exists():
         db_path.unlink()
-    con = sqlite3.connect(db_path)
-    con.executescript(SCHEMA.read_text())
-    _restore_system_rows(con, system_rows)
+    connection = sqlite3.connect(db_path)
+    connection.execute("PRAGMA foreign_keys = ON")
+    connection.executescript(SCHEMA.read_text())
     xlsx = zipfile.ZipFile(xlsx_path)
-
-    parameter = read_sheet(xlsx, "Parameter")
-    auftrag = read_sheet(xlsx, "Auftrag")
-    con.execute(
-        "INSERT INTO parameter (jahr, letzter_ist_monat, stichtag, auftragsnummer) VALUES (?,?,?,?)",
-        (
-            int(num(parameter, 1, 2)),
-            int(num(parameter, 2, 2)),
-            excel_date(int(num(parameter, 3, 2))),
-            text(auftrag, 3, 2),
-        ),
-    )
-
-    projekt = read_sheet(xlsx, "Projektstamm")
-    for r in sorted(k for k in projekt if k > 1):
-        if value(projekt, r, 1) is None:
-            continue
-        con.execute(
-            "INSERT INTO projekt VALUES (?,?,?,?,?,?,?,?,?)",
-            (
-                int(num(projekt, r, 1)),
-                text(projekt, r, 2),
-                text(projekt, r, 3),
-                text(projekt, r, 4),
-                text(projekt, r, 5),
-                text(projekt, r, 6),
-                text(projekt, r, 7),
-                num(projekt, r, 8),
-                num(projekt, r, 9),
-            ),
+    try:
+        _load_workbook(connection, xlsx, xlsx_path.name)
+    finally:
+        xlsx.close()
+    restore_preserved(connection, preserved)
+    _drop_empty_tables(connection)
+    connection.commit()
+    names = [
+        row[0]
+        for row in connection.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
         )
-
-    kosten = read_sheet(xlsx, "Kostenarten")
-    for r in sorted(k for k in kosten if k > 1):
-        if value(kosten, r, 1) is None:
-            continue
-        con.execute(
-            "INSERT INTO kostenart VALUES (?,?,?,?,?,?,?)",
-            (
-                int(num(kosten, r, 1)),
-                text(kosten, r, 2),
-                text(kosten, r, 3),
-                int(num(kosten, r, 4)),
-                text(kosten, r, 5),
-                int(num(kosten, r, 6)),
-                text(kosten, r, 7),
-            ),
-        )
-
-    journal = read_sheet(xlsx, "Auftrag_Journal")
-    buchungen = []
-    for r in sorted(k for k in journal if k > 1):
-        if value(journal, r, 1) is None:
-            continue
-        projekt_id = value(journal, r, 8)
-        kostenart_id = value(journal, r, 9)
-        buchungen.append(
-            (
-                int(num(journal, r, 1)),
-                excel_date(int(num(journal, r, 2))),
-                int(num(journal, r, 3)),
-                int(num(journal, r, 4)),
-                text(journal, r, 5),
-                text(journal, r, 6),
-                text(journal, r, 7),
-                int(projekt_id) if isinstance(projekt_id, (int, float)) and projekt_id != "" else None,
-                int(kostenart_id) if isinstance(kostenart_id, (int, float)) and kostenart_id != "" else None,
-                text(journal, r, 10),
-                num(journal, r, 11),
-                text(journal, r, 12),
-            )
-        )
-    con.executemany("INSERT INTO buchung VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", buchungen)
-
-    plan = read_sheet(xlsx, "Forecast_Plan")
-    con.executemany(
-        "INSERT INTO forecast_plan VALUES (?,?,?,?,?,?,?,?)",
-        [
-            (
-                int(num(plan, r, 1)),
-                text(plan, r, 2),
-                text(plan, r, 3),
-                text(plan, r, 4),
-                text(plan, r, 5),
-                text(plan, r, 6),
-                int(num(plan, r, 7)),
-                num(plan, r, 8),
-            )
-            for r in sorted(plan)
-            if r > 1 and value(plan, r, 1) is not None
-        ],
-    )
-
-    ebitda = read_sheet(xlsx, "EBITDA_Plan")
-    con.executemany(
-        "INSERT INTO ebitda_plan VALUES (?,?,?,?,?)",
-        [
-            (int(num(ebitda, r, 1)), int(num(ebitda, r, 2)), num(ebitda, r, 3), num(ebitda, r, 4), num(ebitda, r, 5))
-            for r in sorted(ebitda)
-            if r > 1 and value(ebitda, r, 1) is not None
-        ],
-    )
-
-    verlust = read_sheet(xlsx, "Verlust")
-    con.executemany(
-        "INSERT INTO verlust VALUES (?,?,?,?,?,?,?,?,?)",
-        [
-            (
-                int(num(verlust, r, 1)),
-                int(num(verlust, r, 2)),
-                text(verlust, r, 3),
-                text(verlust, r, 4),
-                num(verlust, r, 5),
-                flag(value(verlust, r, 6)),
-                flag(value(verlust, r, 7)),
-                flag(value(verlust, r, 8)),
-                text(verlust, r, 9),
-            )
-            for r in sorted(verlust)
-            if r > 1 and value(verlust, r, 1) is not None
-        ],
-    )
-
-    liq_p = read_sheet(xlsx, "Liq_Parameter")
-    con.executemany(
-        "INSERT INTO liq_parameter VALUES (?,?,?,?,?)",
-        [
-            (int(num(liq_p, r, 1)), text(liq_p, r, 2), num(liq_p, r, 3), text(liq_p, r, 4), text(liq_p, r, 5))
-            for r in sorted(liq_p)
-            if r > 1 and value(liq_p, r, 1) is not None
-        ],
-    )
-
-    liq_m = read_sheet(xlsx, "Liq_Monat")
-    con.executemany(
-        "INSERT INTO liq_monat VALUES (?,?,?,?,?,?)",
-        [
-            (int(num(liq_m, r, 1)), int(num(liq_m, r, 2)), num(liq_m, r, 3), num(liq_m, r, 4), num(liq_m, r, 5), flag(value(liq_m, r, 6)))
-            for r in sorted(liq_m)
-            if r > 1 and value(liq_m, r, 1) is not None
-        ],
-    )
-
-    bestand = read_sheet(xlsx, "Liq_Bestand")
-    con.executemany(
-        "INSERT INTO liq_bestand VALUES (?,?,?,?)",
-        [
-            (int(num(bestand, r, 1)), int(num(bestand, r, 2)), num(bestand, r, 3), text(bestand, r, 4))
-            for r in sorted(bestand)
-            if r > 1 and value(bestand, r, 1) is not None
-        ],
-    )
-
-    konto = read_sheet(xlsx, "Kontostand")
-    for r in sorted(k for k in konto if k > 1):
-        if value(konto, r, 1) is None:
-            continue
-        con.execute(
-            "INSERT INTO kontostand VALUES (?,?,?)",
-            (excel_date(int(num(konto, r, 1))), text(konto, r, 2), num(konto, r, 3)),
-        )
-
-    guv = read_sheet(xlsx, "GuV_Positionen")
-    for r in range(5, 91):
-        f = formula(guv, r, 3)
-        con.execute(
-            "INSERT INTO guv_position VALUES (?,?,?,?)",
-            (r, int(num(guv, r, 1)), text(guv, r, 2), sum_rows(f) if f else ""),
-        )
-        if f:
-            # Dieselbe Struktur muss in jeder Monatsspalte stehen.
-            for month, col in enumerate(range(3, 12), start=1):
-                other = formula(guv, r, col)
-                if other is None or sum_rows(other) != sum_rows(f):
-                    raise SystemExit(f"GuV-Formel weicht ab: Zeile {r} Monat {month}: {other}")
-            continue
-        for month, col in enumerate(range(3, 12), start=1):
-            if formula(guv, r, col):
-                raise SystemExit(f"Blattwert erwartet, Formel gefunden: Zeile {r} Monat {month}")
-            if value(guv, r, col) is None:
-                continue
-            con.execute("INSERT INTO guv_wert VALUES (?,?,?)", (r, month, num(guv, r, col)))
-
-    kosten_v = read_sheet(xlsx, "Kostenverfolgung")
-    for r in sorted(k for k in kosten_v if k >= 5):
-        if value(kosten_v, r, 2) is None:
-            continue
-        con.execute(
-            "INSERT INTO kosten_meldung VALUES (?,?,?,?,?,?,?,?,?)",
-            (
-                r,
-                text(kosten_v, r, 1),
-                text(kosten_v, r, 2),
-                text(kosten_v, r, 3),
-                text(kosten_v, r, 4),
-                num(kosten_v, r, 5),
-                num(kosten_v, r, 6),
-                num(kosten_v, r, 7),
-                num(kosten_v, r, 12),
-            ),
-        )
-
-    auftraege = read_sheet(xlsx, "Auftraege")
-    for r in range(5, 101):
-        nr = text(auftraege, r, 1)
-        if nr:
-            con.execute("INSERT INTO auftrag_liste VALUES (?,?)", (r, nr))
-
-    regionen = read_sheet(xlsx, "Regionen")
-    for r in range(5, 9):
-        con.execute("INSERT INTO region_liste VALUES (?,?)", (r, text(regionen, r, 1)))
-
-    legende = read_sheet(xlsx, "Legende")
-    for r in sorted(k for k in legende if k >= 4):
-        punkt = text(legende, r, 1)
-        if not punkt:
-            continue
-        con.execute("INSERT INTO legende VALUES (?,?,?)", (r, punkt, text(legende, r, 2)))
-
-    con.commit()
-    xlsx.close()
-    counts = {
-        name: con.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0]
-        for name in (
-            "parameter",
-            "projekt",
-            "kostenart",
-            "buchung",
-            "forecast_plan",
-            "ebitda_plan",
-            "verlust",
-            "liq_parameter",
-            "liq_monat",
-            "liq_bestand",
-            "kontostand",
-            "guv_position",
-            "guv_wert",
-            "kosten_meldung",
-            "auftrag_liste",
-            "region_liste",
-            "legende",
-        )
-    }
+    ]
+    counts = {name: connection.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()[0] for name in names}
     print(db_path)
     for name, count in counts.items():
         print(f"{name}: {count}")
-    con.close()
+    connection.close()
     return counts
+
+
+def _load_workbook(connection: sqlite3.Connection, xlsx: zipfile.ZipFile, filename: str) -> None:
+    parameter = read_sheet(xlsx, "Parameter")
+    jahr = int(num(parameter, 1, 2))
+    letzter = int(num(parameter, 2, 2))
+    stichtag = excel_date(int(num(parameter, 3, 2)))
+    auftrag_focus = text(read_sheet(xlsx, "Auftrag"), 3, 2)
+
+    region_id = {row[0]: row[1] for row in connection.execute("SELECT code, region_id FROM region")}
+    kostenart_id = {row[0]: row[1] for row in connection.execute("SELECT code, kostenart_id FROM kostenart")}
+    position_id = {
+        row[0]: row[1]
+        for row in connection.execute("SELECT code, position_id FROM berichtsposition")
+    }
+    stellen: dict[tuple[str, str], int] = {}
+
+    def stelle(code: str, typ: str) -> int:
+        key = (code, typ)
+        if key in stellen:
+            return stellen[key]
+        label = connection.execute("SELECT bezeichnung FROM region WHERE code = ?", (code,)).fetchone()[0]
+        cursor = connection.execute(
+            """
+            INSERT INTO kostenstelle (nummer, bezeichnung, region_id, typ)
+            VALUES (?, ?, ?, ?)
+            """,
+            (f"{code}-{typ}", f"{label} {typ}", region_id[code], typ),
+        )
+        stellen[key] = int(cursor.lastrowid)
+        return stellen[key]
+
+    for code in region_id:
+        stelle(code, "PROJEKT")
+        stelle(code, "NIEDERLASSUNG")
+    stelle("VERW", "OVERHEAD")
+
+    projects: dict[str, int] = {}
+    stamm = read_sheet(xlsx, "Projektstamm")
+    for row_number in sorted(key for key in stamm if key > 1):
+        auftrag = text(stamm, row_number, 2).strip()
+        if not auftrag or auftrag.startswith("'"):
+            continue
+        name = text(stamm, row_number, 3).strip() or auftrag
+        typ = text(stamm, row_number, 4).strip()
+        code = _region_code(text(stamm, row_number, 6).strip(), text(stamm, row_number, 5).strip(), auftrag)
+        status = text(stamm, row_number, 7).strip()
+        phase = "ABGESCHLOSSEN" if status == "ABGESCHLOSSEN" else "LAUFEND"
+        ks_typ = "PROJEKT" if typ == "PROJEKT" else "NIEDERLASSUNG" if typ == "INNENAUFTRAG" else "OVERHEAD"
+        if ks_typ == "OVERHEAD":
+            code_for_stelle = "VERW"
+        else:
+            code_for_stelle = code
+        cursor = connection.execute(
+            """
+            INSERT INTO projekt
+              (auftragsnr, psp, bezeichnung, region_id, kostenstelle_id, phase, vertragsumsatz, bemerkung)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
+            """,
+            (
+                auftrag,
+                _psp(auftrag),
+                name,
+                region_id[code],
+                stelle(code_for_stelle, ks_typ),
+                phase,
+                num(stamm, row_number, 8),
+            ),
+        )
+        projects[auftrag] = int(cursor.lastrowid)
+
+    journal = read_sheet(xlsx, "Auftrag_Journal")
+    bookings = []
+    titles: dict[str, dict[str, int]] = {}
+    for row_number in sorted(key for key in journal if key > 1):
+        if value(journal, row_number, 1) is None:
+            continue
+        konto = text(journal, row_number, 10).strip()
+        jahr_zeile = int(num(journal, row_number, 3))
+        monat = int(num(journal, row_number, 4))
+        if not konto or konto.startswith("'") or jahr_zeile <= 0 or not 1 <= monat <= 16:
+            continue
+        auftrag = text(journal, row_number, 7).strip()
+        titel = text(journal, row_number, 12).strip()
+        if _AUFTRAG_NR.fullmatch(auftrag) and titel and not titel.lower().startswith("zu erw"):
+            titles.setdefault(auftrag, {})
+            titles[auftrag][titel] = titles[auftrag].get(titel, 0) + 1
+        bookings.append((row_number, jahr_zeile, monat, auftrag, konto, num(journal, row_number, 11), titel))
+
+    for auftrag in sorted({row[3] for row in bookings} | set(titles)):
+        if auftrag in projects or not _AUFTRAG_NR.fullmatch(auftrag):
+            continue
+        code = _PSP_REGION.get(_psp(auftrag)[:2], "VERW")
+        counted = titles.get(auftrag) or {}
+        name = max(counted, key=lambda item: (counted[item], len(item)))[:120] if counted else auftrag
+        cursor = connection.execute(
+            """
+            INSERT INTO projekt
+              (auftragsnr, psp, bezeichnung, region_id, kostenstelle_id, phase, vertragsumsatz, bemerkung)
+            VALUES (?, ?, ?, ?, ?, 'LAUFEND', 0, 'Journal')
+            """,
+            (auftrag, _psp(auftrag), name, region_id[code], stelle(code, "PROJEKT")),
+        )
+        projects[auftrag] = int(cursor.lastrowid)
+
+    def internal(auftrag: str, name: str) -> int:
+        if auftrag in projects:
+            return projects[auftrag]
+        cursor = connection.execute(
+            """
+            INSERT INTO projekt
+              (auftragsnr, psp, bezeichnung, region_id, kostenstelle_id, phase, bemerkung)
+            VALUES (?, '', ?, ?, ?, 'LAUFEND', 'Intern')
+            """,
+            (auftrag, name, region_id["VERW"], stelle("VERW", "OVERHEAD")),
+        )
+        projects[auftrag] = int(cursor.lastrowid)
+        return projects[auftrag]
+
+    overhead_id = internal("OVERHEAD", "Overhead")
+    bewertung_id = internal("BEWERTUNG", "Offene Bewertung")
+
+    kosten = read_sheet(xlsx, "Kostenarten")
+    for row_number in sorted(key for key in kosten if key > 1):
+        konto = text(kosten, row_number, 2).strip()
+        if not konto or konto.startswith("'"):
+            continue
+        gruppe = text(kosten, row_number, 5).strip()
+        klr = text(kosten, row_number, 7).strip()
+        name = text(kosten, row_number, 3).strip() or konto
+        code = _position_code(konto, gruppe)
+        art = "ERTRAG" if code in _ERTRAG else "AUFWAND"
+        art_code = _kostenart_code(art, gruppe, klr, name)
+        connection.execute(
+            """
+            INSERT INTO konto (konto_nr, bezeichnung, kontoart, kaufm_faktor, kostenart_id)
+            VALUES (?, ?, ?, -1, ?)
+            ON CONFLICT (konto_nr) DO UPDATE SET
+              bezeichnung = excluded.bezeichnung,
+              kontoart = excluded.kontoart,
+              kaufm_faktor = excluded.kaufm_faktor,
+              kostenart_id = excluded.kostenart_id
+            """,
+            (konto, name, art, kostenart_id.get(art_code) if art_code else None),
+        )
+        connection.execute("DELETE FROM konto_mapping WHERE konto_nr = ?", (konto,))
+        connection.execute(
+            "INSERT INTO konto_mapping (konto_nr, position_id) VALUES (?, ?)",
+            (konto, position_id[code]),
+        )
+
+    known_accounts = {row[0] for row in connection.execute("SELECT konto_nr FROM konto")}
+    import_cursor = connection.execute(
+        """
+        INSERT INTO import_lauf (quelle, dateiname, bemerkung)
+        VALUES ('FI_EINZELPOSTEN', ?, ?)
+        """,
+        (filename, f"auftrag={auftrag_focus}"),
+    )
+    import_id = import_cursor.lastrowid
+    zeile_nr: dict[tuple[int, str], int] = {}
+    buchung_rows = []
+    for row_number, jahr_zeile, monat, auftrag, konto, betrag, titel in bookings:
+        if konto not in known_accounts:
+            continue
+        beleg = text(journal, row_number, 6).strip() or f"OHNE-{int(num(journal, row_number, 1))}"
+        key = (jahr_zeile, beleg)
+        zeile_nr[key] = zeile_nr.get(key, 0) + 1
+        projekt_id = projects.get(auftrag)
+        ks = None
+        if projekt_id is not None:
+            ks = connection.execute(
+                "SELECT kostenstelle_id FROM projekt WHERE projekt_id = ?",
+                (projekt_id,),
+            ).fetchone()[0]
+        buchung_rows.append((
+            import_id,
+            jahr_zeile,
+            monat,
+            beleg,
+            zeile_nr[key],
+            excel_date(int(num(journal, row_number, 2))),
+            konto,
+            ks,
+            projekt_id,
+            round(betrag, 2),
+            titel,
+        ))
+    connection.executemany(
+        """
+        INSERT INTO buchung (
+          import_id, quelle, geschaeftsjahr, periode, belegnr, zeile, buchungsdatum,
+          konto_nr, kostenstelle_id, projekt_id, betrag_sap, buchungstext
+        ) VALUES (?, 'FI_EINZELPOSTEN', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        buchung_rows,
+    )
+    connection.execute("UPDATE import_lauf SET zeilen = ? WHERE import_id = ?", (len(buchung_rows), import_id))
+
+    plan_version = connection.execute(
+        """
+        INSERT INTO forecast_version
+          (bezeichnung, geschaeftsjahr, typ, ist_bis_periode, status, ist_aktiv)
+        VALUES ('Mappe', ?, 'PLAN', ?, 'FREIGEGEBEN', 0)
+        """,
+        (jahr, letzter),
+    ).lastrowid
+    rolling = connection.execute(
+        """
+        INSERT INTO forecast_version
+          (bezeichnung, geschaeftsjahr, typ, ist_bis_periode, status, ist_aktiv)
+        VALUES ('Rolling Forecast', ?, 'ROLLING_FORECAST', ?, 'FREIGEGEBEN', 1)
+        """,
+        (jahr, letzter),
+    ).lastrowid
+
+    forecast_import = connection.execute(
+        """
+        INSERT INTO import_lauf (quelle, dateiname, bemerkung)
+        VALUES ('FORECAST_IMPORT', ?, 'Forecast_Plan und EBITDA_Plan')
+        """,
+        (filename,),
+    ).lastrowid
+    plan = read_sheet(xlsx, "Forecast_Plan")
+    aggregated: dict[tuple[int, str, str], list[float | None]] = {}
+
+    def add_value(projekt: int, month: int, wertart: str, plan_amount: float | None, forecast_amount: float | None) -> None:
+        key = (projekt, f"{jahr}-{month:02d}-01", wertart)
+        current = aggregated.get(key, [None, None])
+        if plan_amount is not None:
+            current[0] = (current[0] or 0.0) + plan_amount
+        if forecast_amount is not None:
+            current[1] = (current[1] or 0.0) + forecast_amount
+        aggregated[key] = current
+
+    for row_number in sorted(key for key in plan if key > 1):
+        if value(plan, row_number, 1) is None:
+            continue
+        auftrag = text(plan, row_number, 3).strip()
+        if auftrag not in projects:
+            if not _AUFTRAG_NR.fullmatch(auftrag):
+                continue
+            code = _PSP_REGION.get(_psp(auftrag)[:2], "VERW")
+            cursor = connection.execute(
+                """
+                INSERT INTO projekt
+                  (auftragsnr, psp, bezeichnung, region_id, kostenstelle_id, phase, bemerkung)
+                VALUES (?, ?, ?, ?, ?, 'LAUFEND', 'Journal')
+                """,
+                (
+                    auftrag,
+                    _psp(auftrag),
+                    text(plan, row_number, 4).strip() or auftrag,
+                    region_id[code],
+                    stelle(code, "PROJEKT"),
+                ),
+            )
+            projects[auftrag] = int(cursor.lastrowid)
+        groesse = text(plan, row_number, 5).strip()
+        art = text(plan, row_number, 6).strip()
+        amount = num(plan, row_number, 8)
+        if groesse == "umsatz":
+            wertart, commercial = "UMSATZ", -amount
+        elif groesse == "ba":
+            wertart, commercial = "BESTANDSVERAENDERUNG", amount
+        else:
+            wertart, commercial = "KOSTEN", amount
+        if art == "korrektur":
+            add_value(projects[auftrag], int(num(plan, row_number, 7)), wertart, None, commercial)
+        else:
+            add_value(projects[auftrag], int(num(plan, row_number, 7)), wertart, commercial, None)
+
+    ebitda = read_sheet(xlsx, "EBITDA_Plan")
+    for row_number in sorted(key for key in ebitda if key > 1):
+        if value(ebitda, row_number, 1) is None:
+            continue
+        month = int(num(ebitda, row_number, 2))
+        overhead = num(ebitda, row_number, 4)
+        bewertung = num(ebitda, row_number, 5)
+        if overhead:
+            add_value(overhead_id, month, "KOSTEN", -overhead, None)
+        if bewertung:
+            add_value(bewertung_id, month, "KOSTEN", -bewertung, None)
+
+    linked: set[int] = set()
+    for (projekt, monat, wertart), (plan_amount, forecast_amount) in aggregated.items():
+        if projekt not in linked:
+            connection.execute(
+                "INSERT INTO forecast_projekt (version_id, projekt_id) VALUES (?, ?)",
+                (rolling, projekt),
+            )
+            linked.add(projekt)
+        connection.execute(
+            """
+            INSERT INTO forecast_wert
+              (version_id, projekt_id, monat, wertart, betrag_plan, betrag_forecast)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (rolling, projekt, monat, wertart, plan_amount, forecast_amount),
+        )
+    connection.execute(
+        "UPDATE import_lauf SET zeilen = ? WHERE import_id = ?",
+        (len(aggregated), forecast_import),
+    )
+
+    kv_import = connection.execute(
+        """
+        INSERT INTO import_lauf (quelle, dateiname, bemerkung)
+        VALUES ('KOSTENVERFOLGUNG', ?, 'Kostenverfolgung')
+        """,
+        (filename,),
+    ).lastrowid
+    kosten_v = read_sheet(xlsx, "Kostenverfolgung")
+    kv: dict[str, list[float]] = {}
+    for row_number in sorted(key for key in kosten_v if key >= 5):
+        auftrag = text(kosten_v, row_number, 2).strip()
+        if not auftrag or auftrag not in projects:
+            continue
+        current = kv.setdefault(auftrag, [0.0, 0.0, 0.0])
+        current[0] += num(kosten_v, row_number, 5)
+        current[1] += num(kosten_v, row_number, 6)
+        current[2] += num(kosten_v, row_number, 12)
+    for auftrag, (umsatz, kosten_sum, vertrag) in kv.items():
+        connection.execute(
+            """
+            INSERT INTO kv_stand
+              (projekt_id, stand_datum, umsatz_vertrag, gesamtumsatz, projektkosten, quelle_datei)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (projects[auftrag], stichtag, vertrag, umsatz, kosten_sum, filename),
+        )
+    connection.execute("UPDATE import_lauf SET zeilen = ? WHERE import_id = ?", (len(kv), kv_import))
+
+    dso = dpo = None
+    liq_p = read_sheet(xlsx, "Liq_Parameter")
+    for row_number in sorted(key for key in liq_p if key > 1):
+        key_name = text(liq_p, row_number, 2).strip()
+        if key_name == "dso_tage":
+            dso = int(num(liq_p, row_number, 3))
+        elif key_name == "dpo_tage":
+            dpo = int(num(liq_p, row_number, 3))
+    bestand = read_sheet(xlsx, "Liq_Bestand")
+    startsaldo = 0.0
+    for row_number in sorted(key for key in bestand if key > 1):
+        if value(bestand, row_number, 1) is None:
+            continue
+        month = int(num(bestand, row_number, 2))
+        saldo = num(bestand, row_number, 3)
+        connection.execute(
+            "INSERT INTO liq_bankstand (datum, bankkonto, saldo) VALUES (?, 'Cash-Pool', ?)",
+            (_month_end(int(num(bestand, row_number, 1)), month), saldo),
+        )
+        startsaldo = saldo
+    konto_sheet = read_sheet(xlsx, "Kontostand")
+    for row_number in sorted(key for key in konto_sheet if key > 1):
+        if value(konto_sheet, row_number, 1) is None:
+            continue
+        connection.execute(
+            "INSERT INTO liq_bankstand (datum, bankkonto, saldo) VALUES (?, ?, ?)",
+            (excel_date(int(num(konto_sheet, row_number, 1))), text(konto_sheet, row_number, 2), num(konto_sheet, row_number, 3)),
+        )
+    enddatum = (date.fromisoformat(stichtag) + timedelta(days=26 * 7)).isoformat()
+    connection.execute(
+        """
+        INSERT INTO liq_szenario
+          (bezeichnung, forecast_version_id, startdatum, enddatum, startsaldo, dso_tage, dpo_tage)
+        VALUES ('Liquidität', ?, ?, ?, ?, ?, ?)
+        """,
+        (rolling, stichtag, enddatum, startsaldo, dso or 60, dpo or 30),
+    )
+    # plan_version bleibt als Stichtag der Mappe stehen und trägt keine Werte.
+    connection.execute("SELECT ?", (plan_version,))
 
 
 if __name__ == "__main__":
@@ -501,3 +1086,5 @@ if __name__ == "__main__":
     parser.add_argument("--db", type=Path, default=DB)
     args = parser.parse_args()
     import_workbook(args.xlsx, args.db)
+
+

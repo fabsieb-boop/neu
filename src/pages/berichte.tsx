@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Download, Printer } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useDash } from "@/data";
 import { axis, DataTable, eur, Kpi, num, PageHeader, Panel, short } from "@/components/dash";
 import type { Dash } from "@/types";
@@ -36,6 +37,15 @@ function downloadCsv(name: string, rows: Row[], columns = rows.length ? Object.k
 }
 
 const reportButton = "inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold hover:bg-muted";
+
+const MONTH_NAMES = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+
+function monatLabel(value: string) {
+  const [year, month] = value.split("-");
+  return `${MONTH_NAMES[Number(month) - 1] ?? month} ${year}`;
+}
+
+type FixedType = "forecast" | "liquiditaet" | "rentabilitaet" | "kontoauszug";
 
 export function ManagementBericht() {
   const { dash } = useDash();
@@ -160,22 +170,34 @@ export function Berichte() {
 
 function FixedReports() {
   const { dash } = useDash();
-  const [type, setType] = useState<"forecast" | "liquiditaet" | "rentabilitaet">("forecast");
-  const exports = fixedRows(dash, type);
+  const latestBank = dash.bank.monate.at(-1)?.monat ?? "";
+  const [type, setType] = useState<FixedType>(latestBank ? "kontoauszug" : "forecast");
+  const [bankMonth, setBankMonth] = useState(latestBank);
+  const exports = fixedRows(dash, type, bankMonth);
   return (
     <>
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4 shadow-card print:hidden">
         <label className="text-xs font-medium text-muted-foreground">
           Bericht
-          <select value={type} onChange={(event) => setType(event.target.value as typeof type)} className="mt-1 block min-w-60 rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground">
+          <select value={type} onChange={(event) => setType(event.target.value as FixedType)} className="mt-1 block min-w-60 rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground">
+            <option value="kontoauszug">Kontoauszug</option>
             <option value="forecast">Forecast-Bericht</option>
             <option value="liquiditaet">Liquiditätsbericht</option>
             <option value="rentabilitaet">Rentabilitätsbericht</option>
           </select>
         </label>
-        <button className={reportButton} onClick={() => downloadCsv(`TVF_${type}_${dash.jahr}.csv`, exports)}><Download className="h-4 w-4" />Excel-Daten</button>
+        {type === "kontoauszug" && dash.bank.monate.length > 0 && (
+          <label className="text-xs font-medium text-muted-foreground">
+            Monat
+            <select value={bankMonth} onChange={(event) => setBankMonth(event.target.value)} className="mt-1 block min-w-48 rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground">
+              {[...dash.bank.monate].reverse().map((row) => <option key={row.monat} value={row.monat}>{monatLabel(row.monat)}</option>)}
+            </select>
+          </label>
+        )}
+        <button className={reportButton} onClick={() => downloadCsv(`TVF_${type}_${bankMonth || dash.jahr}.csv`, exports)}><Download className="h-4 w-4" />Excel-Daten</button>
         <button className={reportButton} onClick={() => window.print()}><Printer className="h-4 w-4" />Drucken / PDF</button>
       </div>
+      {type === "kontoauszug" && <StatementReport month={bankMonth} />}
       {type === "forecast" && <ForecastReport />}
       {type === "liquiditaet" && <LiquidityReport />}
       {type === "rentabilitaet" && <ProfitabilityReport />}
@@ -183,7 +205,20 @@ function FixedReports() {
   );
 }
 
-function fixedRows(dash: Dash, type: "forecast" | "liquiditaet" | "rentabilitaet"): Row[] {
+function fixedRows(dash: Dash, type: FixedType, bankMonth: string): Row[] {
+  if (type === "kontoauszug") return dash.bank.bewegungen
+    .filter((row) => !bankMonth || row.datum.startsWith(bankMonth))
+    .map((row) => ({
+      Buchungstag: row.datum.split("-").reverse().join("."),
+      Valuta: row.valuta ? row.valuta.split("-").reverse().join(".") : "",
+      Gegenpartei: row.gegenpartei,
+      Verwendungszweck: row.zweck,
+      Buchungstext: row.text,
+      Betrag: num(row.betrag, 2),
+      Währung: row.waehrung,
+      IBAN: row.iban,
+      Konto: row.konto,
+    }));
   if (type === "forecast") return dash.forecastOrders.map((order) => ({
     Auftrag: order.nr,
     Name: order.name,
@@ -209,6 +244,56 @@ function fixedRows(dash: Dash, type: "forecast" | "liquiditaet" | "rentabilitaet
   }));
 }
 
+function StatementReport({ month }: { month: string }) {
+  const { dash } = useDash();
+  const summary = dash.bank.monate.find((row) => row.monat === month);
+  const rows = dash.bank.bewegungen
+    .filter((row) => month && row.datum.startsWith(month))
+    .sort((a, b) => a.datum.localeCompare(b.datum) || a.betrag - b.betrag);
+  if (dash.bank.anzahl === 0 || !summary) {
+    return (
+      <Panel title="Kontoauszug" subtitle="noch keine Bankdatei">
+        <p className="text-sm text-muted-foreground">Nach dem Import unter System → Import erscheint hier jeder Monat der Datei. Der Oktober-Auszug steht dann als Oktober 2026, mit Punkt als Tausender und Komma als Cent.</p>
+        <Link className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" to="/import">Zum Import</Link>
+      </Panel>
+    );
+  }
+  const saldo = summary.ein - summary.aus;
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">Die Buchungen stammen aus dem importierten Kontoauszug und stehen direkt nach dem Import bereit. GuV, Forecast und der 26-Wochen-Plan verwenden weiter den Ist-Stand der Excel-Datenbasis.</p>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <AmountStat label="Eingang" value={summary.ein} hint={monatLabel(summary.monat)} />
+        <AmountStat label="Ausgang" value={-summary.aus} hint={monatLabel(summary.monat)} />
+        <AmountStat label="Saldo" value={saldo} hint={`${summary.anzahl.toLocaleString("de-DE")} Buchungen`} />
+        <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Buchungen</p>
+          <p className="mt-3 font-display text-2xl font-semibold tracking-tight">{summary.anzahl.toLocaleString("de-DE")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{rows.length < summary.anzahl ? `${rows.length.toLocaleString("de-DE")} in der Tabelle` : "im gewählten Monat"}</p>
+        </div>
+      </section>
+      <Panel title={`Buchungen ${monatLabel(summary.monat)}`} subtitle="Punkt für die Tausender, Komma für die Cent">
+        <DataTable rows={rows} cols={[
+          { key: "d", label: "Buchungstag", render: (row) => row.datum.split("-").reverse().join(".") },
+          { key: "g", label: "Gegenpartei", render: (row) => row.gegenpartei || "–" },
+          { key: "t", label: "Text", render: (row) => <span className="inline-block max-w-xs truncate" title={row.zweck || row.text}>{row.zweck || row.text}</span> },
+          { key: "b", label: "Betrag", right: true, render: (row) => <span className={row.betrag < 0 ? "text-negative" : ""}>{num(row.betrag, 2)} €</span> },
+        ]} />
+      </Panel>
+    </div>
+  );
+}
+
+function AmountStat({ label, value, hint }: { label: string; value: number; hint: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={`mt-3 font-display text-2xl font-semibold tracking-tight ${value < 0 ? "text-negative" : ""}`}>{num(value, 2)} €</p>
+      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+    </div>
+  );
+}
+
 function ForecastReport() {
   const { dash } = useDash();
   const ist = dash.forecast.filter((row) => row.ist).reduce((sum, row) => sum + row.angezeigt, 0);
@@ -224,7 +309,7 @@ function ForecastReport() {
       </section>
       <Panel title="Abrechnungsstand je Projekt" subtitle={`${dash.orders.length} Aufträge`}>
         <DataTable rows={[...dash.orders].sort((a, b) => b.leistung - a.leistung)} cols={[
-          { key: "p", label: "Projekt", render: (row) => <><p className="font-medium">{row.name || row.nr}</p><p className="text-xs text-muted-foreground">{row.nr}</p></> },
+          { key: "p", label: "Projekt", render: (row) => <><Link to={`/projektsuche?nr=${encodeURIComponent(row.nr)}`} className="font-medium hover:underline">{row.name || row.nr}</Link><p className="text-xs text-muted-foreground">{row.nr}{row.status ? ` · ${row.status}` : ""}</p></> },
           { key: "r", label: "Region", render: (row) => row.region },
           { key: "l", label: "Leistung", right: true, render: (row) => eur(row.leistung) },
           { key: "a", label: "Anteil", right: true, render: (row) => `${num(dash.orders.reduce((sum, item) => sum + item.leistung, 0) ? row.leistung / dash.orders.reduce((sum, item) => sum + item.leistung, 0) * 100 : 0, 1)} %` },
@@ -254,6 +339,7 @@ function LiquidityReport() {
   const lowest = weeks.reduce((candidate, week) => week.bestand < candidate.bestand ? week : candidate, weeks[0]);
   return (
     <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">Dieser Bericht ist der 26-Wochen-Plan aus der Excel-Datenbasis. Importierte Kontoauszüge, einschließlich Oktober, stehen im Bericht Kontoauszug.</p>
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Startbestand" value={dash.liquidity.start} hint={dash.stichtag} signed icon />
         <Kpi label="Tiefster Bestand" value={lowest?.bestand ?? 0} hint={lowest?.datum ?? "keine Reihe"} signed />
@@ -294,7 +380,7 @@ function ProfitabilityReport() {
       </section>
       <Panel title="Projekte nach Rentabilität">
         <DataTable rows={[...orders].sort((a, b) => b.akteMarge - a.akteMarge)} cols={[
-          { key: "p", label: "Projekt", render: (row) => <><p className="font-medium">{row.name || row.nr}</p><p className="text-xs text-muted-foreground">{row.nr}</p></> },
+          { key: "p", label: "Projekt", render: (row) => <><Link to={`/projektsuche?nr=${encodeURIComponent(row.nr)}`} className="font-medium hover:underline">{row.name || row.nr}</Link><p className="text-xs text-muted-foreground">{row.nr}</p></> },
           { key: "r", label: "Region", render: (row) => row.region },
           { key: "l", label: "Leistung", right: true, render: (row) => eur(row.leistung) },
           { key: "d", label: "DB I", right: true, render: (row) => eur(row.db1) },
@@ -358,7 +444,7 @@ const metricGroups: MetricGroup[] = [
       balance("Eigenkapitalrendite", "Ergebnis annualisiert / Eigenkapital"),
       balance("Gesamtkapitalrendite", "(Ergebnis + Zinsaufwand) annualisiert / Gesamtkapital"),
       { name: "Umsatzrendite", formula: "Ergebnis vor Steuern / Umsatzerlöse", unit: "pct", value: (dash, month) => ratio(monthResult(dash, month), dash.months[month - 1]?.umsatz) },
-      { name: "Wirtschaftlichkeit", formula: "(Gesamtleistung + sonstige betriebliche Erträge) / Gesamtaufwand", unit: "num", value: (dash, month) => quotient((dash.months[month - 1]?.leistung ?? 0) + guvMonth(dash, "Andere sonstige betriebliche Ertraege", month), monthExpense(dash, month)) },
+      { name: "Wirtschaftlichkeit", formula: "(Gesamtleistung + sonstige betriebliche Erträge) / Gesamtaufwand", unit: "num", value: (dash, month) => quotient((dash.months[month - 1]?.leistung ?? 0) + guvMonth(dash, "Sonstige betriebliche Ertraege", month), monthExpense(dash, month)) },
       balance("Umschlagshäufigkeit des Eigenkapitals", "Umsatz annualisiert / Eigenkapital"),
       balance("Umschlagshäufigkeit des Gesamtkapitals", "Umsatz annualisiert / Gesamtkapital"),
       balance("Return on Investment (ROI)", "Ergebnis annualisiert / Gesamtkapital"),
@@ -417,10 +503,10 @@ const metricGroups: MetricGroup[] = [
       } },
       { name: "Break-Even-Point", formula: "Fixkosten / Deckungsquote", unit: "eur", value: (dash, month) => {
         const fixed = Math.abs(guvMonth(dash, "Personalaufwand", month))
-          + Math.abs(guvMonth(dash, "Sachkosten", month))
+          + Math.abs(guvMonth(dash, "Sonstige betriebliche Aufwendungen", month))
           + Math.abs(guvMonth(dash, "Abschreibungen", month));
         const output = dash.months[month - 1]?.leistung ?? 0;
-        const variable = Math.abs(guvMonth(dash, "Vorleistungen", month));
+        const variable = Math.abs(guvMonth(dash, "Material und Fremdleistungen", month));
         const margin = output ? 1 - variable / output : 0;
         return margin > 0 ? fixed / margin : null;
       } },
@@ -428,7 +514,7 @@ const metricGroups: MetricGroup[] = [
       market("Relativer Marktanteil", "eigener / größter Wettbewerber"),
       market("Marktwachstum", "Veränderung Marktvolumen"),
       { name: "Auftragsreichweite", formula: "Restplan Umsatz / durchschnittlicher Monatsumsatz", unit: "months", value: (dash) => {
-        const rest = dash.forecastPlan.filter((row) => row.art === "plan" && row.groesse === "umsatz" && row.monat > dash.letzterIst).reduce((sum, row) => sum - row.wert, 0);
+        const rest = dash.forecastPlan.filter((row) => row.art === "plan" && row.groesse === "umsatz" && row.monat > dash.letzterIst).reduce((sum, row) => sum + row.wert, 0);
         const revenue = dash.months.filter((row) => row.ist).reduce((sum, row) => sum + row.umsatz, 0);
         return revenue && dash.letzterIst ? rest / (revenue / dash.letzterIst) : null;
       } },
@@ -445,9 +531,9 @@ function monthResult(dash: Dash, month: number) {
   return row ? row.ebitda + row.abschreibungen + row.finanzergebnis : 0;
 }
 function monthExpense(dash: Dash, month: number) {
-  return Math.abs(guvMonth(dash, "Vorleistungen", month))
+  return Math.abs(guvMonth(dash, "Material und Fremdleistungen", month))
     + Math.abs(guvMonth(dash, "Personalaufwand", month))
-    + Math.abs(guvMonth(dash, "Sachkosten", month))
+    + Math.abs(guvMonth(dash, "Sonstige betriebliche Aufwendungen", month))
     + Math.abs(guvMonth(dash, "Abschreibungen", month));
 }
 function quotient(a: number | undefined, b: number | undefined) {
@@ -486,7 +572,7 @@ function KpiReport() {
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4 shadow-card print:hidden">
         <label className="text-xs font-medium text-muted-foreground">Monat
           <select value={month} onChange={(event) => setMonth(Number(event.target.value))} className="mt-1 block rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground">
-            {dash.monate.slice(0, dash.letzterIst).map((name, index) => <option key={name} value={index + 1}>{name} {dash.jahr}</option>)}
+            {dash.monate.map((name, index) => <option key={name} value={index + 1}>{name} {dash.jahr}{index + 1 === dash.aktuellerMonat ? " · Plan und Ist" : index + 1 > dash.letzterIst ? " · Plan" : ""}</option>)}
           </select>
         </label>
         <button className={reportButton} onClick={() => setView(view === "catalog" ? "report" : "catalog")}>{view === "catalog" ? `Bericht anzeigen (${selected.length})` : "Zur Auswahl"}</button>
@@ -533,8 +619,8 @@ function reportSources(dash: Dash, journal: ReturnType<typeof useDash>["journal"
   return {
     guv: {
       label: "GuV je Position und Monat",
-      description: "Die Positionen und Monatswerte aus GuV_Positionen.",
-      rows: dash.guv.flatMap((row) => row.values.map((value, index) => ({ zeile: row.zeile, nummer: row.nr, position: row.name, monat: index + 1, wert: value }))),
+      description: "Die Positionen der GuV. Monate nach der Excel-Mappe stammen aus dem Journal.",
+      rows: dash.guv.flatMap((row) => row.values.flatMap((value, index) => (value == null ? [] : [{ zeile: row.zeile, nummer: row.nr, position: row.name, monat: index + 1, wert: value }]))),
     },
     projekte: {
       label: "Deckungsbeitrag je Projekt",
@@ -555,6 +641,11 @@ function reportSources(dash: Dash, journal: ReturnType<typeof useDash>["journal"
       label: "Liquidität je Kalenderwoche",
       description: "Ein- und Auszahlungen sowie fortgeschriebener Bestand.",
       rows: dash.liquidity.weeks.map((row) => ({ datum: row.datum, jahr: row.jahr, monat: row.monat, einzahlungen: row.ein, auszahlungen: row.aus, netto: row.netto, bestand: row.bestand })),
+    },
+    kontoauszug: {
+      label: "Kontoauszug",
+      description: "Importierte Bankbuchungen. Oktober 2026 steht mit Buchungstag ab 01.10.2026.",
+      rows: dash.bank.bewegungen.map((row) => ({ buchungstag: row.datum, valuta: row.valuta ?? "", monat: row.datum.slice(0, 7), gegenpartei: row.gegenpartei, verwendungszweck: row.zweck, buchungstext: row.text, betrag: row.betrag, waehrung: row.waehrung, iban: row.iban, konto: row.konto })),
     },
     buchungen: {
       label: "Einzelbuchungen",

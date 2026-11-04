@@ -2,16 +2,14 @@ import { Bar, CartesianGrid, Cell, ComposedChart, ResponsiveContainer, Tooltip, 
 import { useDash } from "@/data";
 import { DataTable, money, eur, Panel, PageHeader, Kpi, ChartTip, axis, short } from "@/components/dash";
 
-export function Ebitda() {
+export function Ebitda({ eingebettet = false }: { eingebettet?: boolean }) {
   const { dash } = useDash();
   let c = 0;
   const rows = dash.months.map((m) => ({ ...m, kurz: short(m.name), kum: (c += m.ebitda), marge: m.leistung ? (m.ebitda / m.leistung) * 100 : null }));
   const best = [...rows].sort((a, b) => b.ebitda - a.ebitda)[0];
   const worst = [...rows].sort((a, b) => a.ebitda - b.ebitda)[0];
-  return (
-    <div>
-      <PageHeader title="EBITDA" subtitle={`Journal der GuV bis ${dash.letzterIstName}, danach Plan`} />
-      <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+  const inhalt = (
+    <>
         <section className="grid gap-4 sm:grid-cols-3">
           <Kpi label="EBITDA Jahr" value={c} hint="Ist + Plan" signed />
           <Kpi label={`Bester Monat · ${best.name}`} value={best.ebitda} hint="höchstes EBITDA" signed />
@@ -40,10 +38,17 @@ export function Ebitda() {
             { key: "h", label: "Overhead", right: true, render: (r) => money(r.overhead) },
             { key: "b", label: "Bewertung Plan", right: true, render: (r) => money(r.bewertungPlan) },
             { key: "f", label: "Bewertung offen", right: true, render: (r) => money(r.bewertungOffen) },
+            { key: "i", label: "Gebucht", right: true, render: (r) => money(r.ebitdaIst) },
             { key: "s", label: "Angezeigt", right: true, render: (r) => <span className="font-semibold">{money(r.ebitda)}</span> },
           ]} />
         </Panel>
-      </main>
+    </>
+  );
+  if (eingebettet) return <div className="mx-auto max-w-7xl space-y-6 px-6 pb-8">{inhalt}</div>;
+  return (
+    <div>
+      <PageHeader title="EBITDA" subtitle={dash.aktuellerMonatName ? `Gebucht bis ${dash.letzterIstName}. ${dash.aktuellerMonatName} zeigt Plan und die gebuchte Monatsscheibe.` : `Gebucht bis ${dash.letzterIstName}`} />
+      <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">{inhalt}</main>
     </div>
   );
 }

@@ -26,11 +26,16 @@ from threading import Lock
 from urllib.parse import parse_qs, urlparse
 from xml.etree import ElementTree as ET
 
-from model import (
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from server.model import (
     DB,
     ForecastInputError,
     SystemInputError,
     add_forecast_plan,
+    create_projektakte,
     annual_document,
     annual_entries,
     authenticate,
@@ -41,6 +46,7 @@ from model import (
     delete_report_template,
     ensure_system_schema,
     get_user,
+    bank_statement_import,
     import_log,
     journal_rows,
     list_users,
@@ -48,36 +54,33 @@ from model import (
     report_templates,
     save_annual_entry,
     save_report_template,
+    set_ist_freigabe,
     update_user,
     user_count,
     user_regions,
 )
 
-ROOT = Path(__file__).resolve().parents[1]
 XLSX = ROOT / "data" / "tvf-dashboard-download.xlsx"
 HOST = os.environ.get("TVF_API_HOST", "127.0.0.1")
 PORT = int(os.environ.get("TVF_API_PORT", "8787"))
 COOKIE = "tvf_session"
 SESSION_SECRET = os.environ.get("TVF_SESSION_SECRET", "").encode() or secrets.token_bytes(32)
-SYSTEM_TABLES = ("benutzer", "bericht_vorlage", "ja_stand", "import_protokoll")
 SOURCE_TABLES = (
-    "parameter",
-    "projekt",
-    "kostenart",
+    "berichtsposition",
     "buchung",
-    "forecast_plan",
-    "ebitda_plan",
-    "verlust",
-    "liq_parameter",
-    "liq_monat",
-    "liq_bestand",
-    "kontostand",
-    "guv_position",
-    "guv_wert",
-    "kosten_meldung",
-    "auftrag_liste",
-    "region_liste",
-    "legende",
+    "forecast_projekt",
+    "forecast_version",
+    "forecast_wert",
+    "import_lauf",
+    "konto",
+    "konto_mapping",
+    "kostenart",
+    "kostenstelle",
+    "kv_stand",
+    "liq_bankstand",
+    "liq_szenario",
+    "projekt",
+    "region",
 )
 def _session_token(user_id: int) -> str:
     expires = int(time.time()) + 12 * 60 * 60
@@ -96,6 +99,19 @@ def _session_user(token: str) -> dict | None:
         return get_user(int(raw_id))
     except (ValueError, TypeError):
         return None
+
+
+def _is_dashboard_workbook(content: bytes) -> bool:
+    if not content.startswith(b"PK"):
+        return False
+    from scripts.import_excel import SHEETS, workbook_sheet_names
+
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            names = set(workbook_sheet_names(archive))
+    except (zipfile.BadZipFile, KeyError, ET.ParseError, ValueError) as error:
+        raise SystemInputError("Die Datei ist keine lesbare Excel-Mappe.") from error
+    return bool(names & set(SHEETS))
 
 
 def _analyse_workbook(content: bytes) -> dict:
@@ -171,29 +187,14 @@ def _run_import(content: bytes) -> tuple[tempfile.TemporaryDirectory, Path, dict
 
 
 def _preserve_system_tables(new_database: Path) -> None:
-    ensure_system_schema()
-    old = sqlite3.connect(DB)
-    old.row_factory = sqlite3.Row
+    from scripts.import_excel import restore_preserved, snapshot_preserved
+    snapshot = snapshot_preserved(DB)
     new = sqlite3.connect(new_database)
     try:
-        for table in SYSTEM_TABLES:
-            columns = [
-                row[1] for row in old.execute(f'PRAGMA table_info("{table}")')
-            ]
-            if not columns:
-                continue
-            rows = old.execute(f'SELECT * FROM "{table}"').fetchall()
-            if not rows:
-                continue
-            names = ", ".join(f'"{name}"' for name in columns)
-            marks = ", ".join("?" for _ in columns)
-            new.executemany(
-                f'INSERT INTO "{table}" ({names}) VALUES ({marks})',
-                [tuple(row[name] for name in columns) for row in rows],
-            )
+        new.execute("PRAGMA foreign_keys = ON")
+        restore_preserved(new, snapshot)
         new.commit()
     finally:
-        old.close()
         new.close()
 
 
@@ -415,9 +416,47 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 self._json({"user": created, "setupComplete": False}, status=201)
                 return
+            if path == "/api/ist-freigabe":
+                roles = set(user["rollen"])
+                if user["regional"] or not roles & {"ADMIN", "CONTROLLING", "GF"}:
+                    self._json({"error": "Keine Berechtigung für die Ist-Freigabe."}, status=403)
+                    return
+                payload = self._read_json()
+                raw = payload.get("monat")
+                if raw is None:
+                    monat = None
+                elif isinstance(raw, bool) or not isinstance(raw, (int, float)) or not float(raw).is_integer():
+                    raise SystemInputError("Der Monat ist ungültig.")
+                else:
+                    monat = int(raw)
+                with self.data_lock:
+                    freigabe = set_ist_freigabe(monat)
+                    Handler.dashboard = build()
+                    Handler.scoped_dashboards.clear()
+                    dashboard = self._dashboard_for(user)
+                self._json({"freigabe": freigabe, "dashboard": dashboard})
+                return
+            if path == "/api/projektakte":
+                roles = set(user["rollen"])
+                if not roles & {"ADMIN", "CONTROLLING", "GF", "PROJEKTLEITER", "FORECAST-PFLEGE"}:
+                    self._json({"error": "Keine Berechtigung für die Projektakte."}, status=403)
+                    return
+                payload = self._read_json()
+                with self.data_lock:
+                    akte = create_projektakte(
+                        str(payload.get("auftrag", "")),
+                        str(payload.get("name", "")),
+                        str(payload.get("region", "")),
+                        user_regions(user),
+                    )
+                    Handler.dashboard = build()
+                    Handler.scoped_dashboards.clear()
+                    dashboard = self._dashboard_for(user)
+                self._json({"akte": akte, "dashboard": dashboard}, status=201)
+                return
             if path == "/api/forecast":
                 roles = set(user["rollen"])
-                if not roles & {"ADMIN", "CONTROLLING", "FORECAST-PFLEGE"}:
+                if not roles & {"ADMIN", "CONTROLLING", "GF", "PROJEKTLEITER", "FORECAST-PFLEGE"}:
                     self._json({"error": "Keine Berechtigung für Forecast-Eingaben."}, status=403)
                     return
                 payload = self._read_json()
@@ -479,11 +518,24 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     content = base64.b64decode(payload.get("inhalt", ""), validate=True)
                 except (ValueError, TypeError) as error:
-                    raise SystemInputError("Die Excel-Datei ist ungültig.") from error
+                    raise SystemInputError("Die Datei ist ungültig.") from error
                 if not content or len(content) > 32 * 1024 * 1024:
-                    raise SystemInputError("Die Excel-Datei fehlt oder ist zu groß.")
+                    raise SystemInputError("Die Datei fehlt oder ist zu groß.")
                 filename = Path(str(payload.get("dateiname", "dashboard.xlsx"))).name
                 step = str(payload.get("schritt", "analyse"))
+                if not _is_dashboard_workbook(content):
+                    if step not in {"analyse", "testlauf", "import"}:
+                        raise SystemInputError("Der Importschritt ist ungültig.")
+                    result = bank_statement_import(filename, content, write=step == "import")
+                    if step == "import":
+                        with self.data_lock:
+                            log_import(filename, step, "ERFOLGREICH", result["importiert"], result["format"])
+                            Handler.dashboard = build()
+                            Handler.scoped_dashboards.clear()
+                    elif step == "testlauf":
+                        log_import(filename, step, "ERFOLGREICH", result["zeilen"], result["format"])
+                    self._json(result)
+                    return
                 analysis = _analyse_workbook(content)
                 if step == "analyse":
                     self._json({"art": "TVF-Dashboard", **analysis})

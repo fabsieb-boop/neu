@@ -3,11 +3,12 @@ import { useParams } from "react-router-dom";
 import { Download, FileUp, Mail as MailIcon, Search, Upload, UserPlus } from "lucide-react";
 import { Berichte } from "@/pages/berichte";
 import { useDash } from "@/data";
-import { DataTable, eur, Kpi, PageHeader, Panel } from "@/components/dash";
+import { DataTable, eur, Kpi, num, PageHeader, Panel } from "@/components/dash";
 import type { User } from "@/types";
 
-export function System() {
-  const { section } = useParams();
+export function System({ bereich }: { bereich?: string }) {
+  const { section: ausPfad } = useParams();
+  const section = bereich ?? ausPfad;
   if (section === "berichte") return <Berichte />;
   if (section === "unterlagen") return <AnnualClosing />;
   if (section === "import") return <ImportManager />;
@@ -23,7 +24,7 @@ type UserData = { nutzer: User[]; rollen: string[]; regionen: string[] };
 function Users() {
   const { user: currentUser, logout } = useDash();
   const [data, setData] = useState<UserData | null>(null);
-  const [form, setForm] = useState({ email: "", passwort: "", vorname: "", nachname: "", rolle: currentUser.setup ? "ADMIN" : "NEUTRAL" });
+  const [form, setForm] = useState({ email: "", passwort: "", vorname: "", nachname: "", rolle: currentUser.setup ? "ADMIN" : "LESEN" });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const load = () => fetch("/api/users").then(async (response) => {
@@ -44,7 +45,7 @@ function Users() {
       return;
     }
     setMessage("Benutzer angelegt – Passwortwechsel bei erster Anmeldung ist gekennzeichnet.");
-    setForm({ email: "", passwort: "", vorname: "", nachname: "", rolle: "NEUTRAL" });
+    setForm({ email: "", passwort: "", vorname: "", nachname: "", rolle: "LESEN" });
     load();
   };
   const change = async (benutzerId: number, aktion: string, wert: string | undefined, an: boolean) => {
@@ -96,7 +97,46 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
 }
 
 type ImportRun = { id: number; erstelltAt: string; dateiname: string; schritt: string; status: string; zeilen: number; detail: string };
-type ImportAnalysis = { blaetter?: string[]; erkannt?: number; tabellen?: Record<string, number>; zeilen?: number; importiert?: number };
+type ImportPreview = { datum: string; betrag: number; betragText?: string; text: string; gegenpartei: string };
+type ImportAnalysis = {
+  art?: string;
+  format?: string;
+  blaetter?: string[];
+  erkannt?: number;
+  tabellen?: Record<string, number>;
+  zeilen?: number;
+  importiert?: number;
+  konto?: string;
+  von?: string;
+  bis?: string;
+  summe?: number;
+  summeText?: string;
+  eingang?: number;
+  eingangText?: string;
+  ausgang?: number;
+  ausgangText?: string;
+  neu?: number;
+  bereits?: number;
+  uebersprungen?: number;
+  schlussSaldo?: number | null;
+  schlussSaldoText?: string | null;
+  schlussDatum?: string | null;
+  vorschau?: ImportPreview[];
+};
+
+function importMessage(step: "analyse" | "testlauf" | "import", result: ImportAnalysis) {
+  if (result.art === "Kontoauszug") {
+    if (step === "import") return `${(result.importiert ?? 0).toLocaleString("de-DE")} Buchungen aus dem Kontoauszug übernommen.`;
+    const neu = (result.neu ?? 0).toLocaleString("de-DE");
+    const schon = (result.bereits ?? 0).toLocaleString("de-DE");
+    return `${result.format}: ${(result.zeilen ?? 0).toLocaleString("de-DE")} Buchungen erkannt, ${neu} neu, ${schon} schon vorhanden.`;
+  }
+  if (step === "analyse") return `${result.erkannt} benötigte Blätter erkannt.`;
+  if (step === "testlauf") return `${result.zeilen} Quellzeilen im isolierten Test verarbeitet.`;
+  return `${result.importiert} Quellzeilen importiert.`;
+}
+
+const deDate = (value?: string) => value ? value.split("-").reverse().join(".") : "";
 
 function ImportManager() {
   const { updateDash, updateJournal } = useDash();
@@ -118,7 +158,7 @@ function ImportManager() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Import fehlgeschlagen.");
       setAnalysis(result);
-      setMessage(step === "analyse" ? `${result.erkannt} benötigte Blätter erkannt.` : step === "testlauf" ? `${result.zeilen} Quellzeilen im isolierten Test verarbeitet.` : `${result.importiert} Quellzeilen importiert.`);
+      setMessage(importMessage(step, result));
       if (step === "import") {
         const [dashboard, journal] = await Promise.all([fetch("/api/dashboard").then((item) => item.json()), fetch("/api/journal").then((item) => item.json())]);
         updateDash(dashboard); updateJournal(journal);
@@ -138,15 +178,33 @@ function ImportManager() {
   };
   return (
     <div>
-      <PageHeader title="Datenimport" subtitle="Analyse, isolierter Testlauf und direkter Import der TVF-Excel-Datei" />
+      <PageHeader title="Datenimport" subtitle="Excel-Mappe oder Kontoauszug: CSV, CAMT, MT940" />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         {(message || error) && <p className={`rounded-lg px-4 py-3 text-sm ${error ? "bg-negative/10 text-negative" : "bg-positive/10 text-positive"}`}>{error || message}</p>}
         <Panel title="SAP-Daten & Listen" subtitle="Excel-Quelldatei">
-          <label className="grid min-h-48 cursor-pointer place-items-center rounded-xl border-2 border-dashed border-border bg-muted/30 p-8 text-center hover:border-primary">
-            <div><Upload className="mx-auto h-8 w-8 text-primary" /><p className="mt-3 font-semibold">{file ? file.name : "Datei hierher ziehen oder klicken"}</p><p className="mt-1 text-xs text-muted-foreground">tvf-dashboard-download.xlsx · Art und benötigte Blätter werden geprüft</p></div>
-            <input type="file" accept=".xlsx" className="sr-only" onChange={(event) => choose(event.target.files?.[0])} />
+          <label
+            className="grid min-h-48 cursor-pointer place-items-center rounded-xl border-2 border-dashed border-border bg-muted/30 p-8 text-center hover:border-primary"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => { event.preventDefault(); choose(event.dataTransfer.files?.[0]); }}
+          >
+            <div><Upload className="mx-auto h-8 w-8 text-primary" /><p className="mt-3 font-semibold">{file ? file.name : "Datei hierher ziehen oder klicken"}</p><p className="mt-1 text-xs text-muted-foreground">Dashboard-Mappe oder Kontoauszug der Bank · Sparkasse, VR, DATEV, CAMT, MT940</p></div>
+            <input type="file" accept=".xlsx,.xlsm,.csv,.txt,.xml,.sta,.mt940,text/csv,text/plain,application/xml,text/xml" className="sr-only" onChange={(event) => choose(event.target.files?.[0])} />
           </label>
           {file && <div className="mt-4 flex flex-wrap gap-2"><button disabled={running} className={buttonClass} onClick={() => void execute("analyse")}>1 · Analysieren</button><button disabled={running || !analysis} className={buttonClass} onClick={() => void execute("testlauf")}>2 · Testlauf</button><button disabled={running || !analysis} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40" onClick={() => void execute("import")}>3 · Importieren</button></div>}
+          {analysis?.art === "Kontoauszug" && (
+            <div className="mt-5 space-y-3 text-sm">
+              <p>{analysis.format} · {analysis.konto || "Konto aus der Datei"} · {deDate(analysis.von)}–{deDate(analysis.bis)} · Eingang {analysis.eingangText ?? num(analysis.eingang ?? 0, 2)} € · Ausgang {analysis.ausgangText ?? num(analysis.ausgang ?? 0, 2)} €</p>
+              {analysis.schlussSaldo != null && <p>Schlusssaldo laut Datei: {analysis.schlussSaldoText ?? num(analysis.schlussSaldo, 2)} €{analysis.schlussDatum ? ` am ${deDate(analysis.schlussDatum)}` : ""}</p>}
+              {analysis.vorschau && analysis.vorschau.length > 0 && (
+                <DataTable rows={analysis.vorschau} cols={[
+                  { key: "d", label: "Buchungstag", render: (row) => deDate(row.datum) },
+                  { key: "g", label: "Gegenpartei", render: (row) => row.gegenpartei || "–" },
+                  { key: "t", label: "Text", render: (row) => <span className="inline-block max-w-xs truncate align-bottom" title={row.text}>{row.text}</span> },
+                  { key: "b", label: "Betrag", right: true, render: (row) => <span className={row.betrag < 0 ? "text-negative" : ""}>{row.betragText ?? num(row.betrag, 2)} €</span> },
+                ]} />
+              )}
+            </div>
+          )}
           {analysis?.blaetter && <div className="mt-5 flex flex-wrap gap-2">{analysis.blaetter.map((sheet) => <span key={sheet} className="rounded-full bg-muted px-3 py-1 text-xs">{sheet}</span>)}</div>}
           {analysis?.tabellen && <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{Object.entries(analysis.tabellen).map(([table, count]) => <div key={table} className="rounded-lg bg-muted p-3 text-sm"><p className="font-mono text-xs text-muted-foreground">{table}</p><p className="mt-1 font-semibold">{count.toLocaleString("de-DE")} Zeilen</p></div>)}</div>}
         </Panel>
@@ -170,7 +228,7 @@ async function executeFile(file: File, setRunning: (value: boolean) => void, set
     const response = await fetch("/api/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schritt: "analyse", dateiname: file.name, inhalt: await fileBase64(file) }) });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Analyse fehlgeschlagen.");
-    setAnalysis(result); setMessage(`${result.erkannt} benötigte Blätter erkannt.`);
+    setAnalysis(result); setMessage(importMessage("analyse", result));
   } catch (reason) { setError(reason instanceof Error ? reason.message : "Analyse fehlgeschlagen."); } finally { setRunning(false); }
 }
 
@@ -308,47 +366,46 @@ function sum<T extends Record<string, unknown>>(rows: T[], key: keyof T) {
 }
 
 const ebitdaContributionGroups = new Set([
-  "1 Umsatzerlöse",
-  "2 Bestandsveränderungen",
-  "3 Sonstige betriebliche Erträge",
-  "4 Materialaufwand",
-  "5 Aufwand für bezogene Leistungen",
-  "6 Personalaufwand",
-  "8 Sonstige betriebliche Aufwendungen",
+  "Umsatzerloese",
+  "Bestandsveraenderung",
+  "Sonstige betriebliche Ertraege",
+  "Material und Fremdleistungen",
+  "Personalaufwand",
+  "Sonstige betriebliche Aufwendungen",
+  "Sonstige Steuern",
 ]);
 const counterRows = [
-  ["1 Umsatzerlöse", "Summe Umsatzerlöse", "beitrag"],
-  ["2 Bestandsveränderungen", "Bestandsveraend. UE und FE", "beitrag"],
-  ["3 Sonstige betriebliche Erträge", "Andere sonstige betriebliche Ertraege", "beitrag"],
-  ["4 Materialaufwand", "Aufwendungen für RHB", "beitrag"],
-  ["5 Aufwand für bezogene Leistungen", "Fremdleistungen", "beitrag"],
-  ["6 Personalaufwand", "Personalaufwand", "beitrag"],
-  ["8 Sonstige betriebliche Aufwendungen", "Sachkosten", "beitrag"],
-  ["12 Periodenfremdes Ergebnis", "Neutrales Ergebnis", "wert"],
-  ["7 Abschreibungen", "Abschreibungen", "wert"],
-  ["10 Zinsergebnis", "Finanzergebnis", "wert"],
+  ["Umsatzerloese", "Umsatzerloese"],
+  ["Bestandsveraenderung", "Bestandsveraenderung"],
+  ["Sonstige betriebliche Ertraege", "Sonstige betriebliche Ertraege"],
+  ["Material und Fremdleistungen", "Material und Fremdleistungen"],
+  ["Personalaufwand", "Personalaufwand"],
+  ["Sonstige betriebliche Aufwendungen", "Sonstige betriebliche Aufwendungen"],
+  ["Sonstige Steuern", "Sonstige Steuern"],
+  ["Neutrales Ergebnis", "Neutrales Ergebnis"],
+  ["Abschreibungen", "Abschreibungen"],
+  ["Zinsen und Steuern", "Zinsen und Steuern"],
 ] as const;
 
 function Countercheck() {
   const { dash, journal } = useDash();
-  const [month, setMonth] = useState(Math.min(dash.letzterIst, 9));
-  const rows = counterRows.map(([group, position, source]) => {
-    const guv = dash.guv.find((row) => row.name === position)?.values[month - 1] ?? 0;
+  const columns = dash.guv[0]?.values.length ?? 9;
+  const [month, setMonth] = useState(dash.aktuellerMonat ?? Math.min(dash.letzterIst, columns));
+  const rows = counterRows.map(([group, position]) => {
+    const guv = dash.guv.find((row) => row.name === position)?.ist[month - 1] ?? 0;
     const matching = journal.filter((row) => row.monat === month && row.guvGruppe === group);
-    const bookings = source === "beitrag"
-      ? matching.reduce((total, row) => total + row.beitrag, 0)
-      : -matching.reduce((total, row) => total + row.wert, 0);
+    const bookings = matching.reduce((total, row) => total + row.wert * -1, 0);
     return { group, position, guv, bookings, delta: guv - bookings };
   });
-  const ebitda = dash.guv.find((row) => row.name === "EBITDA")?.values[month - 1] ?? 0;
+  const ebitda = dash.guv.find((row) => row.name === "EBITDA")?.ist[month - 1] ?? 0;
   const journalEbitda = journal
     .filter((row) => row.monat === month && ebitdaContributionGroups.has(row.guvGruppe))
-    .reduce((total, row) => total + row.beitrag, 0);
+    .reduce((total, row) => total + row.wert * -1, 0);
   return (
     <div>
       <PageHeader title="Gegenkontrolle" subtitle="GuV gegen die nach Kontenstamm zugeordneten Buchungen" />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-        <label className="block w-fit text-xs font-medium text-muted-foreground">Monat<select value={month} onChange={(event) => setMonth(Number(event.target.value))} className="mt-1 block rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground">{dash.monate.slice(0, 9).map((name, index) => <option key={name} value={index + 1}>{name} {dash.jahr}</option>)}</select></label>
+        <label className="block w-fit text-xs font-medium text-muted-foreground">Monat<select value={month} onChange={(event) => setMonth(Number(event.target.value))} className="mt-1 block rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground">{dash.monate.slice(0, columns).map((name, index) => <option key={name} value={index + 1}>{name} {dash.jahr}</option>)}</select></label>
         <section className="grid gap-4 sm:grid-cols-3">
           <Kpi label={`EBITDA ${dash.monate[month - 1]}`} value={ebitda} hint="GuV-Zeile EBITDA" signed />
           <Kpi label="Buchungsableitung" value={journalEbitda} hint="Beitrag der Gruppen 1–6 und 8" signed />

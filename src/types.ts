@@ -17,9 +17,14 @@ export type Month = {
   bewertungPlan: number;
   bewertungOffen: number;
   ebitda: number;
+  offen: boolean;
+  umsatzIst: number;
+  bestandIst: number;
+  leistungIst: number;
+  ebitdaIst: number;
 };
 
-export type GuvRow = { zeile: number; nr: number; name: string; sum: boolean; values: number[] };
+export type GuvRow = { zeile: number; nr: number; name: string; sum: boolean; values: (number | null)[]; ist: number[] };
 export type Order = {
   nr: string;
   name: string;
@@ -33,7 +38,17 @@ export type Order = {
   akte: number;
   abgrenzung: number;
 };
-export type ForecastOrder = { nr: string; name: string; region: string; status: string; monate: number[] };
+export type ForecastOrder = {
+  nr: string;
+  name: string;
+  region: string;
+  status: string;
+  psp: string;
+  monate: number[];
+  leistungMonate: number[];
+  kostenMonate: number[];
+  istMonate: number[];
+};
 export type Region = { region: string; akte: number[]; forecast: (number | null)[]; umsatz: number[] };
 export type AuftragDetail = {
   umsatz: number;
@@ -91,6 +106,11 @@ export type Dash = {
   jahr: number;
   letzterIst: number;
   letzterIstName: string;
+  aktuellerMonat: number | null;
+  aktuellerMonatName: string | null;
+  mappeMonat: number;
+  mappeMonatName: string;
+  freigabeGesetzt: boolean;
   stichtag: string;
   auftragsnummer: string;
   monate: string[];
@@ -114,6 +134,7 @@ export type Dash = {
     kostenPlan: number | null;
     bestandPlan: number | null;
     angezeigt: number;
+    offen: boolean;
   }[];
   guv: GuvRow[];
   orders: Order[];
@@ -143,6 +164,12 @@ export type Dash = {
   liqBestand: { monat: number; saldo: number; quelle: string }[];
   forecastPlan: { region: string; nr: string; name: string; groesse: string; art: string; monat: number; wert: number }[];
   liquidity: { start: number; dso: number; dpo: number; weeks: { datum: string; jahr: number; monat: number; ein: number; aus: number; netto: number; bestand: number }[] };
+  bank: {
+    anzahl: number;
+    summe: number;
+    monate: { monat: string; ein: number; aus: number; anzahl: number }[];
+    bewegungen: { datum: string; valuta: string | null; betrag: number; waehrung: string; text: string; zweck: string; gegenpartei: string; iban: string; konto: string }[];
+  };
   auftragDetail: Record<string, AuftragDetail>;
   scope: { regional: boolean; regions: string[] };
 };

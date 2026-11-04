@@ -2,8 +2,7 @@ import { Bar, CartesianGrid, Cell, ComposedChart, Line, ResponsiveContainer, Too
 import { AlertTriangle } from "lucide-react";
 import { useDash } from "@/data";
 import { eur, short, Kpi, Panel, ChartTip, PageHeader } from "@/components/dash";
-
-const GUV_ZEILEN = ["Summe Umsatzerlöse", "Rohertrag", "Personalaufwand", "Sachkosten", "EBITDA (Operatives Ergebnis)", "Neutrales Ergebnis", "EBITDA", "Abschreibungen", "Finanzergebnis", "Ergebnis vor Steuern"];
+const GUV_ZEILEN = ["Umsatzerloese", "Rohertrag", "Personalaufwand", "Sonstige betriebliche Aufwendungen", "EBITDA", "Neutrales Ergebnis", "Abschreibungen", "Zinsen und Steuern", "Ergebnis"];
 
 export function Uebersicht() {
   const { dash } = useDash();
@@ -89,12 +88,12 @@ export function Uebersicht() {
                     <tr key={m.m} className="border-t border-border">
                       <td className="py-2.5">
                         <span className="font-medium">{m.name}</span>
-                        <span className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${m.ist ? "bg-secondary text-secondary-foreground" : "bg-plan/30 text-primary"}`}>{m.ist ? "Ist" : "Plan"}</span>
+                        <span className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${m.offen ? "bg-plan/30 text-primary" : m.ist ? "bg-secondary text-secondary-foreground" : "bg-plan/30 text-primary"}`}>{m.offen ? "Plan und Ist" : m.ist ? "Ist" : "Plan"}</span>
                       </td>
-                      <td className="text-right">{eur(m.umsatz)}</td>
-                      <td className="text-right text-muted-foreground">{eur(m.bestand)}</td>
-                      <td className="text-right font-medium">{eur(m.leistung)}</td>
-                      <td className={`text-right font-semibold ${m.ebitda < 0 ? "text-negative" : "text-positive"}`}>{eur(m.ebitda)}</td>
+                      <td className="text-right">{eur(m.umsatz)}{m.offen && <span className="block text-xs text-muted-foreground">Ist {eur(m.umsatzIst)}</span>}</td>
+                      <td className="text-right text-muted-foreground">{eur(m.bestand)}{m.offen && <span className="block text-xs">Ist {eur(m.bestandIst)}</span>}</td>
+                      <td className="text-right font-medium">{eur(m.leistung)}{m.offen && <span className="block text-xs font-normal text-muted-foreground">Ist {eur(m.leistungIst)}</span>}</td>
+                      <td className={`text-right font-semibold ${m.ebitda < 0 ? "text-negative" : "text-positive"}`}>{eur(m.ebitda)}{m.offen && <span className={`block text-xs font-normal ${m.ebitdaIst < 0 ? "text-negative" : "text-muted-foreground"}`}>Ist {eur(m.ebitdaIst)}</span>}</td>
                       <td className={`text-right ${m.auftragsergebnis < 0 ? "text-negative" : ""}`}>{eur(m.auftragsergebnis)}</td>
                     </tr>
                   ))}
@@ -104,8 +103,8 @@ export function Uebersicht() {
           </Panel>
           <Panel title={`GuV Januar–${dash.letzterIstName}`} subtitle="Zwischensummen">
             <ul className="divide-y divide-border text-sm">
-              {dash.guv.filter((g) => g.sum && GUV_ZEILEN.includes(g.name)).map((g) => {
-                const t = g.values.reduce((a, b) => a + b, 0);
+              {dash.guv.filter((g) => GUV_ZEILEN.includes(g.name)).map((g) => {
+                const t = g.values.reduce<number>((a, b) => a + (b ?? 0), 0);
                 const key = g.name === "EBITDA" || g.name === "Ergebnis vor Steuern";
                 return (
                   <li key={g.name} className={`flex justify-between py-2 ${key ? "font-semibold" : ""}`}>

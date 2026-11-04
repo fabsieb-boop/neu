@@ -1,30 +1,57 @@
-import { useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
 import { OrderSearch } from "@/components/order-search";
 import { useDash } from "@/data";
-import { eur, Panel, PageHeader, Kpi, axis, DataTable, money, short } from "@/components/dash";
+import { eur, Panel, PageHeader, Kpi, axis, DataTable, money, num, short } from "@/components/dash";
 
 export function Auftrag() {
   const { dash, journal } = useDash();
-  const [nr, setNr] = useState(dash.auftragsnummer);
+  const [params, setParams] = useSearchParams();
+  const nr = params.get("nr") || dash.auftragsnummer;
   const o = dash.orders.find((x) => x.nr === nr);
   const d = dash.auftragDetail[nr];
   const belege = journal.filter((j) => j.nr === nr);
+  const bewegteMonate = d?.monate.filter((monat) => monat.leistung !== 0 || monat.kosten !== 0) ?? [];
   const pie = d ? [{ n: "Variable Kosten", v: d.kvar }, { n: "Fixe Kosten", v: d.kfix }, { n: "Gemeinkosten", v: d.umlage }] : [];
   const C = ["var(--chart-1)", "var(--chart-3)", "var(--chart-4)"];
   return (
     <div>
-      <PageHeader title={o?.name || nr} subtitle={`${nr}${o ? ` · ${o.region}` : ""}`} />
+      <PageHeader title={o?.name || nr} subtitle={`${nr}${o ? ` · ${o.region}` : ""}${o?.status ? ` · ${o.status}` : ""}`} />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-        <div className="max-w-xl"><OrderSearch value={nr} onSelect={setNr} /></div>
+        <Link to="/projektsuche" className="text-sm font-medium text-primary hover:underline">Zur Projektsuche</Link>
+        <div className="max-w-xl"><OrderSearch value={nr} onSelect={(next) => setParams({ nr: next })} /></div>
         {d && (
           <>
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Kpi label="Leistung" value={d.leistung} hint="Umsatzerlöse + Bestand" />
-              <Kpi label="DB1" value={d.db1} hint="Leistung − variable Kosten" signed />
-              <Kpi label="DB2" value={d.db2} hint="DB1 − fixe Kosten" signed />
-              <Kpi label="Ergebnis Akte" value={d.akte} hint={d.leistung ? `Marge ${((d.akte / d.leistung) * 100).toFixed(1)} %` : "ohne Leistung"} signed />
+              <Kpi label="Leistung" value={d.leistung} hint="Umsatzerlöse + Bestand" cents />
+              <Kpi label="DB1" value={d.db1} hint="Leistung − variable Kosten" signed cents />
+              <Kpi label="DB2" value={d.db2} hint="DB1 − fixe Kosten" signed cents />
+              <Kpi label="Ergebnis Akte" value={d.akte} hint={d.leistung ? `Marge ${((d.akte / d.leistung) * 100).toFixed(1)} %` : "Leistung minus Kosten"} signed cents />
             </section>
+            {bewegteMonate.length > 0 && (
+              <Panel title="Monate mit Buchungen" subtitle={`Journal in Euro. Ab ${dash.monate[dash.letzterIst] ?? "dem nächsten Monat"} gilt im Forecast der Plan.`}>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
+                      <th className="pb-3 font-medium">Monat</th>
+                      <th className="pb-3 text-right font-medium">Leistung</th>
+                      <th className="pb-3 text-right font-medium">Kosten</th>
+                      <th className="pb-3 text-right font-medium">Ergebnis</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bewegteMonate.map((monat) => (
+                      <tr key={monat.m} className="border-t border-border">
+                        <td className="py-2">{monat.name}</td>
+                        <td className="py-2 text-right tabular-nums">{num(monat.leistung, 2)} €</td>
+                        <td className="py-2 text-right tabular-nums">{num(monat.kosten, 2)} €</td>
+                        <td className={`py-2 text-right font-semibold tabular-nums ${monat.ergebnis < 0 ? "text-negative" : ""}`}>{num(monat.ergebnis, 2)} €</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Panel>
+            )}
             <div className="grid gap-6 lg:grid-cols-3">
               <Panel title="Verlauf je Monat" className="lg:col-span-2" subtitle={`${d.belege} Belege mit dieser Projektnummer`}>
                 <div className="h-72">

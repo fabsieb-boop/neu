@@ -1,6 +1,6 @@
 type GuvSourceRow = {
   name: string;
-  values: number[];
+  values: (number | null)[];
 };
 
 export type WaterfallBar = {
@@ -14,17 +14,17 @@ export function buildGuvWaterfall(rows: GuvSourceRow[]) {
   const total = (name: string) => {
     const row = rows.find((item) => item.name === name);
     if (!row) throw new Error(`GuV-Zeile fehlt: ${name}`);
-    return row.values.reduce((sum, value) => sum + value, 0);
+    return row.values.reduce<number>((sum, value) => sum + (value ?? 0), 0);
   };
 
-  const umsatz = total("Summe Umsatzerlöse");
+  const umsatz = total("Umsatzerloese");
+  const sachkosten = total("Sonstige betriebliche Aufwendungen") + total("Sonstige Steuern");
   const steps: [string, number][] = [
     ["Umsatz", umsatz],
     ["bis Rohertrag", total("Rohertrag") - umsatz],
-    ["Sonst. Erträge", total("Andere sonstige betriebliche Ertraege")],
+    ["Sonst. Erträge", total("Sonstige betriebliche Ertraege")],
     ["Personal", total("Personalaufwand")],
-    ["Sachkosten", total("Sachkosten")],
-    ["Neutral", total("Neutrales Ergebnis")],
+    ["Sachkosten", sachkosten],
   ];
 
   let run = 0;
