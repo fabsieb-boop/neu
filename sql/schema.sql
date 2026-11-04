@@ -4,13 +4,15 @@
 -- Datum und Uhrzeit ISO-Text. EXTRACT(day) ist substr(..., 9, 2) = '01'.
 --
 -- Nicht angelegt, weil die Mappe dafür keine Zeilen hat:
---   partner, mitarbeiter, anmelde_protokoll, benutzer_zugriff,
---   nachtrag, projekt_dokument, unterauftrag, unterauftrag_kv_position,
---   stunden, stunden_kontrolle, konto_saldo, risiko_katalog, projekt_risiko,
---   liq_finanzierung, liq_posten, bericht_vorlage, bericht_abschnitt, bericht_lauf
+--   benutzer, benutzer_rolle, partner, mitarbeiter, anmelde_protokoll,
+--   benutzer_zugriff, nachtrag, projekt_dokument, unterauftrag,
+--   unterauftrag_kv_position, stunden, stunden_kontrolle, konto_saldo,
+--   risiko_katalog, projekt_risiko, liq_finanzierung, liq_posten,
+--   bericht_vorlage, bericht_abschnitt, bericht_lauf
+-- benutzer und benutzer_rolle legt die Anwendung mit dem ersten Benutzer an.
 -- liq_posten, bericht_vorlage, bericht_abschnitt und benutzer_zugriff
--- legt die Anwendung erst an, wenn ein Kontoauszug, eine Vorlage
--- oder eine Regionseinschränkung gespeichert wird.
+-- folgen, wenn ein Kontoauszug, eine Vorlage oder eine Region
+-- gespeichert wird. Nach dem Einlesen wird jede leere Tabelle gelöscht.
 -- Die plpgsql-Funktionen und die Sichten, die nur auf leere Tabellen
 -- zeigen, fehlen. Enthalten sind v_guv_monat, v_ebitda_monat
 -- und v_projektakte_forecast.
@@ -34,28 +36,10 @@ CREATE TABLE kostenstelle (
     aktiv           INTEGER NOT NULL DEFAULT 1 CHECK (aktiv IN (0, 1))
 );
 
-CREATE TABLE benutzer (
-    benutzer_id      INTEGER PRIMARY KEY,
-    login            TEXT NOT NULL UNIQUE,
-    anzeigename      TEXT NOT NULL,
-    email            TEXT,
-    passwort_hash    TEXT NOT NULL,
-    aktiv            INTEGER NOT NULL DEFAULT 1 CHECK (aktiv IN (0, 1)),
-    muss_pw_aendern  INTEGER NOT NULL DEFAULT 1 CHECK (muss_pw_aendern IN (0, 1)),
-    angelegt_am      TEXT NOT NULL DEFAULT (datetime('now')),
-    letzte_anmeldung TEXT
-);
-
 CREATE TABLE rolle (
     rolle_id     INTEGER PRIMARY KEY,
     code         TEXT NOT NULL UNIQUE,
     bezeichnung  TEXT NOT NULL
-);
-
-CREATE TABLE benutzer_rolle (
-    benutzer_id  INTEGER NOT NULL REFERENCES benutzer (benutzer_id) ON DELETE CASCADE,
-    rolle_id     INTEGER NOT NULL REFERENCES rolle (rolle_id),
-    PRIMARY KEY (benutzer_id, rolle_id)
 );
 
 CREATE TABLE kostenart (
@@ -152,7 +136,7 @@ CREATE TABLE import_lauf (
                   CHECK (quelle IN ('FI_EINZELPOSTEN', 'CO_OBJEKTPOSTEN', 'BILANZ_GUV_BERICHT', 'FORECAST_IMPORT', 'KOSTENVERFOLGUNG', 'MANUELL')),
     dateiname     TEXT,
     importiert_am TEXT NOT NULL DEFAULT (datetime('now')),
-    benutzer_id   INTEGER REFERENCES benutzer (benutzer_id),
+    benutzer_id   INTEGER,
     zeilen        INTEGER,
     bemerkung     TEXT
 );
@@ -190,7 +174,7 @@ CREATE TABLE forecast_version (
                     CHECK (status IN ('ENTWURF', 'FREIGEGEBEN', 'ARCHIVIERT')),
     ist_aktiv       INTEGER NOT NULL DEFAULT 0 CHECK (ist_aktiv IN (0, 1)),
     erstellt_am     TEXT NOT NULL DEFAULT (datetime('now')),
-    erstellt_von    INTEGER REFERENCES benutzer (benutzer_id)
+    erstellt_von    INTEGER
 );
 CREATE UNIQUE INDEX uq_forecast_version_aktiv
     ON forecast_version (geschaeftsjahr, typ) WHERE ist_aktiv;
@@ -200,7 +184,7 @@ CREATE TABLE forecast_projekt (
     projekt_id           INTEGER NOT NULL REFERENCES projekt (projekt_id) ON DELETE CASCADE,
     endergebnis_prognose REAL,
     bemerkung            TEXT,
-    gepflegt_von         INTEGER REFERENCES benutzer (benutzer_id),
+    gepflegt_von         INTEGER,
     gepflegt_am          TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (version_id, projekt_id)
 );
@@ -235,7 +219,7 @@ CREATE TABLE liq_szenario (
     dpo_tage            INTEGER NOT NULL DEFAULT 30,
     nur_sichere_posten  INTEGER NOT NULL DEFAULT 0 CHECK (nur_sichere_posten IN (0, 1)),
     erstellt_am         TEXT NOT NULL DEFAULT (datetime('now')),
-    erstellt_von        INTEGER REFERENCES benutzer (benutzer_id),
+    erstellt_von        INTEGER,
     CHECK (enddatum > startdatum)
 );
 

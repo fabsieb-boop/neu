@@ -4,7 +4,7 @@ Das Dashboard zeigt die Arbeitsmappe `data/tvf-dashboard-download.xlsx`. Beträg
 
 ## Tabellen
 
-Gefüllt werden nur Tabellen mit Zeilen aus der Mappe: Region, Kostenstelle, Konto, Kontenzuordnung, Projekt, Kostenverfolgung, Buchung, Forecast, Liquiditätsstände, KLR-Sätze und die Kennzahldefinitionen. Leere Bereiche der Vorlage (Partner, Stunden, Risiken, Unteraufträge, Bilanzsalden) werden nicht angelegt. `benutzer` darf leer sein, bis sich jemand anmeldet.
+Gefüllt werden nur Tabellen mit Zeilen aus der Mappe: Region, Rolle, Kostenstelle, Konto, Kontenzuordnung, Projekt, Kostenverfolgung, Buchung, Forecast, Liquiditätsstände, KLR-Sätze und die Kennzahldefinitionen. Nach dem Einlesen wird jede leere Tabelle gelöscht. `benutzer` entsteht mit dem ersten Benutzer, ein Kontoauszug legt `liq_posten` an.
 
 Ist-Monate kommen aus `buchung`. Planmonate kommen aus `forecast_wert`. Der letzte Ist-Monat steht an der aktiven Forecast-Version. Ein erneuter Excel-Import setzt ihn nur zurück, wenn niemand einen anderen Monat freigegeben hat.
 

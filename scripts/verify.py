@@ -62,7 +62,7 @@ def main() -> None:
         "berichtsposition", "buchung", "forecast_projekt", "forecast_version", "forecast_wert",
         "import_lauf", "kennzahl_definition", "klr_ampel_schwelle", "klr_zuschlagssatz",
         "konto", "konto_mapping", "kostenart", "kostenstelle", "kv_stand", "liq_bankstand",
-        "liq_szenario", "projekt", "region", "rolle", "benutzer",
+        "liq_szenario", "projekt", "region", "rolle",
     }
     forbidden = {
         "auftrag_liste", "ebitda_plan", "forecast_plan", "guv_position", "guv_wert",
@@ -74,8 +74,6 @@ def main() -> None:
     if not required <= present or present & forbidden:
         raise SystemExit(f"Tabellen weichen ab: {tables}")
     for name in tables:
-        if name == "benutzer":
-            continue
         count = con.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()[0]
         if count == 0:
             raise SystemExit(f"Leere Tabelle: {name}")

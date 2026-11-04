@@ -34,7 +34,18 @@ _ROLE_ALIAS = {
     "SACHBEARBEITUNG": "LESEN",
     "FORECAST-PFLEGE": "CONTROLLING",
 }
-BENUTZER_ROLLE_DDL = """
+BENUTZER_DDL = """
+CREATE TABLE IF NOT EXISTS benutzer (
+    benutzer_id      INTEGER PRIMARY KEY,
+    login            TEXT NOT NULL UNIQUE,
+    anzeigename      TEXT NOT NULL,
+    email            TEXT,
+    passwort_hash    TEXT NOT NULL,
+    aktiv            INTEGER NOT NULL DEFAULT 1 CHECK (aktiv IN (0, 1)),
+    muss_pw_aendern  INTEGER NOT NULL DEFAULT 1 CHECK (muss_pw_aendern IN (0, 1)),
+    angelegt_am      TEXT NOT NULL DEFAULT (datetime('now')),
+    letzte_anmeldung TEXT
+);
 CREATE TABLE IF NOT EXISTS benutzer_rolle (
     benutzer_id INTEGER NOT NULL REFERENCES benutzer (benutzer_id) ON DELETE CASCADE,
     rolle_id INTEGER NOT NULL REFERENCES rolle (rolle_id),
@@ -174,12 +185,16 @@ def bootstrap_user() -> dict:
 def user_count() -> int:
     ensure_system_schema()
     with connect() as con:
+        if not _table_exists(con, "benutzer"):
+            return 0
         return int(con.execute("SELECT COUNT(*) FROM benutzer").fetchone()[0])
 
 
 def get_user(benutzer_id: int) -> dict | None:
     ensure_system_schema()
     with connect() as con:
+        if not _table_exists(con, "benutzer"):
+            return None
         row = con.execute(
             "SELECT * FROM benutzer WHERE benutzer_id = ? AND aktiv = 1",
             (benutzer_id,),
@@ -190,6 +205,8 @@ def get_user(benutzer_id: int) -> dict | None:
 def authenticate(email: str, password: str) -> dict | None:
     ensure_system_schema()
     with connect() as con:
+        if not _table_exists(con, "benutzer"):
+            return None
         row = con.execute(
             "SELECT * FROM benutzer WHERE login = ? COLLATE NOCASE AND aktiv = 1",
             (email.strip(),),
@@ -248,7 +265,10 @@ def available_regions(con: sqlite3.Connection | None = None) -> list[str]:
 def list_users() -> dict:
     ensure_system_schema()
     with connect() as con:
-        users = [_user_dict(con, row) for row in con.execute("SELECT * FROM benutzer ORDER BY login")]
+        if _table_exists(con, "benutzer"):
+            users = [_user_dict(con, row) for row in con.execute("SELECT * FROM benutzer ORDER BY login")]
+        else:
+            users = []
         regions = available_regions(con)
     return {"nutzer": users, "rollen": ROLLEN, "regionen": regions}
 
@@ -279,7 +299,7 @@ def create_user(
     anzeigename = f"{vorname.strip()} {nachname.strip()}".strip() or email
     try:
         with connect() as con:
-            con.executescript(BENUTZER_ROLLE_DDL)
+            con.executescript(BENUTZER_DDL)
             cursor = con.execute(
                 """
                 INSERT INTO benutzer
@@ -320,7 +340,7 @@ def update_user(benutzer_id: int, action: str, value, enabled: bool) -> dict:
             if role not in ROLLEN:
                 raise SystemInputError("Die Rolle ist ungültig.")
             if enabled and role not in roles:
-                con.executescript(BENUTZER_ROLLE_DDL)
+                con.executescript(BENUTZER_DDL)
                 rolle_id = con.execute("SELECT rolle_id FROM rolle WHERE code = ?", (role,)).fetchone()[0]
                 con.execute(
                     "INSERT OR IGNORE INTO benutzer_rolle (benutzer_id, rolle_id) VALUES (?, ?)",

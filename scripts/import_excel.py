@@ -104,6 +104,25 @@ CREATE TABLE IF NOT EXISTS liq_posten (
 CREATE INDEX IF NOT EXISTS ix_liq_posten_szenario_datum ON liq_posten (szenario_id, datum);
 """
 
+BENUTZER_DDL = """
+CREATE TABLE IF NOT EXISTS benutzer (
+    benutzer_id      INTEGER PRIMARY KEY,
+    login            TEXT NOT NULL UNIQUE,
+    anzeigename      TEXT NOT NULL,
+    email            TEXT,
+    passwort_hash    TEXT NOT NULL,
+    aktiv            INTEGER NOT NULL DEFAULT 1 CHECK (aktiv IN (0, 1)),
+    muss_pw_aendern  INTEGER NOT NULL DEFAULT 1 CHECK (muss_pw_aendern IN (0, 1)),
+    angelegt_am      TEXT NOT NULL DEFAULT (datetime('now')),
+    letzte_anmeldung TEXT
+);
+CREATE TABLE IF NOT EXISTS benutzer_rolle (
+    benutzer_id INTEGER NOT NULL REFERENCES benutzer (benutzer_id) ON DELETE CASCADE,
+    rolle_id    INTEGER NOT NULL REFERENCES rolle (rolle_id),
+    PRIMARY KEY (benutzer_id, rolle_id)
+);
+"""
+
 BENUTZER_ZUGRIFF_DDL = """
 CREATE TABLE IF NOT EXISTS benutzer_zugriff (
     zugriff_id     INTEGER PRIMARY KEY,
@@ -469,7 +488,10 @@ def _snapshot_cutoff(connection: sqlite3.Connection) -> int | None:
 
 
 def restore_preserved(connection: sqlite3.Connection, snapshot: dict) -> None:
-    for user in snapshot.get("users") or []:
+    users = snapshot.get("users") or []
+    if users:
+        connection.executescript(BENUTZER_DDL)
+    for user in users:
         cursor = connection.execute(
             """
             INSERT INTO benutzer
@@ -631,10 +653,25 @@ def _month_end(year: int, month: int) -> str:
     return date(year, month, calendar.monthrange(year, month)[1]).isoformat()
 
 
-def _drop_if_empty(connection: sqlite3.Connection, table: str) -> None:
-    count = connection.execute(f'SELECT COUNT(*) FROM "{table}"').fetchone()[0]
-    if count == 0 and table != "benutzer":
-        connection.execute(f'DROP TABLE "{table}"')
+def _drop_empty_tables(connection: sqlite3.Connection) -> None:
+    """Nach dem Einlesen hat eine leere Tabelle keinen Inhalt und verschwindet."""
+    connection.execute("PRAGMA foreign_keys = OFF")
+    while True:
+        names = [
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+            )
+        ]
+        dropped = False
+        for name in names:
+            count = connection.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()[0]
+            if count == 0:
+                connection.execute(f'DROP TABLE "{name}"')
+                dropped = True
+        if not dropped:
+            break
+    connection.execute("PRAGMA foreign_keys = ON")
 
 
 def import_workbook(xlsx_path: Path = XLSX, db_path: Path = DB) -> dict[str, int]:
@@ -655,9 +692,7 @@ def import_workbook(xlsx_path: Path = XLSX, db_path: Path = DB) -> dict[str, int
     finally:
         xlsx.close()
     restore_preserved(connection, preserved)
-    for table in ("benutzer_rolle",):
-        if _columns(connection, table):
-            _drop_if_empty(connection, table)
+    _drop_empty_tables(connection)
     connection.commit()
     names = [
         row[0]
