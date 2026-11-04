@@ -444,7 +444,7 @@ const metricGroups: MetricGroup[] = [
       balance("Eigenkapitalrendite", "Ergebnis annualisiert / Eigenkapital"),
       balance("Gesamtkapitalrendite", "(Ergebnis + Zinsaufwand) annualisiert / Gesamtkapital"),
       { name: "Umsatzrendite", formula: "Ergebnis vor Steuern / Umsatzerlöse", unit: "pct", value: (dash, month) => ratio(monthResult(dash, month), dash.months[month - 1]?.umsatz) },
-      { name: "Wirtschaftlichkeit", formula: "(Gesamtleistung + sonstige betriebliche Erträge) / Gesamtaufwand", unit: "num", value: (dash, month) => quotient((dash.months[month - 1]?.leistung ?? 0) + guvMonth(dash, "Andere sonstige betriebliche Ertraege", month), monthExpense(dash, month)) },
+      { name: "Wirtschaftlichkeit", formula: "(Gesamtleistung + sonstige betriebliche Erträge) / Gesamtaufwand", unit: "num", value: (dash, month) => quotient((dash.months[month - 1]?.leistung ?? 0) + guvMonth(dash, "Sonstige betriebliche Ertraege", month), monthExpense(dash, month)) },
       balance("Umschlagshäufigkeit des Eigenkapitals", "Umsatz annualisiert / Eigenkapital"),
       balance("Umschlagshäufigkeit des Gesamtkapitals", "Umsatz annualisiert / Gesamtkapital"),
       balance("Return on Investment (ROI)", "Ergebnis annualisiert / Gesamtkapital"),
@@ -503,10 +503,10 @@ const metricGroups: MetricGroup[] = [
       } },
       { name: "Break-Even-Point", formula: "Fixkosten / Deckungsquote", unit: "eur", value: (dash, month) => {
         const fixed = Math.abs(guvMonth(dash, "Personalaufwand", month))
-          + Math.abs(guvMonth(dash, "Sachkosten", month))
+          + Math.abs(guvMonth(dash, "Sonstige betriebliche Aufwendungen", month))
           + Math.abs(guvMonth(dash, "Abschreibungen", month));
         const output = dash.months[month - 1]?.leistung ?? 0;
-        const variable = Math.abs(guvMonth(dash, "Vorleistungen", month));
+        const variable = Math.abs(guvMonth(dash, "Material und Fremdleistungen", month));
         const margin = output ? 1 - variable / output : 0;
         return margin > 0 ? fixed / margin : null;
       } },
@@ -514,7 +514,7 @@ const metricGroups: MetricGroup[] = [
       market("Relativer Marktanteil", "eigener / größter Wettbewerber"),
       market("Marktwachstum", "Veränderung Marktvolumen"),
       { name: "Auftragsreichweite", formula: "Restplan Umsatz / durchschnittlicher Monatsumsatz", unit: "months", value: (dash) => {
-        const rest = dash.forecastPlan.filter((row) => row.art === "plan" && row.groesse === "umsatz" && row.monat > dash.letzterIst).reduce((sum, row) => sum - row.wert, 0);
+        const rest = dash.forecastPlan.filter((row) => row.art === "plan" && row.groesse === "umsatz" && row.monat > dash.letzterIst).reduce((sum, row) => sum + row.wert, 0);
         const revenue = dash.months.filter((row) => row.ist).reduce((sum, row) => sum + row.umsatz, 0);
         return revenue && dash.letzterIst ? rest / (revenue / dash.letzterIst) : null;
       } },
@@ -531,9 +531,9 @@ function monthResult(dash: Dash, month: number) {
   return row ? row.ebitda + row.abschreibungen + row.finanzergebnis : 0;
 }
 function monthExpense(dash: Dash, month: number) {
-  return Math.abs(guvMonth(dash, "Vorleistungen", month))
+  return Math.abs(guvMonth(dash, "Material und Fremdleistungen", month))
     + Math.abs(guvMonth(dash, "Personalaufwand", month))
-    + Math.abs(guvMonth(dash, "Sachkosten", month))
+    + Math.abs(guvMonth(dash, "Sonstige betriebliche Aufwendungen", month))
     + Math.abs(guvMonth(dash, "Abschreibungen", month));
 }
 function quotient(a: number | undefined, b: number | undefined) {

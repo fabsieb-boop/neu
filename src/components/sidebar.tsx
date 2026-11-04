@@ -32,7 +32,7 @@ type Group = { label: string; items: Item[] };
 function useGroups(): Group[] {
   const { user } = useDash();
   const regional = user.regional;
-  const canForecast = user.rollen.some((role) => ["ADMIN", "CONTROLLING", "FORECAST-PFLEGE"].includes(role));
+  const canForecast = user.rollen.some((role) => ["ADMIN", "CONTROLLING", "GF", "PROJEKTLEITER", "FORECAST-PFLEGE"].includes(role));
   const groups: Group[] = [
     {
       label: "Start",

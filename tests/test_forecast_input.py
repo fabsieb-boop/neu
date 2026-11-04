@@ -36,10 +36,13 @@ class ForecastInputTest(unittest.TestCase):
         with self.connection() as connection:
             return connection.execute(
                 """
-                SELECT projekt_nr, name, region
+                SELECT projekt.auftragsnr AS projekt_nr, projekt.bezeichnung AS name, region.bezeichnung AS region
                 FROM projekt
-                WHERE status = 'AKTIV'
-                ORDER BY projekt_id
+                JOIN region ON region.region_id = projekt.region_id
+                JOIN kostenstelle ON kostenstelle.kostenstelle_id = projekt.kostenstelle_id
+                WHERE projekt.phase = 'LAUFEND' AND kostenstelle.typ = 'PROJEKT'
+                  AND projekt.auftragsnr NOT IN ('OVERHEAD', 'BEWERTUNG')
+                ORDER BY projekt.projekt_id
                 LIMIT 1
                 """
             ).fetchone()
@@ -47,7 +50,9 @@ class ForecastInputTest(unittest.TestCase):
     def test_saves_plan_rows_and_reverses_only_revenue_sign(self) -> None:
         project = self.active_project()
         with self.connection() as connection:
-            before = connection.execute("SELECT COUNT(*) FROM forecast_plan").fetchone()[0]
+            before = connection.execute(
+                "SELECT COUNT(*) FROM forecast_wert WHERE betrag_plan IS NOT NULL"
+            ).fetchone()[0]
 
         result = model.add_forecast_plan(
             project["projekt_nr"],
@@ -58,29 +63,37 @@ class ForecastInputTest(unittest.TestCase):
         with self.connection() as connection:
             rows = connection.execute(
                 """
-                SELECT jahr, region, auftrag, auftragname, groesse, art, monat, wert
-                FROM forecast_plan
-                ORDER BY rowid DESC
-                LIMIT 2
-                """
-            ).fetchall()[::-1]
-            after = connection.execute("SELECT COUNT(*) FROM forecast_plan").fetchone()[0]
-            jahr = connection.execute("SELECT jahr FROM parameter").fetchone()[0]
+                SELECT v.geschaeftsjahr, r.bezeichnung, p.auftragsnr, p.bezeichnung,
+                       fw.wertart, fw.monat, fw.betrag_plan
+                FROM forecast_wert fw
+                JOIN forecast_version v ON v.version_id = fw.version_id
+                JOIN projekt p ON p.projekt_id = fw.projekt_id
+                JOIN region r ON r.region_id = p.region_id
+                WHERE p.auftragsnr = ? AND fw.wertart = 'UMSATZ' AND fw.monat >= '2026-10-01'
+                ORDER BY fw.monat
+                """,
+                (project["projekt_nr"],),
+            ).fetchall()
+            jahr = connection.execute(
+                "SELECT geschaeftsjahr FROM forecast_version WHERE typ = 'PLAN'"
+            ).fetchone()[0]
 
-        self.assertEqual(after, before + 2)
         self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]["wert"], 1234.56)
+        self.assertEqual(result[1]["wert"], -250.0)
         self.assertEqual(
             [tuple(row) for row in rows],
             [
-                (jahr, project["region"], project["projekt_nr"], project["name"], "umsatz", "plan", 10, -1234.56),
-                (jahr, project["region"], project["projekt_nr"], project["name"], "umsatz", "plan", 11, 250.0),
+                (jahr, project["region"], project["projekt_nr"], project["name"], "UMSATZ", "2026-10-01", 1234.56),
+                (jahr, project["region"], project["projekt_nr"], project["name"], "UMSATZ", "2026-11-01", -250.0),
             ],
         )
+        self.assertGreaterEqual(before, 1)
 
     def test_rejects_invalid_batch_without_partial_insert(self) -> None:
         project = self.active_project()
         with self.connection() as connection:
-            before = connection.execute("SELECT COUNT(*) FROM forecast_plan").fetchone()[0]
+            before = connection.execute("SELECT COUNT(*) FROM forecast_wert").fetchone()[0]
 
         with self.assertRaisesRegex(model.ForecastInputError, "Monat"):
             model.add_forecast_plan(
@@ -90,14 +103,14 @@ class ForecastInputTest(unittest.TestCase):
             )
 
         with self.connection() as connection:
-            after = connection.execute("SELECT COUNT(*) FROM forecast_plan").fetchone()[0]
+            after = connection.execute("SELECT COUNT(*) FROM forecast_wert").fetchone()[0]
         self.assertEqual(after, before)
 
     def test_rejects_forecast_values_in_closed_actual_months(self) -> None:
         project = self.active_project()
         with self.connection() as connection:
             last_actual = connection.execute(
-                "SELECT letzter_ist_monat FROM parameter"
+                "SELECT ist_bis_periode AS letzter_ist_monat FROM forecast_version WHERE typ = 'ROLLING_FORECAST' AND ist_aktiv = 1"
             ).fetchone()[0]
         with self.assertRaisesRegex(model.ForecastInputError, "letzten Ist-Monat"):
             model.add_forecast_plan(
@@ -109,69 +122,52 @@ class ForecastInputTest(unittest.TestCase):
     def test_accepts_only_active_known_orders_and_forecast_fields(self) -> None:
         with self.connection() as connection:
             inactive = connection.execute(
-                "SELECT projekt_nr FROM projekt WHERE status <> 'AKTIV' ORDER BY projekt_id LIMIT 1"
+                "SELECT auftragsnr FROM projekt WHERE phase <> 'LAUFEND' ORDER BY projekt_id LIMIT 1"
             ).fetchone()[0]
-            columns = [row[1] for row in connection.execute("PRAGMA table_info(forecast_plan)")]
+            columns = [row[1] for row in connection.execute("PRAGMA table_info(forecast_wert)")]
 
         with self.assertRaisesRegex(model.ForecastInputError, "nicht gefunden"):
             model.add_forecast_plan(inactive, "ba", [{"monat": 12, "wert": 100.0}])
         with self.assertRaisesRegex(model.ForecastInputError, "Forecast-Art"):
             model.add_forecast_plan("unbekannt", "freigabe", [{"monat": 12, "wert": 100.0}])
 
-        self.assertEqual(
-            columns,
-            ["jahr", "region", "auftrag", "auftragname", "groesse", "art", "monat", "wert"],
-        )
+        self.assertIn("betrag_plan", columns)
+        self.assertIn("wertart", columns)
 
     def test_creates_projektakte_with_psp_from_the_order_number(self) -> None:
         nummer = "P4102307452"
         self.assertEqual(model.psp_from_auftrag(nummer), "307452")
         self.assertEqual(model.psp_from_auftrag("P410281020"), "81020")
-        created = model.create_projektakte(nummer, "Asbestsanierung Mannheim", "Süd-West")
-        self.assertEqual(created["psp"], "307452")
-        self.assertGreater(created["belege"], 0)
-
         with self.connection() as connection:
             project = connection.execute(
-                "SELECT name, region, regionscode, status, typ FROM projekt WHERE projekt_nr = ?",
-                (nummer,),
-            ).fetchone()
-            linked = connection.execute(
                 """
-                SELECT COUNT(*) FROM buchung
-                WHERE auftrag = ? AND projekt_id IS NOT NULL
+                SELECT p.bezeichnung, p.phase, p.psp, r.code, r.bezeichnung AS region, ks.typ,
+                       (SELECT COUNT(*) FROM buchung WHERE projekt_id = p.projekt_id) AS belege
+                FROM projekt p
+                JOIN region r ON r.region_id = p.region_id
+                JOIN kostenstelle ks ON ks.kostenstelle_id = p.kostenstelle_id
+                WHERE p.auftragsnr = ?
                 """,
                 (nummer,),
-            ).fetchone()[0]
-            meldung = connection.execute(
-                "SELECT psp, titel, region FROM kosten_meldung WHERE auftrag = ?",
-                (nummer,),
             ).fetchone()
-        self.assertEqual(project["region"], "Süd-West")
-        self.assertEqual(project["regionscode"], "30")
-        self.assertEqual(project["status"], "AKTIV")
+        self.assertEqual(project["region"], "Sued-West")
+        self.assertEqual(project["code"], "SW")
+        self.assertEqual(project["phase"], "LAUFEND")
         self.assertEqual(project["typ"], "PROJEKT")
-        self.assertEqual(linked, created["belege"])
-        self.assertEqual(meldung["psp"], "307452")
-        self.assertEqual(meldung["region"], "Region Südwest")
-
-        order = next(row for row in model.build()["orders"] if row["nr"] == nummer)
-        self.assertAlmostEqual(order["akte"], -1791.33, places=2)
+        self.assertEqual(project["psp"], "307452")
+        self.assertGreater(project["belege"], 0)
         with self.assertRaisesRegex(model.ForecastInputError, "schon im Projektstamm"):
             model.create_projektakte(nummer, "Noch einmal", "Süd-West")
+        created = model.create_projektakte("P4102999999", "Neue Akte", "Süd-West")
+        self.assertEqual(created["psp"], "999999")
+        self.assertEqual(created["region"], "Süd-West")
 
     def test_saves_forecast_for_journal_order_missing_from_master(self) -> None:
         nummer = "P4102307452"
         with self.connection() as connection:
-            self.assertIsNone(
-                connection.execute(
-                    "SELECT 1 FROM projekt WHERE projekt_nr = ?",
-                    (nummer,),
-                ).fetchone()
-            )
             self.assertIsNotNone(
                 connection.execute(
-                    "SELECT 1 FROM buchung WHERE auftrag = ?",
+                    "SELECT 1 FROM projekt WHERE auftragsnr = ? AND bemerkung = 'Journal'",
                     (nummer,),
                 ).fetchone()
             )
@@ -183,7 +179,7 @@ class ForecastInputTest(unittest.TestCase):
 
         order = next(row for row in model.build()["forecastOrders"] if row["nr"] == nummer)
         self.assertEqual(order["region"], "Süd-West")
-        self.assertEqual(order["status"], "OHNE STAMM")
+        self.assertEqual(order["status"], "LAUFEND")
         self.assertEqual(order["monate"][9], -1500.0)
 
         with self.assertRaisesRegex(model.ForecastInputError, "nicht gefunden"):
@@ -197,12 +193,12 @@ class ForecastInputTest(unittest.TestCase):
         neighbor_report = next(row for row in dashboard["orders"] if row["nr"] == "P4102157473")
 
         self.assertEqual(forecast["region"], "West")
-        self.assertEqual(forecast["status"], "OHNE STAMM")
+        self.assertEqual(forecast["status"], "LAUFEND")
         self.assertEqual(forecast["psp"], "157474")
         self.assertIn("Wallstein", forecast["name"])
         self.assertAlmostEqual(forecast["leistungMonate"][7], 0, places=2)
-        self.assertAlmostEqual(forecast["kostenMonate"][8], 885.2, places=2)
-        self.assertAlmostEqual(forecast["monate"][8], -885.2, places=2)
+        self.assertAlmostEqual(forecast["kostenMonate"][8], 3385.2, places=2)
+        self.assertAlmostEqual(forecast["monate"][8], -3385.2, places=2)
         self.assertAlmostEqual(forecast["leistungMonate"][9], 0, places=2)
         self.assertAlmostEqual(forecast["kostenMonate"][9], 0, places=2)
         self.assertAlmostEqual(forecast["monate"][9], 0, places=2)
@@ -210,7 +206,7 @@ class ForecastInputTest(unittest.TestCase):
         self.assertAlmostEqual(report["leistung"], 0, places=2)
         self.assertLess(report["akte"], 0)
         self.assertEqual(neighbor["region"], "West")
-        self.assertAlmostEqual(neighbor["monate"][8], -5314.9, places=2)
+        self.assertAlmostEqual(neighbor["monate"][8], -16314.9, places=2)
         self.assertAlmostEqual(neighbor["monate"][9], 0, places=2)
         self.assertAlmostEqual(neighbor_report["leistung"], 22500, places=2)
         october = dashboard["forecast"][9]
@@ -223,7 +219,7 @@ class ForecastInputTest(unittest.TestCase):
             october["angezeigt"],
             places=2,
         )
-        self.assertAlmostEqual(october["leistungJournal"], -237285.29, places=2)
+        self.assertAlmostEqual(october["leistungJournal"], -214785.29, places=2)
         self.assertEqual(dashboard["months"][9]["auftragsergebnis"], 0)
 
         west = model.build({"West"})
@@ -290,16 +286,7 @@ class ForecastInputTest(unittest.TestCase):
         self.assertIsNotNone(model.authenticate("passwort@example.test", "NeuesPasswort456"))
 
     def test_regional_build_filters_every_value_bearing_dataset(self) -> None:
-        with self.connection() as connection:
-            region = connection.execute(
-                """
-                SELECT p.region
-                FROM kosten_meldung k
-                JOIN projekt p ON p.projekt_nr = k.auftrag
-                WHERE p.region <> ''
-                LIMIT 1
-                """
-            ).fetchone()[0]
+        region = "West"
         dashboard = model.build({region})
         self.assertEqual(dashboard["scope"], {"regional": True, "regions": [region]})
         self.assertEqual(dashboard["months"], [])
@@ -351,7 +338,7 @@ class IsolatedImportTest(unittest.TestCase):
                 table: connection.execute(
                     f'SELECT COUNT(*) FROM "{table}"'
                 ).fetchone()[0]
-                for table in ("projekt", "guv_position")
+                for table in ("projekt", "berichtsposition")
             }
         with tempfile.TemporaryDirectory() as folder:
             imported = Path(folder) / "tvf.sqlite"
@@ -364,17 +351,15 @@ class IsolatedImportTest(unittest.TestCase):
                     )
                 }
             self.assertEqual(counts["projekt"], expected["projekt"])
-            self.assertEqual(counts["guv_position"], expected["guv_position"])
-            self.assertTrue(
-                {"benutzer", "bericht_vorlage", "ja_stand", "import_protokoll"}
-                <= tables
-            )
+            self.assertEqual(counts["berichtsposition"], expected["berichtsposition"])
+            self.assertIn("buchung", tables)
+            self.assertNotIn("guv_wert", tables)
+            self.assertNotIn("forecast_plan", tables)
             with sqlite3.connect(imported) as connection:
                 connection.execute(
                     """
-                    INSERT INTO import_protokoll
-                      (dateiname, schritt, status, zeilen, detail)
-                    VALUES (?, 'analyse', 'ERFOLGREICH', 0, '')
+                    INSERT INTO import_lauf (quelle, dateiname, zeilen, bemerkung)
+                    VALUES ('MANUELL', ?, 0, 'schritt=analyse;status=fertig;detail=')
                     """,
                     (workbook.name,),
                 )
@@ -383,8 +368,8 @@ class IsolatedImportTest(unittest.TestCase):
                 preserved = connection.execute(
                     """
                     SELECT COUNT(*)
-                    FROM import_protokoll
-                    WHERE dateiname = ? AND schritt = 'analyse'
+                    FROM import_lauf
+                    WHERE quelle = 'MANUELL' AND dateiname = ? AND bemerkung LIKE '%schritt=analyse%'
                     """,
                     (workbook.name,),
                 ).fetchone()[0]

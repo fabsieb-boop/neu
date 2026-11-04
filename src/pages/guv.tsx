@@ -56,7 +56,7 @@ export function GuV() {
             </table>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Januar bis {dash.letzterIstName} stehen wie in der Mappe. Danach bleibt die Summe der Plan. Sie liegt auf denselben Konten wie in den Ist-Monaten, im gleichen Verhältnis. Ein freigegebener Monat ersetzt diese Spalte durch das Journal.
+            Januar bis {dash.letzterIstName} sind die Buchungen, einmal mit dem kaufmännischen Faktor gedreht. Danach stehen Umsatz, Bestand, Projektkosten und Overhead aus dem Forecast. Eine Freigabe schaltet den Monat auf die Buchungen um, ohne die Mappe zu verändern.
           </p>
         </Panel>
       </main>

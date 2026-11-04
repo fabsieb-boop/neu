@@ -26,7 +26,7 @@ export function ForecastRegionen() {
 
   const orders = useMemo(() => dash.forecastOrders.filter((o) =>
     aktiv.includes(o.region) &&
-    (!nurAktuell || o.status === "AKTIV") &&
+    (!nurAktuell || o.status === "LAUFEND") &&
     (!nurPlan || o.monate.slice(istBis).some((v) => v !== 0)) &&
     `${o.nr} ${o.name}`.toLowerCase().includes(q.toLowerCase()),
   ), [aktiv, dash.forecastOrders, istBis, nurAktuell, nurPlan, q]);

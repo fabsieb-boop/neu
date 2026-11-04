@@ -18,7 +18,7 @@ const parseAmount = (raw: string) => {
   return normalized === "" ? 0 : Number(normalized);
 };
 
-const shownValue = (groesse: string, wert: number) => groesse === "umsatz" ? -wert : wert;
+const shownValue = (_groesse: string, wert: number) => wert;
 
 export function ForecastEingabe() {
   const { dash, updateDash, updateJournal } = useDash();
@@ -30,7 +30,7 @@ export function ForecastEingabe() {
   const [success, setSuccess] = useState("");
 
   const projects = useMemo(() => {
-    const active = dash.projektstamm.filter((project) => project.status === "AKTIV");
+    const active = dash.projektstamm.filter((project) => project.status === "LAUFEND" && project.nr !== "OVERHEAD" && project.nr !== "BEWERTUNG");
     const known = new Set(dash.projektstamm.map((project) => project.nr));
     const fromJournal = dash.forecastOrders
       .filter((order) => order.nr && !known.has(order.nr))

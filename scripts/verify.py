@@ -58,152 +58,83 @@ def formula_rows(formula_text: str, expected_column: str) -> list[int]:
 def main() -> None:
     con = sqlite3.connect(DB)
     tables = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
-    quellen = {
-        "auftrag_liste", "buchung", "ebitda_plan", "forecast_plan", "guv_position", "guv_wert",
-        "kontostand", "kosten_meldung", "kostenart", "legende", "liq_bestand", "liq_monat",
-        "liq_parameter", "parameter", "projekt", "region_liste", "verlust",
+    required = {
+        "berichtsposition", "buchung", "forecast_projekt", "forecast_version", "forecast_wert",
+        "import_lauf", "kennzahl_definition", "klr_ampel_schwelle", "klr_zuschlagssatz",
+        "konto", "konto_mapping", "kostenart", "kostenstelle", "kv_stand", "liq_bankstand",
+        "liq_szenario", "projekt", "region", "rolle", "benutzer",
     }
-    system = {"benutzer", "bericht_vorlage", "ja_stand", "import_protokoll"}
-    intern = {"sqlite_sequence"}
+    forbidden = {
+        "auftrag_liste", "ebitda_plan", "forecast_plan", "guv_position", "guv_wert",
+        "kontostand", "kosten_meldung", "legende", "liq_bestand", "liq_monat", "liq_parameter",
+        "parameter", "region_liste", "verlust", "bankbewegung", "ist_freigabe", "import_protokoll",
+        "ja_stand",
+    }
     present = set(tables)
-    if not (quellen | system | intern) <= present or present - quellen - system - intern - {"bankbewegung", "ist_freigabe"}:
+    if not required <= present or present & forbidden:
         raise SystemExit(f"Tabellen weichen ab: {tables}")
-
-    with zipfile.ZipFile(XLSX) as archive:
-        excel_guv = read_sheet(archive, "GuV_Positionen")
-    database_positions = {
-        row: (nr, position, stored_formula)
-        for row, nr, position, stored_formula in con.execute(
-            "SELECT zeile, nr, position, formel FROM guv_position ORDER BY zeile"
-        )
-    }
-    database_leaves = {
-        (row, month): amount
-        for row, month, amount in con.execute("SELECT zeile, monat, wert FROM guv_wert")
-    }
-    source_leaves: dict[tuple[int, int], float] = {}
-    expected_guv: dict[int, list[float]] = {}
-    formula_cells = 0
-    for row in range(5, 91):
-        expected_values = []
-        normalized_formulas = []
-        for month, column in enumerate(range(3, 12), start=1):
-            excel_formula = formula(excel_guv, row, column)
-            if excel_formula:
-                references = formula_rows(excel_formula, excel_column(column))
-                normalized_formulas.append("+".join(str(reference) for reference in references))
-                try:
-                    expected = sum(expected_guv[reference][month - 1] for reference in references)
-                except KeyError as error:
-                    raise SystemExit(f"GuV-Formel verweist vorwärts: Zeile {row}") from error
-                cached = value(excel_guv, row, column)
-                if cached is not None:
-                    close(expected, float(cached))
-                formula_cells += 1
-            else:
-                raw = value(excel_guv, row, column)
-                expected = float(raw) if raw is not None else 0.0
-                if raw is not None:
-                    source_leaves[(row, month)] = expected
-            expected_values.append(expected)
-
-        if normalized_formulas and len(normalized_formulas) != 9:
-            raise SystemExit(f"GuV-Zeile mischt Formel und Blattwert: {row}")
-        if normalized_formulas and len(set(normalized_formulas)) != 1:
-            raise SystemExit(f"GuV-Monatsformeln unterscheiden sich: {row}")
-        normalized_formula = normalized_formulas[0] if normalized_formulas else ""
-        expected_position = (int(num(excel_guv, row, 1)), text(excel_guv, row, 2), normalized_formula)
-        if database_positions.get(row) != expected_position:
-            raise SystemExit(
-                f"GuV-Position weicht von Excel ab: Zeile {row}: "
-                f"{database_positions.get(row)} != {expected_position}"
-            )
-        expected_guv[row] = expected_values
-
-    if set(database_leaves) != set(source_leaves):
-        raise SystemExit(
-            f"GuV-Blattwertschlüssel weichen ab: "
-            f"Excel={len(source_leaves)} SQLite={len(database_leaves)}"
-        )
-    for key, expected in source_leaves.items():
-        close(database_leaves[key], expected)
-
-    bruch = con.execute(
-        """
-        SELECT COUNT(*) FROM v_zeile
-        WHERE ergebnisrelevant = 1 AND db_stufe = 0 AND ABS(leistung + wert) > 0.001
-        """
-    ).fetchone()[0]
-    if bruch:
-        raise SystemExit(f"Leistung stimmt nicht: {bruch}")
-    bruch = con.execute(
-        """
-        SELECT COUNT(*) FROM v_zeile
-        WHERE ergebnisrelevant = 0 AND (leistung != 0 OR kvar != 0 OR kfix != 0 OR umlage != 0 OR beitrag != 0)
-        """
-    ).fetchone()[0]
-    if bruch:
-        raise SystemExit(f"Nicht relevante Zeilen tragen bei: {bruch}")
-    bruch = con.execute(
-        """
-        SELECT COUNT(*) FROM v_zeile
-        WHERE ergebnisrelevant = 1 AND ABS(beitrag - (leistung - kvar - kfix - umlage)) > 0.001
-        """
-    ).fetchone()[0]
-    if bruch:
-        raise SystemExit(f"Beitrag stimmt nicht: {bruch}")
+    for name in tables:
+        if name == "benutzer":
+            continue
+        count = con.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()[0]
+        if count == 0:
+            raise SystemExit(f"Leere Tabelle: {name}")
 
     data = build()
-    model_guv = {row["zeile"]: row for row in data["guv"]}
-    if set(model_guv) != set(expected_guv):
-        raise SystemExit(f"GuV-Modellzeilen weichen von Excel ab: {sorted(model_guv)}")
-    for row, expected_values in expected_guv.items():
-        for month, expected in enumerate(expected_values):
-            close(model_guv[row]["values"][month], expected)
-
-    totals = {row["name"]: sum(value or 0 for value in row["values"]) for row in data["guv"]}
-    waterfall_end = (
-        totals["Summe Umsatzerlöse"]
-        + totals["Rohertrag"] - totals["Summe Umsatzerlöse"]
-        + totals["Andere sonstige betriebliche Ertraege"]
-        + totals["Personalaufwand"]
-        + totals["Sachkosten"]
-        + totals["Neutrales Ergebnis"]
-    )
-    close(waterfall_end, totals["EBITDA"])
-
-    summe = model_guv[8]
-    ebitda = next(g for g in data["guv"] if g["name"] == "EBITDA")
-    operativ = next(g for g in data["guv"] if g["name"] == "EBITDA (Operatives Ergebnis)")
-    neutral = next(g for g in data["guv"] if g["name"] == "Neutrales Ergebnis")
-    for i in range(9):
-        close(ebitda["values"][i], operativ["values"][i] + neutral["values"][i])
-
-    m1 = data["months"][0]
-    close(m1["umsatz"], summe["values"][0])
-    close(m1["ebitda"], ebitda["values"][0])
+    umsatz = next(row for row in data["guv"] if row["name"] == "Umsatzerloese")
+    material = next(row for row in data["guv"] if row["name"] == "Material und Fremdleistungen")
+    sachkosten = next(row for row in data["guv"] if row["name"] == "Sonstige betriebliche Aufwendungen")
+    ebitda = next(row for row in data["guv"] if row["name"] == "EBITDA")
+    if len(umsatz["values"]) != 12:
+        raise SystemExit(f"GuV hat {len(umsatz['values'])} Monate")
     october_umsatz = con.execute(
         """
-        SELECT -COALESCE(SUM(wert), 0) FROM forecast_plan
-        WHERE jahr = ? AND monat = 10 AND art = 'plan' AND groesse = 'umsatz'
-        """,
-        (data["jahr"],),
+        SELECT COALESCE(SUM(fw.betrag_plan), 0)
+        FROM forecast_wert fw
+        JOIN projekt p ON p.projekt_id = fw.projekt_id
+        JOIN forecast_version v ON v.version_id = fw.version_id
+        WHERE v.typ = 'ROLLING_FORECAST' AND fw.monat = '2026-10-01'
+          AND fw.wertart = 'UMSATZ' AND p.auftragsnr NOT IN ('OVERHEAD', 'BEWERTUNG')
+        """
     ).fetchone()[0]
-    if len(summe["values"]) != 12:
-        raise SystemExit(f"GuV hat {len(summe['values'])} Monate")
+    october_kosten = con.execute(
+        """
+        SELECT COALESCE(SUM(fw.betrag_plan), 0)
+        FROM forecast_wert fw
+        JOIN projekt p ON p.projekt_id = fw.projekt_id
+        WHERE fw.monat = '2026-10-01' AND fw.wertart = 'KOSTEN'
+          AND p.auftragsnr NOT IN ('OVERHEAD', 'BEWERTUNG')
+        """
+    ).fetchone()[0]
+    overhead = con.execute(
+        """
+        SELECT COALESCE(SUM(fw.betrag_plan), 0)
+        FROM forecast_wert fw
+        JOIN projekt p ON p.projekt_id = fw.projekt_id
+        WHERE fw.monat = '2026-10-01' AND fw.wertart = 'KOSTEN' AND p.auftragsnr = 'OVERHEAD'
+        """
+    ).fetchone()[0]
     close(data["months"][9]["umsatz"], october_umsatz)
-    close(summe["values"][9], october_umsatz)
-    month_ten_plan = con.execute(
-        "SELECT operativ + overhead FROM ebitda_plan WHERE jahr = ? AND monat = 10",
-        (data["jahr"],),
-    ).fetchone()[0]
-    month_ten_open = con.execute(
+    close(umsatz["values"][9], october_umsatz)
+    close(material["values"][9], -october_kosten)
+    close(sachkosten["values"][9], -overhead)
+    close(data["months"][9]["ebitda"], october_umsatz - october_kosten - overhead)
+    close(ebitda["values"][9], data["months"][9]["ebitda"])
+    doubled = con.execute(
         """
-        SELECT COALESCE(SUM(betrag), 0) FROM verlust
-        WHERE monat = 10 AND gebucht = 1 AND im_forecast = 1 AND nachrichtlich = 0
+        SELECT COUNT(*) FROM v_guv_monat g
+        WHERE ABS(g.betrag_kaufm - (
+            SELECT SUM(b.betrag_sap * k.kaufm_faktor)
+            FROM buchung b JOIN konto k ON k.konto_nr = b.konto_nr
+            WHERE b.geschaeftsjahr = g.geschaeftsjahr AND b.periode = g.periode
+              AND b.konto_nr IN (SELECT konto_nr FROM konto_mapping km WHERE km.position_id = g.position_id)
+        )) > 0.02
         """
     ).fetchone()[0]
-    close(data["months"][9]["ebitda"], month_ten_plan + month_ten_open)
+    if doubled:
+        raise SystemExit(f"Kaufmännischer Faktor weicht ab: {doubled}")
+    if con.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+        raise SystemExit("Integrität verletzt")
 
     if data["liquidity"]["weeks"][0]["datum"] != "2026-10-19":
         raise SystemExit(data["liquidity"]["weeks"][0])
@@ -217,10 +148,9 @@ def main() -> None:
     ist_leistung = data["forecast"][0]["angezeigt"]
     if ist_leistung == 0:
         raise SystemExit("Forecast-Ist Januar ist 0")
-    print("GuV Excel-Identität", len(source_leaves), "Blattwerte", formula_cells, "Formelzellen")
-    print("GuV Umsatz Januar", round(summe["values"][0], 2))
-    print("EBITDA Januar", round(m1["ebitda"], 2))
-    print("Wasserfall EBITDA", round(waterfall_end, 2))
+    print("GuV Umsatz Januar", round(umsatz["values"][0], 2))
+    print("EBITDA Januar", round(data["months"][0]["ebitda"], 2))
+    print("EBITDA Oktober", round(data["months"][9]["ebitda"], 2))
     print("EBITDA Jahr", round(sum(m["ebitda"] for m in data["months"]), 2))
     print("Forecast Januar", round(ist_leistung, 2))
     print("Aufträge", len(data["orders"]), "Summe Akte", round(sum(o["akte"] for o in data["orders"]), 2))

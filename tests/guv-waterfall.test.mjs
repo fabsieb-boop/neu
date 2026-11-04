@@ -5,16 +5,17 @@ import { buildGuvWaterfall } from "../src/lib/guv-waterfall.ts";
 
 test("Wasserfall endet beim GuV-EBITDA und enthält alle EBITDA-Bestandteile", () => {
   const rows = [
-    { name: "Summe Umsatzerlöse", values: [120, 80] },
+    { name: "Umsatzerloese", values: [120, 80] },
     { name: "Rohertrag", values: [70, 50] },
-    { name: "Andere sonstige betriebliche Ertraege", values: [10, 5] },
+    { name: "Sonstige betriebliche Ertraege", values: [10, 5] },
     { name: "Personalaufwand", values: [-20, -20] },
-    { name: "Sachkosten", values: [-15, -10] },
+    { name: "Sonstige betriebliche Aufwendungen", values: [-15, -10] },
+    { name: "Sonstige Steuern", values: [0, 0] },
     { name: "Neutrales Ergebnis", values: [3, 2] },
-    { name: "EBITDA", values: [40, 35] },
+    { name: "EBITDA", values: [45, 25] },
     { name: "Abschreibungen", values: [-10, -10] },
-    { name: "Finanzergebnis", values: [-5, -5] },
-    { name: "Ergebnis vor Steuern", values: [25, 20] },
+    { name: "Zinsen und Steuern", values: [-5, -5] },
+    { name: "Ergebnis", values: [33, 12] },
   ];
 
   const result = buildGuvWaterfall(rows);
@@ -27,7 +28,6 @@ test("Wasserfall endet beim GuV-EBITDA und enthält alle EBITDA-Bestandteile", (
     "Sonst. Erträge",
     "Personal",
     "Sachkosten",
-    "Neutral",
   ]);
   assert.equal(result.run, result.ebitda);
   assert.equal(signedFinal, result.ebitda);

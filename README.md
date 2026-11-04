@@ -1,36 +1,14 @@
 # TVF Altwert Controlling
 
-Das Dashboard zeigt die Arbeitsmappe `data/tvf-dashboard-download.xlsx`. Beträge werden nicht ergänzt. Die Darstellung übernimmt Farben, Schriften und den Seitenaufbau des Entwurfs. Neue Projektplanwerte werden ohne Freigabe direkt in die vorhandene Tabelle `forecast_plan` geschrieben.
+Das Dashboard zeigt die Arbeitsmappe `data/tvf-dashboard-download.xlsx`. Beträge werden nicht ergänzt. Die Datenbank folgt `sql/schema.sql`, der SQLite-Fassung des Controlling-Modells. SAP-Beträge bleiben im SAP-Vorzeichen. Gedreht wird nur über `konto.kaufm_faktor`. Forecast-Werte stehen kaufmännisch positiv in `forecast_wert`.
 
 ## Tabellen
 
-In `data/tvf.sqlite` liegen die Blätter mit eingegebenen Werten:
+Gefüllt werden nur Tabellen mit Zeilen aus der Mappe: Region, Kostenstelle, Konto, Kontenzuordnung, Projekt, Kostenverfolgung, Buchung, Forecast, Liquiditätsstände, KLR-Sätze und die Kennzahldefinitionen. Leere Bereiche der Vorlage (Partner, Stunden, Risiken, Unteraufträge, Bilanzsalden) werden nicht angelegt. `benutzer` darf leer sein, bis sich jemand anmeldet.
 
-- `parameter`, `projekt`, `kostenart`, `buchung`
-- `forecast_plan`, `ebitda_plan`, `verlust`
-- `liq_parameter`, `liq_monat`, `liq_bestand`, `kontostand`
-- `guv_position`, `guv_wert`, `kosten_meldung`
-- `auftrag_liste`, `region_liste`, `legende`
+Ist-Monate kommen aus `buchung`. Planmonate kommen aus `forecast_wert`. Der letzte Ist-Monat steht an der aktiven Forecast-Version. Ein erneuter Excel-Import setzt ihn nur zurück, wenn niemand einen anderen Monat freigegeben hat.
 
-Vier Systemtabellen enthalten ausschließlich Anwendungszustand und keine
-erfundenen Fachwerte:
-
-- `benutzer` für Anmeldung, Rollen und Regionen
-- `bericht_vorlage` für persönliche Berichtsbaukästen
-- `ja_stand` für Status und Dokumente der Jahresabschluss-Unterlagen
-- `import_protokoll` für ausgeführte Importläufe
-- `bankbewegung` für importierte Kontoauszüge
-
-Unter System → Import lässt sich neben der Dashboard-Mappe ein Kontoauszug
-einlesen. CSV von Sparkasse, VR-Bank und DATEV sowie CAMT-XML und MT940 werden
-erkannt. Zufluss bleibt positiv, Abfluss negativ. Dieselbe Buchung wird beim
-erneuten Import übersprungen. Die Zeilen bleiben erhalten, wenn die Excel-Mappe
-neu eingelesen wird. Auf der Seite Liquidität stehen die Monatssummen und die
-letzten Buchungen.
-
-GuV-Summen, Kennzahlen, EBITDA-Anzeige, Forecast, Regionen, Auftragsauswertung und der 26-Wochen-Plan sind Abfragen. Die Zuordnung jeder Buchung steht in der Sicht `v_zeile` und folgt den Formeln des Auftragsjournals.
-
-Unter `Forecast-Eingabe` lassen sich Werte je aktivem Auftrag und Monat erfassen. Die Eingabe nutzt ausschließlich die Spalten des Excel-Blatts `Forecast_Plan`: Jahr, Region, Auftrag, Auftragsname, Größe, Art, Monat und Wert. Umsatz wird wie in der Mappe intern mit umgekehrtem Vorzeichen gespeichert. Es gibt keinen Freigabeschritt.
+Unter System → Import lässt sich neben der Dashboard-Mappe ein Kontoauszug einlesen. Die Zeilen liegen dann in `liq_posten` des Szenarios Kontoauszug. Dieselbe Buchung wird beim erneuten Import übersprungen.
 
 ## Start
 

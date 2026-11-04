@@ -65,25 +65,22 @@ HOST = os.environ.get("TVF_API_HOST", "127.0.0.1")
 PORT = int(os.environ.get("TVF_API_PORT", "8787"))
 COOKIE = "tvf_session"
 SESSION_SECRET = os.environ.get("TVF_SESSION_SECRET", "").encode() or secrets.token_bytes(32)
-SYSTEM_TABLES = ("benutzer", "bericht_vorlage", "ja_stand", "import_protokoll", "bankbewegung", "ist_freigabe")
 SOURCE_TABLES = (
-    "parameter",
-    "projekt",
-    "kostenart",
+    "berichtsposition",
     "buchung",
-    "forecast_plan",
-    "ebitda_plan",
-    "verlust",
-    "liq_parameter",
-    "liq_monat",
-    "liq_bestand",
-    "kontostand",
-    "guv_position",
-    "guv_wert",
-    "kosten_meldung",
-    "auftrag_liste",
-    "region_liste",
-    "legende",
+    "forecast_projekt",
+    "forecast_version",
+    "forecast_wert",
+    "import_lauf",
+    "konto",
+    "konto_mapping",
+    "kostenart",
+    "kostenstelle",
+    "kv_stand",
+    "liq_bankstand",
+    "liq_szenario",
+    "projekt",
+    "region",
 )
 def _session_token(user_id: int) -> str:
     expires = int(time.time()) + 12 * 60 * 60
@@ -190,29 +187,14 @@ def _run_import(content: bytes) -> tuple[tempfile.TemporaryDirectory, Path, dict
 
 
 def _preserve_system_tables(new_database: Path) -> None:
-    ensure_system_schema()
-    old = sqlite3.connect(DB)
-    old.row_factory = sqlite3.Row
+    from scripts.import_excel import restore_preserved, snapshot_preserved
+    snapshot = snapshot_preserved(DB)
     new = sqlite3.connect(new_database)
     try:
-        for table in SYSTEM_TABLES:
-            columns = [
-                row[1] for row in old.execute(f'PRAGMA table_info("{table}")')
-            ]
-            if not columns:
-                continue
-            rows = old.execute(f'SELECT * FROM "{table}"').fetchall()
-            if not rows:
-                continue
-            names = ", ".join(f'"{name}"' for name in columns)
-            marks = ", ".join("?" for _ in columns)
-            new.executemany(
-                f'INSERT INTO "{table}" ({names}) VALUES ({marks})',
-                [tuple(row[name] for name in columns) for row in rows],
-            )
+        new.execute("PRAGMA foreign_keys = ON")
+        restore_preserved(new, snapshot)
         new.commit()
     finally:
-        old.close()
         new.close()
 
 
@@ -436,7 +418,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path == "/api/ist-freigabe":
                 roles = set(user["rollen"])
-                if user["regional"] or not roles & {"ADMIN", "CONTROLLING"}:
+                if user["regional"] or not roles & {"ADMIN", "CONTROLLING", "GF"}:
                     self._json({"error": "Keine Berechtigung für die Ist-Freigabe."}, status=403)
                     return
                 payload = self._read_json()
@@ -456,7 +438,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path == "/api/projektakte":
                 roles = set(user["rollen"])
-                if not roles & {"ADMIN", "CONTROLLING", "FORECAST-PFLEGE"}:
+                if not roles & {"ADMIN", "CONTROLLING", "GF", "PROJEKTLEITER", "FORECAST-PFLEGE"}:
                     self._json({"error": "Keine Berechtigung für die Projektakte."}, status=403)
                     return
                 payload = self._read_json()
@@ -474,7 +456,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path == "/api/forecast":
                 roles = set(user["rollen"])
-                if not roles & {"ADMIN", "CONTROLLING", "FORECAST-PFLEGE"}:
+                if not roles & {"ADMIN", "CONTROLLING", "GF", "PROJEKTLEITER", "FORECAST-PFLEGE"}:
                     self._json({"error": "Keine Berechtigung für Forecast-Eingaben."}, status=403)
                     return
                 payload = self._read_json()

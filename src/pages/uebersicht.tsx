@@ -4,7 +4,7 @@ import { useDash } from "@/data";
 import { eur, short, Kpi, Panel, ChartTip, PageHeader } from "@/components/dash";
 import { IstFreigabe } from "@/components/ist-freigabe";
 
-const GUV_ZEILEN = ["Summe Umsatzerlöse", "Rohertrag", "Personalaufwand", "Sachkosten", "EBITDA (Operatives Ergebnis)", "Neutrales Ergebnis", "EBITDA", "Abschreibungen", "Finanzergebnis", "Ergebnis vor Steuern"];
+const GUV_ZEILEN = ["Umsatzerloese", "Rohertrag", "Personalaufwand", "Sonstige betriebliche Aufwendungen", "EBITDA", "Neutrales Ergebnis", "Abschreibungen", "Zinsen und Steuern", "Ergebnis"];
 
 export function Uebersicht() {
   const { dash } = useDash();
@@ -106,7 +106,7 @@ export function Uebersicht() {
           </Panel>
           <Panel title={`GuV Januar–${dash.letzterIstName}`} subtitle="Zwischensummen">
             <ul className="divide-y divide-border text-sm">
-              {dash.guv.filter((g) => g.sum && GUV_ZEILEN.includes(g.name)).map((g) => {
+              {dash.guv.filter((g) => GUV_ZEILEN.includes(g.name)).map((g) => {
                 const t = g.values.reduce<number>((a, b) => a + (b ?? 0), 0);
                 const key = g.name === "EBITDA" || g.name === "Ergebnis vor Steuern";
                 return (

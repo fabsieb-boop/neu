@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import json
 import shutil
 import sqlite3
 import subprocess
@@ -272,7 +273,13 @@ class KontoauszugTest(unittest.TestCase):
         shutil.copy2(ROOT / "data" / "tvf-dashboard-download.xlsx", workbook)
         import_workbook(workbook, self.database)
         with sqlite3.connect(self.database) as connection:
-            count = connection.execute("SELECT COUNT(*) FROM bankbewegung").fetchone()[0]
+            count = connection.execute(
+                """
+                SELECT COUNT(*) FROM liq_posten
+                JOIN liq_szenario ON liq_szenario.szenario_id = liq_posten.szenario_id
+                WHERE liq_szenario.bezeichnung = 'Kontoauszug'
+                """
+            ).fetchone()[0]
         self.assertEqual(count, 2)
         overview = model.build()["bank"]
         self.assertEqual(overview["anzahl"], 2)
@@ -313,26 +320,30 @@ class KontoauszugTest(unittest.TestCase):
         self.assertEqual(shown["schritt"], "testlauf")
         self.assertEqual(shown["status"], "ERFOLGREICH")
         with sqlite3.connect(self.database) as connection:
-            step, status = connection.execute(
-                "SELECT schritt, status FROM import_protokoll ORDER BY id DESC LIMIT 1"
-            ).fetchone()
+            note = connection.execute(
+                """
+                SELECT bemerkung FROM import_lauf
+                WHERE quelle = 'MANUELL'
+                ORDER BY import_id DESC LIMIT 1
+                """
+            ).fetchone()[0]
             stored = connection.execute(
                 """
-                SELECT waehrung, length(buchungstext), length(gegenpartei),
-                       length(gegen_iban), length(eigenkonto)
-                FROM bankbewegung
+                SELECT bemerkung, richtung, betrag FROM liq_posten
+                JOIN liq_szenario ON liq_szenario.szenario_id = liq_posten.szenario_id
+                WHERE liq_szenario.bezeichnung = 'Kontoauszug'
                 ORDER BY betrag DESC
                 """
             ).fetchone()
-        self.assertLessEqual(len(step), 6)
-        self.assertLessEqual(len(status), 6)
-        self.assertEqual(step, "test")
-        self.assertEqual(status, "fertig")
-        self.assertEqual(stored[0], "USD")
-        self.assertLessEqual(stored[1], 60)
-        self.assertLessEqual(stored[2], 255)
-        self.assertLessEqual(stored[3], 40)
-        self.assertLessEqual(stored[4], 40)
+        self.assertIn("schritt=test", note)
+        self.assertIn("status=fertig", note)
+        payload = json.loads(stored[0])
+        self.assertEqual(payload["waehrung"], "USD")
+        self.assertLessEqual(len(payload["text"]), 60)
+        self.assertLessEqual(len(payload["gegenpartei"]), 255)
+        self.assertLessEqual(len(payload["iban"]), 40)
+        self.assertLessEqual(len(payload["konto"]), 40)
+        self.assertEqual(stored[1], "EIN")
 
     def test_excel_keeps_german_amount_text(self) -> None:
         amounts = ["-53.032,13 €", "-5.332,28 €", "-5.326,11 €", "-5.326,11 €"]
@@ -433,10 +444,17 @@ class KontoauszugTest(unittest.TestCase):
         self.assertNotIn("54,989.00", "".join(row["betragText"] for row in result["vorschau"]))
         with sqlite3.connect(self.database) as connection:
             stored = connection.execute(
-                "SELECT length(buchungstext), betrag FROM bankbewegung ORDER BY betrag"
+                """
+                SELECT bemerkung, richtung, betrag FROM liq_posten
+                JOIN liq_szenario ON liq_szenario.szenario_id = liq_posten.szenario_id
+                WHERE liq_szenario.bezeichnung = 'Kontoauszug'
+                ORDER BY betrag DESC
+                """
             ).fetchall()
-        self.assertEqual(stored[0][0], 60)
-        self.assertEqual(stored[0][1], -53032.13)
+        largest = json.loads(stored[0][0])
+        self.assertEqual(len(largest["text"]), 60)
+        self.assertEqual(stored[0][1], "AUS")
+        self.assertEqual(stored[0][2], 53032.13)
 
     def test_api_started_as_script_can_import_workbook_module(self) -> None:
         proc = subprocess.run(

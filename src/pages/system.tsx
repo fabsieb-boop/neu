@@ -23,7 +23,7 @@ type UserData = { nutzer: User[]; rollen: string[]; regionen: string[] };
 function Users() {
   const { user: currentUser, logout } = useDash();
   const [data, setData] = useState<UserData | null>(null);
-  const [form, setForm] = useState({ email: "", passwort: "", vorname: "", nachname: "", rolle: currentUser.setup ? "ADMIN" : "NEUTRAL" });
+  const [form, setForm] = useState({ email: "", passwort: "", vorname: "", nachname: "", rolle: currentUser.setup ? "ADMIN" : "LESEN" });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const load = () => fetch("/api/users").then(async (response) => {
@@ -44,7 +44,7 @@ function Users() {
       return;
     }
     setMessage("Benutzer angelegt – Passwortwechsel bei erster Anmeldung ist gekennzeichnet.");
-    setForm({ email: "", passwort: "", vorname: "", nachname: "", rolle: "NEUTRAL" });
+    setForm({ email: "", passwort: "", vorname: "", nachname: "", rolle: "LESEN" });
     load();
   };
   const change = async (benutzerId: number, aktion: string, wert: string | undefined, an: boolean) => {
@@ -365,43 +365,41 @@ function sum<T extends Record<string, unknown>>(rows: T[], key: keyof T) {
 }
 
 const ebitdaContributionGroups = new Set([
-  "1 Umsatzerlöse",
-  "2 Bestandsveränderungen",
-  "3 Sonstige betriebliche Erträge",
-  "4 Materialaufwand",
-  "5 Aufwand für bezogene Leistungen",
-  "6 Personalaufwand",
-  "8 Sonstige betriebliche Aufwendungen",
+  "Umsatzerloese",
+  "Bestandsveraenderung",
+  "Sonstige betriebliche Ertraege",
+  "Material und Fremdleistungen",
+  "Personalaufwand",
+  "Sonstige betriebliche Aufwendungen",
+  "Sonstige Steuern",
 ]);
 const counterRows = [
-  ["1 Umsatzerlöse", "Summe Umsatzerlöse", "beitrag"],
-  ["2 Bestandsveränderungen", "Bestandsveraend. UE und FE", "beitrag"],
-  ["3 Sonstige betriebliche Erträge", "Andere sonstige betriebliche Ertraege", "beitrag"],
-  ["4 Materialaufwand", "Aufwendungen für RHB", "beitrag"],
-  ["5 Aufwand für bezogene Leistungen", "Fremdleistungen", "beitrag"],
-  ["6 Personalaufwand", "Personalaufwand", "beitrag"],
-  ["8 Sonstige betriebliche Aufwendungen", "Sachkosten", "beitrag"],
-  ["12 Periodenfremdes Ergebnis", "Neutrales Ergebnis", "wert"],
-  ["7 Abschreibungen", "Abschreibungen", "wert"],
-  ["10 Zinsergebnis", "Finanzergebnis", "wert"],
+  ["Umsatzerloese", "Umsatzerloese"],
+  ["Bestandsveraenderung", "Bestandsveraenderung"],
+  ["Sonstige betriebliche Ertraege", "Sonstige betriebliche Ertraege"],
+  ["Material und Fremdleistungen", "Material und Fremdleistungen"],
+  ["Personalaufwand", "Personalaufwand"],
+  ["Sonstige betriebliche Aufwendungen", "Sonstige betriebliche Aufwendungen"],
+  ["Sonstige Steuern", "Sonstige Steuern"],
+  ["Neutrales Ergebnis", "Neutrales Ergebnis"],
+  ["Abschreibungen", "Abschreibungen"],
+  ["Zinsen und Steuern", "Zinsen und Steuern"],
 ] as const;
 
 function Countercheck() {
   const { dash, journal } = useDash();
   const columns = dash.guv[0]?.values.length ?? 9;
   const [month, setMonth] = useState(Math.min(dash.letzterIst, columns));
-  const rows = counterRows.map(([group, position, source]) => {
+  const rows = counterRows.map(([group, position]) => {
     const guv = dash.guv.find((row) => row.name === position)?.values[month - 1] ?? 0;
     const matching = journal.filter((row) => row.monat === month && row.guvGruppe === group);
-    const bookings = source === "beitrag"
-      ? matching.reduce((total, row) => total + row.beitrag, 0)
-      : -matching.reduce((total, row) => total + row.wert, 0);
+    const bookings = matching.reduce((total, row) => total + row.wert * -1, 0);
     return { group, position, guv, bookings, delta: guv - bookings };
   });
   const ebitda = dash.guv.find((row) => row.name === "EBITDA")?.values[month - 1] ?? 0;
   const journalEbitda = journal
     .filter((row) => row.monat === month && ebitdaContributionGroups.has(row.guvGruppe))
-    .reduce((total, row) => total + row.beitrag, 0);
+    .reduce((total, row) => total + row.wert * -1, 0);
   return (
     <div>
       <PageHeader title="Gegenkontrolle" subtitle="GuV gegen die nach Kontenstamm zugeordneten Buchungen" />
