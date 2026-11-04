@@ -91,12 +91,12 @@ export function Uebersicht() {
                     <tr key={m.m} className="border-t border-border">
                       <td className="py-2.5">
                         <span className="font-medium">{m.name}</span>
-                        <span className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${m.ist ? "bg-secondary text-secondary-foreground" : "bg-plan/30 text-primary"}`}>{m.ist ? "Ist" : "Plan"}</span>
+                        <span className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${m.offen ? "bg-plan/30 text-primary" : m.ist ? "bg-secondary text-secondary-foreground" : "bg-plan/30 text-primary"}`}>{m.offen ? "Plan und Ist" : m.ist ? "Ist" : "Plan"}</span>
                       </td>
-                      <td className="text-right">{eur(m.umsatz)}</td>
-                      <td className="text-right text-muted-foreground">{eur(m.bestand)}</td>
-                      <td className="text-right font-medium">{eur(m.leistung)}</td>
-                      <td className={`text-right font-semibold ${m.ebitda < 0 ? "text-negative" : "text-positive"}`}>{eur(m.ebitda)}</td>
+                      <td className="text-right">{eur(m.umsatz)}{m.offen && <span className="block text-xs text-muted-foreground">Ist {eur(m.umsatzIst)}</span>}</td>
+                      <td className="text-right text-muted-foreground">{eur(m.bestand)}{m.offen && <span className="block text-xs">Ist {eur(m.bestandIst)}</span>}</td>
+                      <td className="text-right font-medium">{eur(m.leistung)}{m.offen && <span className="block text-xs font-normal text-muted-foreground">Ist {eur(m.leistungIst)}</span>}</td>
+                      <td className={`text-right font-semibold ${m.ebitda < 0 ? "text-negative" : "text-positive"}`}>{eur(m.ebitda)}{m.offen && <span className={`block text-xs font-normal ${m.ebitdaIst < 0 ? "text-negative" : "text-muted-foreground"}`}>Ist {eur(m.ebitdaIst)}</span>}</td>
                       <td className={`text-right ${m.auftragsergebnis < 0 ? "text-negative" : ""}`}>{eur(m.auftragsergebnis)}</td>
                     </tr>
                   ))}

@@ -572,7 +572,7 @@ function KpiReport() {
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4 shadow-card print:hidden">
         <label className="text-xs font-medium text-muted-foreground">Monat
           <select value={month} onChange={(event) => setMonth(Number(event.target.value))} className="mt-1 block rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground">
-            {dash.monate.slice(0, dash.letzterIst).map((name, index) => <option key={name} value={index + 1}>{name} {dash.jahr}</option>)}
+            {dash.monate.map((name, index) => <option key={name} value={index + 1}>{name} {dash.jahr}{index + 1 === dash.aktuellerMonat ? " · Plan und Ist" : index + 1 > dash.letzterIst ? " · Plan" : ""}</option>)}
           </select>
         </label>
         <button className={reportButton} onClick={() => setView(view === "catalog" ? "report" : "catalog")}>{view === "catalog" ? `Bericht anzeigen (${selected.length})` : "Zur Auswahl"}</button>

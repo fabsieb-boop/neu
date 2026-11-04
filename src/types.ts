@@ -17,9 +17,14 @@ export type Month = {
   bewertungPlan: number;
   bewertungOffen: number;
   ebitda: number;
+  offen: boolean;
+  umsatzIst: number;
+  bestandIst: number;
+  leistungIst: number;
+  ebitdaIst: number;
 };
 
-export type GuvRow = { zeile: number; nr: number; name: string; sum: boolean; values: (number | null)[] };
+export type GuvRow = { zeile: number; nr: number; name: string; sum: boolean; values: (number | null)[]; ist: number[] };
 export type Order = {
   nr: string;
   name: string;
@@ -42,6 +47,7 @@ export type ForecastOrder = {
   monate: number[];
   leistungMonate: number[];
   kostenMonate: number[];
+  istMonate: number[];
 };
 export type Region = { region: string; akte: number[]; forecast: (number | null)[]; umsatz: number[] };
 export type AuftragDetail = {
@@ -100,6 +106,8 @@ export type Dash = {
   jahr: number;
   letzterIst: number;
   letzterIstName: string;
+  aktuellerMonat: number | null;
+  aktuellerMonatName: string | null;
   mappeMonat: number;
   mappeMonatName: string;
   freigabeGesetzt: boolean;
@@ -126,6 +134,7 @@ export type Dash = {
     kostenPlan: number | null;
     bestandPlan: number | null;
     angezeigt: number;
+    offen: boolean;
   }[];
   guv: GuvRow[];
   orders: Order[];

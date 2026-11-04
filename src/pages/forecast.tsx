@@ -18,10 +18,13 @@ export function Forecast() {
     <div>
       <PageHeader title="Forecast" subtitle="Hochrechnung bis Dezember" />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-        <section className="grid gap-4 sm:grid-cols-3">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Kpi label="Leistung Ist" value={istSumme} hint={`Januar–${dash.letzterIstName}, Projekte`} />
           <Kpi label="Hochrechnung Jahr" value={c} hint="Ist + Plan" />
           <Kpi label="Forecast-Umsatz Plan" value={q4sum} hint="alle Regionen, ab dem ersten Planmonat" />
+          {dash.forecast.filter((month) => month.offen).map((month) => (
+            <Kpi key={month.m} label={`${month.name} gebucht`} value={month.leistungJournal} hint={`Plan ${eur(month.angezeigt)} · Journal der Projekte`} signed />
+          ))}
         </section>
         <div className="grid gap-6 lg:grid-cols-3">
           <Panel title="Angezeigte Leistung kumuliert" className="lg:col-span-2" subtitle="Ist aus dem Journal, Plan aus Forecast_Plan">

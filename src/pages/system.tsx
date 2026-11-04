@@ -389,14 +389,14 @@ const counterRows = [
 function Countercheck() {
   const { dash, journal } = useDash();
   const columns = dash.guv[0]?.values.length ?? 9;
-  const [month, setMonth] = useState(Math.min(dash.letzterIst, columns));
+  const [month, setMonth] = useState(dash.aktuellerMonat ?? Math.min(dash.letzterIst, columns));
   const rows = counterRows.map(([group, position]) => {
-    const guv = dash.guv.find((row) => row.name === position)?.values[month - 1] ?? 0;
+    const guv = dash.guv.find((row) => row.name === position)?.ist[month - 1] ?? 0;
     const matching = journal.filter((row) => row.monat === month && row.guvGruppe === group);
     const bookings = matching.reduce((total, row) => total + row.wert * -1, 0);
     return { group, position, guv, bookings, delta: guv - bookings };
   });
-  const ebitda = dash.guv.find((row) => row.name === "EBITDA")?.values[month - 1] ?? 0;
+  const ebitda = dash.guv.find((row) => row.name === "EBITDA")?.ist[month - 1] ?? 0;
   const journalEbitda = journal
     .filter((row) => row.monat === month && ebitdaContributionGroups.has(row.guvGruppe))
     .reduce((total, row) => total + row.wert * -1, 0);

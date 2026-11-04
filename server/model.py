@@ -805,6 +805,12 @@ def _guv_month(guv: list[dict], name: str, monat: int) -> float:
     return 0.0 if value is None else float(value)
 
 
+def _guv_ist(guv: list[dict], name: str, monat: int) -> float:
+    row = next(item for item in guv if item["name"] == name)
+    value = row["ist"][monat - 1]
+    return 0.0 if value is None else float(value)
+
+
 def build(allowed_regions: set[str] | None = None) -> dict:
     from server import facts
     ensure_system_schema()
@@ -854,7 +860,8 @@ def build(allowed_regions: set[str] | None = None) -> dict:
             "m": m, "name": MONATE[m - 1], "ist": ist, "umsatz": umsatz, "bestand": bestand,
             "sonstige": sonstige, "leistung": umsatz + bestand, "ebitdaGuV": ebitda_guv,
             "abschreibungen": abschr, "finanzergebnis": finanz, "steuern": steuern, "neutral": neutral,
-            "auftragsergebnis": sum(z["ergebnis_akte"] for z in zeilen if z["monat"] == m) if ist else 0.0,
+            "offen": m == letzter + 1,
+            "auftragsergebnis": sum(z["ergebnis_akte"] for z in zeilen if z["monat"] == m) if ist or m == letzter + 1 else 0.0,
         })
 
     for row in kenn:
@@ -870,6 +877,10 @@ def build(allowed_regions: set[str] | None = None) -> dict:
         row["bewertungPlan"] = bewertet
         row["bewertungOffen"] = 0.0
         row["ebitda"] = row["ebitdaGuV"] if row["ist"] else operativ + overhead + bewertet
+        row["umsatzIst"] = _guv_ist(guv, "Umsatzerloese", row["m"])
+        row["bestandIst"] = _guv_ist(guv, "Bestandsveraenderung", row["m"])
+        row["leistungIst"] = row["umsatzIst"] + row["bestandIst"]
+        row["ebitdaIst"] = _guv_ist(guv, "EBITDA", row["m"])
 
     forecast = []
     for m in range(1, 13):
@@ -890,6 +901,7 @@ def build(allowed_regions: set[str] | None = None) -> dict:
             "umsatzPlan": None if ist else umsatz_plan,
             "kostenPlan": None if ist else kosten_plan,
             "bestandPlan": None if ist else bestand_plan,
+            "offen": m == letzter + 1,
             "angezeigt": journal if ist else umsatz_plan + bestand_plan - kosten_plan,
         })
 
@@ -907,30 +919,33 @@ def build(allowed_regions: set[str] | None = None) -> dict:
             sum(z["kvar"] + z["kfix"] + z["umlage"] for z in treffer),
         )
 
-    def serie(nr: str) -> tuple[list[float], list[float], list[float]]:
+    def gebucht(nr: str, monat: int) -> tuple[float, float, float]:
+        if nr in journal_only:
+            leistung, kosten = leistung_und_kosten(nr, monat)
+            return leistung - kosten, leistung, kosten
+        leistung = sum(
+            z["leistung"] for z in zeilen
+            if z["monat"] == monat and z["projekt_nr"] == nr and z["ergebnisrelevant"] and z["kostentraeger"] == "Projekt"
+        )
+        return leistung, leistung, 0.0
+
+    def serie(nr: str) -> tuple[list[float], list[float], list[float], list[float]]:
         gezeigt: list[float] = []
         leistung_monate: list[float] = []
         kosten_monate: list[float] = []
+        ist_monate: list[float] = []
         for m in range(1, 13):
+            ist_wert, leistung, kosten = gebucht(nr, m)
+            ist_monate.append(ist_wert)
             if m <= letzter:
-                if nr in journal_only:
-                    leistung, kosten = leistung_und_kosten(nr, m)
-                    gezeigt.append(leistung - kosten)
-                    leistung_monate.append(leistung)
-                    kosten_monate.append(kosten)
-                else:
-                    leistung = sum(
-                        z["leistung"] for z in zeilen
-                        if z["monat"] == m and z["projekt_nr"] == nr and z["ergebnisrelevant"] and z["kostentraeger"] == "Projekt"
-                    )
-                    gezeigt.append(leistung)
-                    leistung_monate.append(leistung)
-                    kosten_monate.append(0.0)
+                gezeigt.append(ist_wert)
+                leistung_monate.append(leistung)
+                kosten_monate.append(kosten)
             else:
                 gezeigt.append(planwert(nr, m))
-                leistung_monate.append(0.0)
-                kosten_monate.append(0.0)
-        return gezeigt, leistung_monate, kosten_monate
+                leistung_monate.append(leistung if m == letzter + 1 else 0.0)
+                kosten_monate.append(kosten if m == letzter + 1 else 0.0)
+        return gezeigt, leistung_monate, kosten_monate, ist_monate
 
     def order_name(nr: str) -> str:
         row = stamm.get(nr)
@@ -989,7 +1004,7 @@ def build(allowed_regions: set[str] | None = None) -> dict:
     forecast_orders = []
     for nr in nummern:
         row = stamm.get(nr)
-        gezeigt, leistung_monate, kosten_monate = serie(nr)
+        gezeigt, leistung_monate, kosten_monate, ist_monate = serie(nr)
         forecast_orders.append({
             "nr": nr,
             "name": order_name(nr),
@@ -999,6 +1014,7 @@ def build(allowed_regions: set[str] | None = None) -> dict:
             "monate": gezeigt,
             "leistungMonate": leistung_monate,
             "kostenMonate": kosten_monate,
+            "istMonate": ist_monate,
         })
 
     def auftrag_detail(nr: str) -> dict:
@@ -1071,6 +1087,8 @@ def build(allowed_regions: set[str] | None = None) -> dict:
         "jahr": jahr,
         "letzterIst": letzter,
         "letzterIstName": MONATE[letzter - 1],
+        "aktuellerMonat": letzter + 1 if letzter < 12 else None,
+        "aktuellerMonatName": MONATE[letzter] if letzter < 12 else None,
         "mappeMonat": mappe_monat,
         "mappeMonatName": MONATE[mappe_monat - 1],
         "freigabeGesetzt": freigabe_gesetzt,

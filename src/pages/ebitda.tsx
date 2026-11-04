@@ -10,7 +10,7 @@ export function Ebitda() {
   const worst = [...rows].sort((a, b) => a.ebitda - b.ebitda)[0];
   return (
     <div>
-      <PageHeader title="EBITDA" subtitle={`Journal der GuV bis ${dash.letzterIstName}, danach Plan`} />
+      <PageHeader title="EBITDA" subtitle={dash.aktuellerMonatName ? `Gebucht bis ${dash.letzterIstName}. ${dash.aktuellerMonatName} zeigt Plan und die gebuchte Monatsscheibe.` : `Gebucht bis ${dash.letzterIstName}`} />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         <section className="grid gap-4 sm:grid-cols-3">
           <Kpi label="EBITDA Jahr" value={c} hint="Ist + Plan" signed />
@@ -40,6 +40,7 @@ export function Ebitda() {
             { key: "h", label: "Overhead", right: true, render: (r) => money(r.overhead) },
             { key: "b", label: "Bewertung Plan", right: true, render: (r) => money(r.bewertungPlan) },
             { key: "f", label: "Bewertung offen", right: true, render: (r) => money(r.bewertungOffen) },
+            { key: "i", label: "Gebucht", right: true, render: (r) => money(r.ebitdaIst) },
             { key: "s", label: "Angezeigt", right: true, render: (r) => <span className="font-semibold">{money(r.ebitda)}</span> },
           ]} />
         </Panel>

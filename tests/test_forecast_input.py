@@ -219,8 +219,9 @@ class ForecastInputTest(unittest.TestCase):
             october["angezeigt"],
             places=2,
         )
+        self.assertTrue(october["offen"])
         self.assertAlmostEqual(october["leistungJournal"], -214785.29, places=2)
-        self.assertEqual(dashboard["months"][9]["auftragsergebnis"], 0)
+        self.assertAlmostEqual(dashboard["months"][9]["auftragsergebnis"], -981646.44, places=2)
 
         west = model.build({"West"})
         self.assertIn("P4102157474", {row["nr"] for row in west["forecastOrders"]})

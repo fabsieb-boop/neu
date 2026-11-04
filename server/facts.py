@@ -248,36 +248,42 @@ def guv_matrix(con: sqlite3.Connection, letzter: int, plan_rows: list[dict], com
             "SONST_AUFWAND": -overhead + bewertung,
         }
     leaves: dict[str, list[float]] = {}
+    booked: dict[str, list[float]] = {}
     out = []
     zeile = 1
     for code, name, nr in LEAVES:
         values = []
+        ist_values = []
         for month in range(1, 13):
+            ist_values.append(ist.get((code, month), 0.0))
             if month <= letzter:
-                values.append(ist.get((code, month), 0.0))
+                values.append(ist_values[-1])
             else:
                 values.append(plan_by_month[month].get(code, 0.0))
         leaves[code] = values
-        out.append({"zeile": zeile, "nr": nr, "name": name, "sum": False, "values": values})
+        booked[code] = ist_values
+        out.append({"zeile": zeile, "nr": nr, "name": name, "sum": False, "values": values, "ist": ist_values})
         zeile += 1
 
-    def add(name: str, nr: int, values: list[float]) -> None:
+    def add(name: str, nr: int, values: list[float], ist_values: list[float]) -> None:
         nonlocal zeile
-        out.append({"zeile": zeile, "nr": nr, "name": name, "sum": True, "values": values})
+        out.append({"zeile": zeile, "nr": nr, "name": name, "sum": True, "values": values, "ist": ist_values})
         zeile += 1
 
-    rohertrag = [
-        leaves["UMSATZ"][i] + leaves["BESTANDSVERAENDERUNG"][i] + leaves["MATERIAL_FREMD"][i]
-        for i in range(12)
-    ]
-    ebitda = [sum(leaves[code][i] for code in EBITDA_CODES) for i in range(12)]
-    ergebnis = [
-        ebitda[i] + leaves["NEUTRAL_ERGEBNIS"][i] + leaves["ABSCHREIBUNGEN"][i] + leaves["ZINSEN_STEUERN"][i]
-        for i in range(12)
-    ]
-    add("Rohertrag", 45, rohertrag)
-    add("EBITDA", 85, ebitda)
-    add("Ergebnis", 110, ergebnis)
+    def combine(source: dict[str, list[float]], codes: list[str]) -> list[float]:
+        return [sum(source[code][i] for code in codes) for i in range(12)]
+
+    rohertrag_codes = ["UMSATZ", "BESTANDSVERAENDERUNG", "MATERIAL_FREMD"]
+    ergebnis_codes = ["NEUTRAL_ERGEBNIS", "ABSCHREIBUNGEN", "ZINSEN_STEUERN"]
+    rohertrag = combine(leaves, rohertrag_codes)
+    ebitda = combine(leaves, list(EBITDA_CODES))
+    ergebnis = [ebitda[i] + combine(leaves, ergebnis_codes)[i] for i in range(12)]
+    ist_rohertrag = combine(booked, rohertrag_codes)
+    ist_ebitda = combine(booked, list(EBITDA_CODES))
+    ist_ergebnis = [ist_ebitda[i] + combine(booked, ergebnis_codes)[i] for i in range(12)]
+    add("Rohertrag", 45, rohertrag, ist_rohertrag)
+    add("EBITDA", 85, ebitda, ist_ebitda)
+    add("Ergebnis", 110, ergebnis, ist_ergebnis)
     return out
 
 

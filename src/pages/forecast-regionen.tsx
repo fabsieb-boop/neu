@@ -48,14 +48,18 @@ export function ForecastRegionen() {
   };
   const cell = (order: ForecastOrder, index: number) => {
     const value = order.monate[index] ?? 0;
+    const gebucht = order.istMonate[index] ?? 0;
     return (
-      <td key={index} title={hinweis(order, index)} className={`whitespace-nowrap px-2 py-2 text-right tabular-nums ${index >= istBis ? "bg-plan/15" : ""} ${value === 0 ? "text-muted-foreground/40" : ""} ${value < 0 ? "text-negative" : ""}`}>{value === 0 ? "–" : num(value / 1000)}</td>
+      <td key={index} title={hinweis(order, index)} className={`whitespace-nowrap px-2 py-2 text-right tabular-nums ${index >= istBis ? "bg-plan/15" : ""} ${value === 0 && gebucht === 0 ? "text-muted-foreground/40" : ""} ${value < 0 ? "text-negative" : ""}`}>
+        <span className="block">{value === 0 ? "–" : num(value / 1000)}</span>
+        {index === istBis && <span className={`block text-[10px] ${gebucht < 0 ? "text-negative" : "text-muted-foreground"}`}>Ist {gebucht === 0 ? "–" : num(gebucht / 1000)}</span>}
+      </td>
     );
   };
 
   return (
     <div>
-      <PageHeader title="Forecast je Region" subtitle="Bis zum letzten Ist-Monat steht die Leistung, bei Aufträgen ohne Stamm das Journal-Ergebnis. Danach steht nur der gespeicherte Plan." />
+      <PageHeader title="Forecast je Region" subtitle={dash.aktuellerMonatName ? `Bis ${dash.letzterIstName} steht das Journal. ${dash.aktuellerMonatName} zeigt in jeder Zelle den Plan und darunter das gebuchte Ist.` : `Bis ${dash.letzterIstName} steht das Journal.`} />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Kpi label={`Ist Jan–${dash.letzterIstName.slice(0, 3)}`} value={tot(0, istBis)} hint={`${orders.length} Aufträge im Filter`} />
@@ -98,13 +102,13 @@ export function ForecastRegionen() {
             </ResponsiveContainer>
           </div>
         </Panel>
-        <Panel title="Aufträge je Monat" subtitle="Werte in Tsd. €. Planmonate kommen aus dem Forecast, nicht aus dem Journal. Die Regionssumme ist die Summe der Zellen.">
+        <Panel title="Aufträge je Monat" subtitle={`Werte in Tsd. €. ${dash.aktuellerMonatName ?? "Der laufende Monat"} zeigt den Plan und darunter die gebuchte Leistung.`}>
           <div className="max-h-[70vh] overflow-auto">
             <table className="w-full text-sm">
               <thead className="sticky top-0 z-[1] bg-card">
                 <tr className="text-xs uppercase tracking-wider text-muted-foreground">
                   <th className="sticky left-0 bg-card pb-3 text-left font-medium">Auftrag</th>
-                  {cols.map((i) => <th key={i} className={`px-2 pb-3 text-right font-medium ${i >= istBis ? "text-primary" : ""}`}>{MON[i]}{i >= istBis && <span className="ml-1 text-[9px]">FC</span>}</th>)}
+                  {cols.map((i) => <th key={i} className={`px-2 pb-3 text-right font-medium ${i >= istBis ? "text-primary" : ""}`}>{MON[i]}{i === istBis ? <span className="ml-1 text-[9px]">Plan+Ist</span> : i > istBis ? <span className="ml-1 text-[9px]">FC</span> : null}</th>)}
                   <th className="px-2 pb-3 text-right font-medium">Summe</th>
                 </tr>
               </thead>
@@ -117,7 +121,15 @@ export function ForecastRegionen() {
                         <td className="sticky left-0 bg-muted py-2.5 pl-2">
                           <span className="flex items-center gap-2"><ChevronDown className={`h-4 w-4 transition ${closed ? "-rotate-90" : ""}`} />{g.r}<span className="text-xs font-normal text-muted-foreground">({g.list.length})</span></span>
                         </td>
-                        {cols.map((i) => <td key={i} className="whitespace-nowrap px-2 text-right">{num((g.sum[i] ?? 0) / 1000)}</td>)}
+                        {cols.map((i) => {
+                          const gebucht = g.list.reduce((s, o) => s + (o.istMonate[i] ?? 0), 0);
+                          return (
+                            <td key={i} className="whitespace-nowrap px-2 text-right">
+                              <span className="block">{num((g.sum[i] ?? 0) / 1000)}</span>
+                              {i === istBis && <span className="block text-[10px] font-normal text-muted-foreground">Ist {num(gebucht / 1000)}</span>}
+                            </td>
+                          );
+                        })}
                         <td className="whitespace-nowrap px-2 text-right">{num(cols.reduce((s, i) => s + (g.sum[i] ?? 0), 0) / 1000)}</td>
                       </tr>
                       {!closed && g.list.map((o) => (
