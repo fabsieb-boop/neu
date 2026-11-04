@@ -254,7 +254,7 @@ function StatementReport({ month }: { month: string }) {
     return (
       <Panel title="Kontoauszug" subtitle="noch keine Bankdatei">
         <p className="text-sm text-muted-foreground">Nach dem Import unter System → Import erscheint hier jeder Monat der Datei. Der Oktober-Auszug steht dann als Oktober 2026, mit Punkt als Tausender und Komma als Cent.</p>
-        <Link className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" to="/system/import">Zum Import</Link>
+        <Link className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" to="/import">Zum Import</Link>
       </Panel>
     );
   }
@@ -309,7 +309,7 @@ function ForecastReport() {
       </section>
       <Panel title="Abrechnungsstand je Projekt" subtitle={`${dash.orders.length} Aufträge`}>
         <DataTable rows={[...dash.orders].sort((a, b) => b.leistung - a.leistung)} cols={[
-          { key: "p", label: "Projekt", render: (row) => <><Link to={`/auftrag?nr=${encodeURIComponent(row.nr)}`} className="font-medium hover:underline">{row.name || row.nr}</Link><p className="text-xs text-muted-foreground">{row.nr}{row.status ? ` · ${row.status}` : ""}</p></> },
+          { key: "p", label: "Projekt", render: (row) => <><Link to={`/projektsuche?nr=${encodeURIComponent(row.nr)}`} className="font-medium hover:underline">{row.name || row.nr}</Link><p className="text-xs text-muted-foreground">{row.nr}{row.status ? ` · ${row.status}` : ""}</p></> },
           { key: "r", label: "Region", render: (row) => row.region },
           { key: "l", label: "Leistung", right: true, render: (row) => eur(row.leistung) },
           { key: "a", label: "Anteil", right: true, render: (row) => `${num(dash.orders.reduce((sum, item) => sum + item.leistung, 0) ? row.leistung / dash.orders.reduce((sum, item) => sum + item.leistung, 0) * 100 : 0, 1)} %` },
@@ -380,7 +380,7 @@ function ProfitabilityReport() {
       </section>
       <Panel title="Projekte nach Rentabilität">
         <DataTable rows={[...orders].sort((a, b) => b.akteMarge - a.akteMarge)} cols={[
-          { key: "p", label: "Projekt", render: (row) => <><Link to={`/auftrag?nr=${encodeURIComponent(row.nr)}`} className="font-medium hover:underline">{row.name || row.nr}</Link><p className="text-xs text-muted-foreground">{row.nr}</p></> },
+          { key: "p", label: "Projekt", render: (row) => <><Link to={`/projektsuche?nr=${encodeURIComponent(row.nr)}`} className="font-medium hover:underline">{row.name || row.nr}</Link><p className="text-xs text-muted-foreground">{row.nr}</p></> },
           { key: "r", label: "Region", render: (row) => row.region },
           { key: "l", label: "Leistung", right: true, render: (row) => eur(row.leistung) },
           { key: "d", label: "DB I", right: true, render: (row) => eur(row.db1) },

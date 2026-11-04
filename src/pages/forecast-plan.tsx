@@ -20,7 +20,7 @@ export function ForecastPlan() {
 
   return (
     <div>
-      <PageHeader title="Forecast-Plan" subtitle="Gespeicherte Planzeilen. Umsatz und Kosten stehen kaufmännisch positiv." />
+      <PageHeader title="Plan" subtitle="Gespeicherte Planzeilen. Umsatz und Kosten stehen kaufmännisch positiv." />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Kpi label="Umsatz angezeigt" value={sum("umsatz", true)} hint="gespeicherter Wert" />

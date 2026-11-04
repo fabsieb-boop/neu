@@ -2,6 +2,7 @@ import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis
 import { useDash } from "@/data";
 import { eur, Panel, PageHeader, axis } from "@/components/dash";
 import { buildGuvWaterfall } from "@/lib/guv-waterfall";
+import { Ebitda } from "@/pages/ebitda";
 
 export function GuV() {
   const { dash } = useDash();
@@ -12,7 +13,7 @@ export function GuV() {
 
   return (
     <div>
-      <PageHeader title="Gewinn- und Verlustrechnung" subtitle={dash.aktuellerMonatName ? `Freigegeben bis ${dash.letzterIstName}. ${dash.aktuellerMonatName} zeigt die gebuchte Monatsscheibe und den Plan.` : `Ist bis ${dash.letzterIstName}`} />
+      <PageHeader title="GuV & EBITDA" subtitle={dash.aktuellerMonatName ? `Freigegeben bis ${dash.letzterIstName}. ${dash.aktuellerMonatName} zeigt die gebuchte Monatsscheibe und den Plan.` : `Ist bis ${dash.letzterIstName}`} />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         <Panel title="Vom Umsatz zum EBITDA" subtitle={`Wasserfall Januar–${mon.at(-1) ?? "Dezember"}, Planmonate mitgerechnet`}>
           <div className="h-80">
@@ -74,6 +75,7 @@ export function GuV() {
           </p>
         </Panel>
       </main>
+      <Ebitda eingebettet />
     </div>
   );
 }

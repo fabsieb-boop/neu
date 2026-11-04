@@ -59,7 +59,7 @@ export function ForecastRegionen() {
 
   return (
     <div>
-      <PageHeader title="Forecast je Region" subtitle={dash.aktuellerMonatName ? `Bis ${dash.letzterIstName} steht das Journal. ${dash.aktuellerMonatName} zeigt in jeder Zelle den Plan und darunter das gebuchte Ist.` : `Bis ${dash.letzterIstName} steht das Journal.`} />
+      <PageHeader title="Forecast je Auftrag" subtitle={dash.aktuellerMonatName ? `Bis ${dash.letzterIstName} steht das Journal. ${dash.aktuellerMonatName} zeigt in jeder Zelle den Plan und darunter das gebuchte Ist.` : `Bis ${dash.letzterIstName} steht das Journal.`} />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Kpi label={`Ist Jan–${dash.letzterIstName.slice(0, 3)}`} value={tot(0, istBis)} hint={`${orders.length} Aufträge im Filter`} />
@@ -135,7 +135,7 @@ export function ForecastRegionen() {
                       {!closed && g.list.map((o) => (
                         <tr key={o.nr} className="border-t border-border hover:bg-muted/50">
                           <td className="sticky left-0 min-w-60 max-w-72 bg-card py-2 pl-8 pr-4">
-                            <Link to={`/auftrag?nr=${encodeURIComponent(o.nr)}`} className="block truncate font-medium hover:underline">{o.name || o.nr}</Link>
+                            <Link to={`/projektsuche?nr=${encodeURIComponent(o.nr)}`} className="block truncate font-medium hover:underline">{o.name || o.nr}</Link>
                             <p className="text-xs text-muted-foreground">{o.nr}{o.status ? ` · ${o.status}` : ""}{o.psp ? ` · PSP ${o.psp}` : ""}</p>
                           </td>
                           {cols.map((i) => cell(o, i))}

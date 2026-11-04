@@ -2,8 +2,6 @@ import { Bar, CartesianGrid, Cell, ComposedChart, Line, ResponsiveContainer, Too
 import { AlertTriangle } from "lucide-react";
 import { useDash } from "@/data";
 import { eur, short, Kpi, Panel, ChartTip, PageHeader } from "@/components/dash";
-import { IstFreigabe } from "@/components/ist-freigabe";
-
 const GUV_ZEILEN = ["Umsatzerloese", "Rohertrag", "Personalaufwand", "Sonstige betriebliche Aufwendungen", "EBITDA", "Neutrales Ergebnis", "Abschreibungen", "Zinsen und Steuern", "Ergebnis"];
 
 export function Uebersicht() {
@@ -21,7 +19,6 @@ export function Uebersicht() {
     <div>
       <PageHeader title="Übersicht" subtitle={`Geschäftsjahr ${dash.jahr}, Ist bis ${dash.letzterIstName}`} />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-        <IstFreigabe />
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <Kpi label="Gesamtleistung Ist" value={leistungIst} hint={`Monate bis ${dash.letzterIstName}`} />
           <Kpi label="EBITDA Ist" value={ebitdaIst} hint="Operativ plus neutral" signed />

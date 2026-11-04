@@ -6,8 +6,9 @@ import { useDash } from "@/data";
 import { DataTable, eur, Kpi, num, PageHeader, Panel } from "@/components/dash";
 import type { User } from "@/types";
 
-export function System() {
-  const { section } = useParams();
+export function System({ bereich }: { bereich?: string }) {
+  const { section: ausPfad } = useParams();
+  const section = bereich ?? ausPfad;
   if (section === "berichte") return <Berichte />;
   if (section === "unterlagen") return <AnnualClosing />;
   if (section === "import") return <ImportManager />;

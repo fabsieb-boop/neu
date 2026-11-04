@@ -6,16 +6,14 @@ import { eur, Panel, PageHeader, DataTable } from "@/components/dash";
 const STUFE = ["Leistung", "Variabel", "Fix"];
 const C = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 
-export function Stammdaten() {
+export function Stammdaten({ eingebettet = false }: { eingebettet?: boolean }) {
   const { dash } = useDash();
   const [tab, setTab] = useState<"projekte" | "kostenarten">("projekte");
   const status = Object.entries(dash.projektstamm.reduce<Record<string, number>>((a, p) => ({ ...a, [p.status || "ohne"]: (a[p.status || "ohne"] ?? 0) + 1 }), {})).map(([n, v]) => ({ n, v }));
   const gruppen = Object.entries(dash.kostenarten.reduce<Record<string, number>>((a, k) => ({ ...a, [k.gruppe]: (a[k.gruppe] ?? 0) + 1 }), {})).map(([n, v]) => ({ n, v }));
   const pie = tab === "projekte" ? status : gruppen;
-  return (
-    <div>
-      <PageHeader title="Stammdaten" subtitle="Projektstamm und Kostenarten" />
-      <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+  const inhalt = (
+    <>
         <div className="flex w-fit gap-1 rounded-lg bg-muted p-1">
           <button onClick={() => setTab("projekte")} className={`rounded-md px-4 py-1.5 text-sm font-medium ${tab === "projekte" ? "bg-card shadow-card" : "text-muted-foreground"}`}>Projektstamm ({dash.projektstamm.length})</button>
           <button onClick={() => setTab("kostenarten")} className={`rounded-md px-4 py-1.5 text-sm font-medium ${tab === "kostenarten" ? "bg-card shadow-card" : "text-muted-foreground"}`}>Kostenarten ({dash.kostenarten.length})</button>
@@ -55,7 +53,13 @@ export function Stammdaten() {
             )}
           </Panel>
         </div>
-      </main>
+    </>
+  );
+  if (eingebettet) return <div className="space-y-6">{inhalt}</div>;
+  return (
+    <div>
+      <PageHeader title="Stammdaten" subtitle="Projektstamm und Kostenarten" />
+      <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">{inhalt}</main>
     </div>
   );
 }

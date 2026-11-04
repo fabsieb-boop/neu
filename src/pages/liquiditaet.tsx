@@ -19,7 +19,7 @@ export function Liquiditaet() {
   const maxSaldo = Math.max(...dash.liqBestand.map((r) => Math.abs(r.saldo)), 1);
   return (
     <div>
-      <PageHeader title="Liquidität" subtitle={`26 Wochen ab Montag der Stichtagswoche · DSO ${dso} / DPO ${dpo} Tage`} />
+      <PageHeader title="Liquiditätsplan" subtitle={`26 Wochen ab Montag der Stichtagswoche · DSO ${dso} / DPO ${dpo} Tage`} />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Kpi label="Startbestand" value={start} hint="letzter Cash-Pool" signed icon />
@@ -71,7 +71,7 @@ export function Liquiditaet() {
               ]} />
             </div>
           )}
-          {user.istAdmin && <Link className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" to="/system/import">Kontoauszug importieren</Link>}
+          {user.istAdmin && <Link className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" to="/import">Kontoauszug importieren</Link>}
         </Panel>
         <Panel title="Cash-Pool" subtitle={dash.liqBestand[0]?.quelle}>
           <DataTable rows={dash.liqBestand} cols={[

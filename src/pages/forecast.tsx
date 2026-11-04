@@ -16,7 +16,7 @@ export function Forecast() {
   const istSumme = dash.forecast.filter((m) => m.ist).reduce((s, m) => s + m.angezeigt, 0);
   return (
     <div>
-      <PageHeader title="Forecast" subtitle="Hochrechnung bis Dezember" />
+      <PageHeader title="Forecast & Plan" subtitle="Hochrechnung bis Dezember" />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Kpi label="Leistung Ist" value={istSumme} hint={`Januar–${dash.letzterIstName}, Projekte`} />

@@ -10,7 +10,7 @@ export function Auftraege() {
   const inListe = dash.orders.length - ohneStamm;
   return (
     <div>
-      <PageHeader title="Aufträge" subtitle="Liste aus dem Blatt Aufträge, Summen aus dem Journal" />
+      <PageHeader title="Projektsuche / Akte" subtitle="Liste aus dem Projektstamm, Summen aus dem Journal" />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         <section className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border border-border bg-card p-5 shadow-card">

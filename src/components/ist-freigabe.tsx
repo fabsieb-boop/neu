@@ -5,7 +5,7 @@ import type { Dash } from "@/types";
 
 export function IstFreigabe() {
   const { dash, user, updateDash } = useDash();
-  const allowed = !user.regional && user.rollen.some((role) => role === "ADMIN" || role === "CONTROLLING");
+  const allowed = !user.regional && user.rollen.some((role) => role === "ADMIN" || role === "CONTROLLING" || role === "GF");
   const [monat, setMonat] = useState(dash.letzterIst);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");

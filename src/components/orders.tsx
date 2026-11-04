@@ -69,7 +69,7 @@ export function Orders() {
               const marge = o.leistung ? (o.akte / o.leistung) * 100 : 0;
               return (
                 <tr key={o.nr} className="border-t border-border">
-                  <td className="py-2.5"><Link to={`/auftrag?nr=${encodeURIComponent(o.nr)}`} className="font-medium hover:underline">{o.name || "—"}</Link><p className="text-xs text-muted-foreground">{o.nr}{o.status ? ` · ${o.status}` : ""}</p></td>
+                  <td className="py-2.5"><Link to={`/projektsuche?nr=${encodeURIComponent(o.nr)}`} className="font-medium hover:underline">{o.name || "—"}</Link><p className="text-xs text-muted-foreground">{o.nr}{o.status ? ` · ${o.status}` : ""}</p></td>
                   <td className="text-muted-foreground">{o.region}</td>
                   <td className="text-right">{eur(o.leistung)}</td>
                   <td className="text-right text-muted-foreground">{eur(o.kvar)}</td>

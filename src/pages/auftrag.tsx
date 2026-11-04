@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
 import { OrderSearch } from "@/components/order-search";
 import { useDash } from "@/data";
@@ -18,6 +18,7 @@ export function Auftrag() {
     <div>
       <PageHeader title={o?.name || nr} subtitle={`${nr}${o ? ` · ${o.region}` : ""}${o?.status ? ` · ${o.status}` : ""}`} />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+        <Link to="/projektsuche" className="text-sm font-medium text-primary hover:underline">Zur Projektsuche</Link>
         <div className="max-w-xl"><OrderSearch value={nr} onSelect={(next) => setParams({ nr: next })} /></div>
         {d && (
           <>
