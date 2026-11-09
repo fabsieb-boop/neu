@@ -42,19 +42,19 @@ class IstFreigabeTest(unittest.TestCase):
         self.assertFalse(october["ist"])
         self.assertTrue(october["offen"])
         self.assertEqual(dashboard["aktuellerMonat"], 10)
-        self.assertAlmostEqual(october["umsatz"], 1351000, places=2)
-        self.assertAlmostEqual(october["ebitda"], 278192, places=2)
-        self.assertAlmostEqual(october["umsatzIst"], -179903.49, places=2)
+        self.assertAlmostEqual(october["umsatz"], 0, places=2)
+        self.assertAlmostEqual(october["ebitda"], 0, places=2)
+        self.assertAlmostEqual(october["umsatzIst"], 0, places=2)
         self.assertEqual(len(umsatz["values"]), 12)
-        self.assertAlmostEqual(umsatz["values"][9], 1351000, places=2)
-        self.assertAlmostEqual(umsatz["ist"][9], -179903.49, places=2)
+        self.assertAlmostEqual(umsatz["values"][9], 0, places=2)
+        self.assertAlmostEqual(umsatz["ist"][9], 0, places=2)
         personal = next(row for row in dashboard["guv"] if row["name"] == "Personalaufwand")
         self.assertAlmostEqual(personal["values"][9], 0, places=2)
-        self.assertNotEqual(round(personal["ist"][9], 2), 0)
+        self.assertAlmostEqual(personal["ist"][9], 0, places=2)
         vorleistungen = next(row for row in dashboard["guv"] if row["name"] == "Material und Fremdleistungen")
         sachkosten = next(row for row in dashboard["guv"] if row["name"] == "Sonstige betriebliche Aufwendungen")
-        self.assertAlmostEqual(vorleistungen["values"][9], -930250, places=2)
-        self.assertAlmostEqual(sachkosten["values"][9], -142558, places=2)
+        self.assertAlmostEqual(vorleistungen["values"][9], 0, places=2)
+        self.assertAlmostEqual(sachkosten["values"][9], 0, places=2)
 
     def test_released_october_shows_journal_figures_and_can_return_to_the_sheet(self) -> None:
         before = model.build()
@@ -71,13 +71,13 @@ class IstFreigabeTest(unittest.TestCase):
         self.assertEqual(released["mappeMonat"], 9)
         self.assertTrue(released["freigabeGesetzt"])
         self.assertTrue(october["ist"])
-        self.assertAlmostEqual(october["umsatz"], -179903.49, places=2)
+        self.assertAlmostEqual(october["umsatz"], 0, places=2)
         self.assertAlmostEqual(october["leistung"], october["umsatz"] + october["bestand"], places=2)
         self.assertAlmostEqual(october["ebitda"], ebitda["values"][9], places=2)
-        self.assertNotEqual(round(october["ebitda"], 2), 0)
+        self.assertAlmostEqual(october["ebitda"], 0, places=2)
         self.assertEqual(len(umsatz["values"]), 12)
-        self.assertAlmostEqual(umsatz["values"][9], -179903.49, places=2)
-        self.assertAlmostEqual(umsatz["values"][10], 2099750, places=2)
+        self.assertAlmostEqual(umsatz["values"][9], 0, places=2)
+        self.assertAlmostEqual(umsatz["values"][10], 0, places=2)
         self.assertAlmostEqual(umsatz["values"][8], september_umsatz, places=2)
 
         with self.connection() as connection:
@@ -100,7 +100,7 @@ class IstFreigabeTest(unittest.TestCase):
         self.assertEqual(restored["letzterIst"], 9)
         self.assertFalse(restored["freigabeGesetzt"])
         self.assertFalse(restored_october["ist"])
-        self.assertAlmostEqual(restored_october["umsatz"], 1351000, places=2)
+        self.assertAlmostEqual(restored_october["umsatz"], 0, places=2)
         self.assertAlmostEqual(restored_october["ebitda"], october_plan, places=2)
         self.assertEqual(
             len(next(row for row in restored["guv"] if row["name"] == "Umsatzerloese")["values"]),
@@ -132,3 +132,58 @@ class IstFreigabeTest(unittest.TestCase):
             model.set_ist_freigabe(13)
         dashboard = model.build()
         self.assertEqual(dashboard["letzterIst"], 9)
+
+    def test_clear_month_removes_only_that_month(self) -> None:
+        with self.connection() as connection:
+            august = connection.execute(
+                "SELECT COUNT(*) FROM buchung WHERE periode = 8"
+            ).fetchone()[0]
+            july = connection.execute(
+                "SELECT COUNT(*) FROM buchung WHERE periode = 7"
+            ).fetchone()[0]
+            september_forecast = connection.execute(
+                "SELECT COUNT(*) FROM forecast_wert WHERE monat = '2026-09-01'"
+            ).fetchone()[0]
+        self.assertGreater(august, 0)
+        self.assertGreater(july, 0)
+
+        removed = model.loesche_monat(8)
+
+        self.assertEqual(removed["monat"], 8)
+        self.assertEqual(removed["buchungen"], august)
+        with self.connection() as connection:
+            self.assertEqual(
+                connection.execute("SELECT COUNT(*) FROM buchung WHERE periode = 8").fetchone()[0],
+                0,
+            )
+            self.assertEqual(
+                connection.execute("SELECT COUNT(*) FROM forecast_wert WHERE monat = '2026-08-01'").fetchone()[0],
+                0,
+            )
+            self.assertEqual(
+                connection.execute("SELECT COUNT(*) FROM buchung WHERE periode = 7").fetchone()[0],
+                july,
+            )
+            self.assertEqual(
+                connection.execute(
+                    "SELECT COUNT(*) FROM forecast_wert WHERE monat = '2026-09-01'"
+                ).fetchone()[0],
+                september_forecast,
+            )
+            self.assertEqual(
+                connection.execute("SELECT COUNT(*) FROM buchung WHERE periode = 10").fetchone()[0],
+                0,
+            )
+            self.assertEqual(
+                connection.execute("SELECT COUNT(*) FROM buchung WHERE periode = 11").fetchone()[0],
+                0,
+            )
+            self.assertEqual(
+                connection.execute(
+                    "SELECT COUNT(*) FROM forecast_wert WHERE monat IN ('2026-10-01', '2026-11-01')"
+                ).fetchone()[0],
+                0,
+            )
+        for invalid in (0, 13, True):
+            with self.assertRaisesRegex(model.SystemInputError, "Monat"):
+                model.loesche_monat(invalid)  # type: ignore[arg-type]

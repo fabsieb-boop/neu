@@ -725,6 +725,51 @@ def read_ist_cutoff(con: sqlite3.Connection) -> tuple[int, int, bool]:
     return letzter, sheet, letzter != sheet
 
 
+def loesche_monat(monat: int) -> dict[str, int]:
+    """Entfernt Buchungen, Forecast und Bankstände eines Monats.
+
+    Die Kostenverfolgung bleibt. Sie ist der Projektstand, keine Monatsscheibe.
+    """
+    if isinstance(monat, bool) or not isinstance(monat, int) or monat < 1 or monat > 12:
+        raise SystemInputError("Der Monat ist ungültig.")
+    con = connect()
+    try:
+        jahr = int(
+            con.execute(
+                """
+                SELECT geschaeftsjahr FROM forecast_version
+                WHERE typ = 'ROLLING_FORECAST' AND ist_aktiv = 1
+                """
+            ).fetchone()["geschaeftsjahr"]
+        )
+        monat_iso = f"{jahr}-{monat:02d}-01"
+        buchungen = con.execute(
+            "DELETE FROM buchung WHERE geschaeftsjahr = ? AND periode = ?",
+            (jahr, monat),
+        ).rowcount
+        forecast = con.execute(
+            "DELETE FROM forecast_wert WHERE monat = ?",
+            (monat_iso,),
+        ).rowcount
+        bank = con.execute(
+            "DELETE FROM liq_bankstand WHERE substr(datum, 1, 7) = ?",
+            (monat_iso[:7],),
+        ).rowcount
+        con.commit()
+        return {
+            "jahr": jahr,
+            "monat": monat,
+            "buchungen": buchungen,
+            "forecast": forecast,
+            "bank": bank,
+        }
+    except sqlite3.IntegrityError as exc:
+        con.rollback()
+        raise SystemInputError("Der Monat konnte nicht gelöscht werden.") from exc
+    finally:
+        con.close()
+
+
 def set_ist_freigabe(monat: int | None) -> dict:
     if monat is not None and (
         isinstance(monat, bool) or not isinstance(monat, int) or monat < 1 or monat > 12

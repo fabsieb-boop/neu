@@ -8,6 +8,7 @@ export function IstFreigabe() {
   const allowed = !user.regional && user.rollen.some((role) => role === "ADMIN" || role === "CONTROLLING" || role === "GF");
   const [monat, setMonat] = useState(dash.letzterIst);
   const [saving, setSaving] = useState(false);
+  const [clearing, setClearing] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -41,7 +42,41 @@ export function IstFreigabe() {
     }
   }
 
+  async function clearMonth(target: number) {
+    const label = `${dash.monate[target - 1]} ${dash.jahr}`;
+    if (!window.confirm(`Alle Buchungen, der Forecast und die Bankstände von ${label} werden gelöscht. Das lässt sich nicht rückgängig machen.`)) {
+      return;
+    }
+    setClearing(target);
+    setError("");
+    setSuccess("");
+    try {
+      const response = await fetch("/api/monat-loeschen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ monat: target }),
+      });
+      const result = await response.json() as {
+        error?: string;
+        dashboard?: Dash;
+        geloescht?: { buchungen: number; forecast: number; bank: number };
+      };
+      if (!response.ok || !result.dashboard || !result.geloescht) {
+        throw new Error(result.error || "Der Monat konnte nicht gelöscht werden.");
+      }
+      updateDash(result.dashboard);
+      const { buchungen, forecast, bank } = result.geloescht;
+      const anzahl = (wert: number, einer: string, mehrere: string) => `${wert} ${wert === 1 ? einer : mehrere}`;
+      setSuccess(`${label}: ${anzahl(buchungen, "Buchung", "Buchungen")}, ${anzahl(forecast, "Forecast-Zeile", "Forecast-Zeilen")} und ${anzahl(bank, "Bankstand", "Bankstände")} gelöscht.`);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Der Monat konnte nicht gelöscht werden.");
+    } finally {
+      setClearing(null);
+    }
+  }
+
   const name = dash.monate[monat - 1];
+  const busy = saving || clearing != null;
   return (
     <Panel title="Ist freigeben" subtitle={dash.freigabeGesetzt ? "eigene Freigabe" : "Stand der Mappe"}>
       <p className="max-w-3xl text-sm text-muted-foreground">
@@ -69,7 +104,7 @@ export function IstFreigabe() {
         </label>
         <button
           type="submit"
-          disabled={saving || monat === dash.letzterIst}
+          disabled={busy || monat === dash.letzterIst}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saving ? "Wird gespeichert …" : `${name} freigeben`}
@@ -77,7 +112,7 @@ export function IstFreigabe() {
         {dash.freigabeGesetzt && (
           <button
             type="button"
-            disabled={saving}
+            disabled={busy}
             onClick={() => void save(null)}
             className="rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-muted disabled:opacity-60"
           >
@@ -85,6 +120,27 @@ export function IstFreigabe() {
           </button>
         )}
       </form>
+      <div className="mt-6 border-t border-border pt-4">
+        <p className="max-w-3xl text-sm text-muted-foreground">
+          Jeder Monat lässt sich hier einzeln leeren. Weg sind die Buchungen, der Forecast und die Bankstände dieses Monats. Die Kostenverfolgung bleibt.
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          {dash.monate.map((label, index) => {
+            const target = index + 1;
+            return (
+              <button
+                key={label}
+                type="button"
+                disabled={busy}
+                onClick={() => void clearMonth(target)}
+                className="rounded-lg border border-border px-3 py-2 text-left text-sm font-semibold hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {clearing === target ? "Wird gelöscht …" : `${label} leeren`}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       {(error || success) && (
         <p role="status" className={`mt-3 rounded-lg px-3 py-2 text-sm ${error ? "bg-negative/10 text-negative" : "bg-positive/10 text-positive"}`}>
           {error || success}
