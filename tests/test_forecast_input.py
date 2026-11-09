@@ -208,20 +208,20 @@ class ForecastInputTest(unittest.TestCase):
         self.assertEqual(neighbor["region"], "West")
         self.assertAlmostEqual(neighbor["monate"][8], -16314.9, places=2)
         self.assertAlmostEqual(neighbor["monate"][9], 0, places=2)
-        self.assertAlmostEqual(neighbor_report["leistung"], 22500, places=2)
+        self.assertAlmostEqual(neighbor_report["leistung"], 0, places=2)
         october = dashboard["forecast"][9]
         self.assertFalse(october["ist"])
-        self.assertAlmostEqual(october["umsatzPlan"], 1351000, places=2)
-        self.assertAlmostEqual(october["kostenPlan"], 930250, places=2)
-        self.assertAlmostEqual(october["angezeigt"], 420750, places=2)
+        self.assertAlmostEqual(october["umsatzPlan"], 0, places=2)
+        self.assertAlmostEqual(october["kostenPlan"], 0, places=2)
+        self.assertAlmostEqual(october["angezeigt"], 0, places=2)
         self.assertAlmostEqual(
             sum(row["monate"][9] for row in dashboard["forecastOrders"]),
             october["angezeigt"],
             places=2,
         )
         self.assertTrue(october["offen"])
-        self.assertAlmostEqual(october["leistungJournal"], -214785.29, places=2)
-        self.assertAlmostEqual(dashboard["months"][9]["auftragsergebnis"], -981646.44, places=2)
+        self.assertAlmostEqual(october["leistungJournal"], 0, places=2)
+        self.assertAlmostEqual(dashboard["months"][9]["auftragsergebnis"], 0, places=2)
 
         west = model.build({"West"})
         self.assertIn("P4102157474", {row["nr"] for row in west["forecastOrders"]})

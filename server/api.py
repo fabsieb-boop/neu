@@ -54,6 +54,7 @@ from server.model import (
     report_templates,
     save_annual_entry,
     save_report_template,
+    loesche_monat,
     set_ist_freigabe,
     update_user,
     user_count,
@@ -415,6 +416,22 @@ class Handler(BaseHTTPRequestHandler):
                     str(payload.get("rolle", "NEUTRAL")),
                 )
                 self._json({"user": created, "setupComplete": False}, status=201)
+                return
+            if path == "/api/monat-loeschen":
+                roles = set(user["rollen"])
+                if user["regional"] or not roles & {"ADMIN", "CONTROLLING", "GF"}:
+                    self._json({"error": "Keine Berechtigung für die Ist-Freigabe."}, status=403)
+                    return
+                payload = self._read_json()
+                raw = payload.get("monat")
+                if isinstance(raw, bool) or not isinstance(raw, (int, float)) or not float(raw).is_integer():
+                    raise SystemInputError("Der Monat ist ungültig.")
+                with self.data_lock:
+                    geloescht = loesche_monat(int(raw))
+                    Handler.dashboard = build()
+                    Handler.scoped_dashboards.clear()
+                    dashboard = self._dashboard_for(user)
+                self._json({"geloescht": geloescht, "dashboard": dashboard})
                 return
             if path == "/api/ist-freigabe":
                 roles = set(user["rollen"])
